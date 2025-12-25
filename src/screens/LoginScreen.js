@@ -45,19 +45,18 @@ export default function LoginScreen({ navigation }) {
 
         if (user && user.id) {
            await AsyncStorage.setItem('userId', String(user.id));
-           // Save the whole user object for easy retrieval later
            await AsyncStorage.setItem('userData', JSON.stringify(user));
            console.log('✅ User Data Saved:', user.id);
 
-            // 3. UPDATE CONTEXT
-            // Ensure we map the nested objects (branch, role) correctly
             setUserData({
-                user: user, // Store the whole object so Header can access .branch, .role
+                id: user.id,                 // Save User ID
+                branch_id: user.branch?.id,  // <--- CRITICAL: Save Branch ID flat
+                branch: user.branch,         // Save full Branch object
+                branchName: user.branch?.name || 'No Branch',
                 name: user.name,
-                branchName: user.branch?.name || 'No Branch Assigned',
                 email: user.email,
                 profilePic: user.profile_pic,
-                role: user.role?.name
+                role: user.role
             });
 
             navigation.replace('Dashboard'); //
