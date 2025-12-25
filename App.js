@@ -1,36 +1,30 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
+import { UserProvider } from './src/context/UserContext'; // <--- Import this
 
-// Import your screens
 import LoginScreen from './src/screens/LoginScreen';
-import DashboardScreen from './src/screens/DashboardScreen';
+import MainTabNavigator from './src/navigation/MainTabNavigator';
 
 const Stack = createStackNavigator();
 
 export default function App() {
   return (
-    <NavigationContainer>
-      <Stack.Navigator initialRouteName="Login">
-        
-        {/* Login Screen (Hide the header bar) */}
-        <Stack.Screen 
-          name="Login" 
-          component={LoginScreen} 
-          options={{ headerShown: false }} 
-        />
-        
-        {/* Dashboard Screen (Show header, disable back button) */}
-        <Stack.Screen 
-          name="Dashboard" 
-          component={DashboardScreen} 
-          options={{ 
-            title: 'My Dashboard',
-            headerLeft: null // Prevents Android back button from returning to login
-          }} 
-        />
-        
-      </Stack.Navigator>
-    </NavigationContainer>
+    <UserProvider> 
+      <NavigationContainer>
+        <Stack.Navigator initialRouteName="Login">
+          <Stack.Screen 
+            name="Login" 
+            component={LoginScreen} 
+            options={{ headerShown: false }} 
+          />
+          <Stack.Screen 
+            name="Dashboard" 
+            component={MainTabNavigator} 
+            options={{ headerShown: false }} 
+          />
+        </Stack.Navigator>
+      </NavigationContainer>
+    </UserProvider>
   );
 }

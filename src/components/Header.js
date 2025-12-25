@@ -1,50 +1,54 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Modal, TouchableWithoutFeedback, Image } from 'react-native'; // Import Image
+import { View, Text, TouchableOpacity, StyleSheet, Modal, TouchableWithoutFeedback, Image, Alert } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native'; // Hook for navigation
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useUser } from '../context/UserContext'; // Hook for data
 import colors from '../styles/colors';
 
-// Added 'profilePic' to props
-const Header = ({ userName, branchName, profilePic, user, onLogout, onAccountPress }) => {
+const Header = () => {
+  const { userData } = useUser(); // Read data from global context
+  const navigation = useNavigation(); // Get navigation object
   const [menuVisible, setMenuVisible] = useState(false);
 
-  const toggleMenu = () => { setMenuVisible(!menuVisible); };
-  const closeMenu = () => { setMenuVisible(false); };
+  const toggleMenu = () => setMenuVisible(!menuVisible);
+  const closeMenu = () => setMenuVisible(false);
 
   const handleLogout = () => {
     closeMenu();
-    onLogout();
-  };
-
-  const handleAccount = () => {
-    closeMenu();
-    if (onAccountPress) onAccountPress();
+    Alert.alert('Logout', 'Are you sure?', [
+      { text: 'Cancel', style: 'cancel' },
+      { 
+        text: 'Logout', 
+        style: 'destructive',
+        onPress: async () => {
+          await AsyncStorage.clear();
+          navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+        }
+      }
+    ]);
   };
 
   return (
     <View style={styles.headerContainer}>
       {/* Left Content */}
       <View style={styles.leftContainer}>
-        {userName ? (
+        {userData.name ? (
           <>
-            <Text style={styles.headerNameText}>{userName}</Text>
-            <Text style={styles.headerBranchText}>{branchName || 'Loading...'}</Text>
+            <Text style={styles.headerNameText}>{userData.name}</Text>
+            <Text style={styles.headerBranchText}>{userData.branchName || 'Loading...'}</Text>
           </>
         ) : (
           <Text style={styles.headerTitle}>Loading...</Text>
         )}
       </View>
 
-      {/* Right Content: Avatar or Image */}
+      {/* Right Content */}
       <View style={styles.rightContainer}>
         <TouchableOpacity onPress={toggleMenu} style={styles.avatarButton}>
-          {profilePic ? (
-             // Show Image if available
-            <Image 
-              source={{ uri: profilePic }} 
-              style={styles.profileImage} 
-            />
+          {userData.profilePic ? (
+            <Image source={{ uri: userData.profilePic }} style={styles.profileImage} />
           ) : (
-            // Show Icon if no image
             <MaterialCommunityIcons name="account-circle" size={40} color={colors.secondary} />
           )}
         </TouchableOpacity>
@@ -57,11 +61,11 @@ const Header = ({ userName, branchName, profilePic, user, onLogout, onAccountPre
             <View style={styles.modalOverlay}>
               <View style={styles.dropdownMenu}>
                 <View style={styles.menuItemHeader}>
-                  <Text style={styles.userName}>{userName || 'User'}</Text>
-                  <Text style={styles.userEmail}>{user?.email || ''}</Text>
+                  <Text style={styles.userName}>{userData.name || 'User'}</Text>
+                  <Text style={styles.userEmail}>{userData.email}</Text>
                 </View>
                 <View style={styles.divider} />
-                <TouchableOpacity style={styles.menuItem} onPress={handleAccount}>
+                <TouchableOpacity style={styles.menuItem} onPress={() => { closeMenu(); Alert.alert('Account'); }}>
                   <MaterialCommunityIcons name="card-account-details-outline" size={20} color="#333" />
                   <Text style={styles.menuText}>Account</Text>
                 </TouchableOpacity>
@@ -78,15 +82,19 @@ const Header = ({ userName, branchName, profilePic, user, onLogout, onAccountPre
   );
 };
 
+// ... Keep your existing StyleSheet exactly as it was ...
 const styles = StyleSheet.create({
-  // ... existing styles ...
   headerContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 20,
+    paddingTop: 45, // INCREASED padding for StatusBar
+    paddingBottom: 15,
     backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+    elevation: 3,
   },
   leftContainer: { flex: 1, justifyContent: 'center' },
   headerNameText: { fontSize: 18, fontWeight: 'bold', color: colors.secondary },
@@ -94,19 +102,9 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 20, fontWeight: 'bold', color: colors.secondary },
   rightContainer: { flexDirection: 'row', alignItems: 'center' },
   avatarButton: { padding: 2 },
-  
-  // NEW STYLE FOR IMAGE
-  profileImage: {
-    width: 40,
-    height: 40,
-    borderRadius: 20, // Makes it a perfect circle
-    borderWidth: 1,
-    borderColor: '#ddd'
-  },
-
-  // Dropdown styles
+  profileImage: { width: 40, height: 40, borderRadius: 20, borderWidth: 1, borderColor: '#ddd' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.1)', justifyContent: 'flex-start', alignItems: 'flex-end' },
-  dropdownMenu: { marginTop: 60, marginRight: 20, backgroundColor: '#fff', borderRadius: 8, width: 220, paddingVertical: 10, elevation: 5 },
+  dropdownMenu: { marginTop: 80, marginRight: 20, backgroundColor: '#fff', borderRadius: 8, width: 220, paddingVertical: 10, elevation: 5 },
   menuItemHeader: { paddingHorizontal: 15, paddingBottom: 10 },
   userName: { fontWeight: 'bold', fontSize: 16, color: '#000' },
   userEmail: { fontSize: 12, color: '#666' },

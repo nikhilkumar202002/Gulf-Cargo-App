@@ -1,28 +1,21 @@
-import React, { useEffect, useState, useLayoutEffect } from 'react';
-import { View, Text, Alert } from 'react-native'; // <--- Added Text
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet } from 'react-native'; // Use View instead of SafeAreaView
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Header from '../components/Header';
-import styles from '../styles/screenStyles';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { getStaffDetails } from '../api/auth'; 
+import { useUser } from '../context/UserContext'; 
+import styles from '../styles/screenStyles';
 import colors from '../styles/colors';
 
-import { getStaffDetails } from '../api/auth'; 
-
-export default function DashboardScreen({ navigation }) {
-  // Added profilePic to state
-  const [userData, setUserData] = useState({ name: '', branchName: '', email: '', profilePic: null });
+export default function DashboardScreen() {
+  const { setUserData } = useUser();
   const [loading, setLoading] = useState(true);
 
-  useLayoutEffect(() => {
-    navigation.setOptions({ headerShown: false });
-  }, [navigation]);
-
   useEffect(() => {
-    fetchHeaderData();
+    fetchData();
   }, []);
 
-  const fetchHeaderData = async () => {
+  const fetchData = async () => {
     try {
       const storedUserId = await AsyncStorage.getItem('userId');
       const userId = storedUserId || '10'; 
@@ -32,38 +25,23 @@ export default function DashboardScreen({ navigation }) {
       if (staff) {
         setUserData({
           name: staff.name || 'Unknown User',
-          // FIX: Read branch directly from the nested object
           branchName: staff.branch?.name || 'No Branch Assigned', 
           email: staff.email,
-          profilePic: staff.profile_pic // Get the image URL
+          profilePic: staff.profile_pic 
         });
       }
-
     } catch (error) {
-      console.error('Error fetching header data:', error);
+      console.error('Error fetching data:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleLogout = async () => {
-    await AsyncStorage.clear();
-    navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
-  };
-
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
-      <Header 
-        userName={userData.name}
-        branchName={userData.branchName}
-        profilePic={userData.profilePic} // Pass the image
-        user={userData} 
-        onLogout={handleLogout}
-        onAccountPress={() => Alert.alert('Account', 'Go to profile')}
-      />
+    // FIX: Use View instead of SafeAreaView to remove top gap
+    <View style={{ flex: 1}}>
 
       <View style={styles.statsContainer}>
-        
         {/* Card 1: Total Cargos */}
         <View style={styles.statCard}>
           <View style={[styles.iconBox, { backgroundColor: '#ffe5e5' }]}>
@@ -75,18 +53,18 @@ export default function DashboardScreen({ navigation }) {
           </View>
         </View>
 
-        {/* Card 2: Total Customers */}
+        {/* Card 2: Total Customers (Fixed Label/Icon) */}
         <View style={styles.statCard}>
           <View style={[styles.iconBox, { backgroundColor: '#e5e7ff' }]}>
             <MaterialCommunityIcons name="account-group" size={28} color={colors.secondary} />
           </View>
           <View style={styles.statInfo}>
             <Text style={styles.statLabel}>Total Customers</Text>
-            <Text style={styles.statCount}>45</Text>
+            <Text style={styles.statCount}>45</Text> 
           </View>
         </View>
 
       </View>
-    </SafeAreaView>
+    </View>
   );
 }

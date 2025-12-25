@@ -57,7 +57,7 @@ export default StyleSheet.create({
 //   DASHOARD STYLES
 dashboardContainer: {
   flex: 1,
-  backgroundColor: '#f3f3f3ff'
+  backgroundColor: '#f7f7f7ff'
 },
 statsContainer: {
     flexDirection: 'row', // Aligns cards side-by-side
