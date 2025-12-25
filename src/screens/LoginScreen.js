@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage'; // <--- Import this
+import AsyncStorage from '@react-native-async-storage/async-storage'; 
 import { MaterialCommunityIcons } from '@expo/vector-icons'; 
-import { login } from '../api/auth';
+import { login, getProfile } from '../api/auth'; // Added getProfile
 import styles from '../styles/screenStyles';
+import { useUser } from '../context/UserContext'; 
 
-export default function LoginScreen({ navigation }) { // <--- 1. Receive navigation prop
+export default function LoginScreen({ navigation }) { 
+  const { setUserData } = useUser(); 
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false); // 2. State for eye toggle
+  const [showPassword, setShowPassword] = useState(false); 
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -21,24 +23,56 @@ export default function LoginScreen({ navigation }) { // <--- 1. Receive navigat
     setLoading(true);
 
     try {
-      const response = await login(email, password);
+      // 1. LOGIN REQUEST
+      const loginResponse = await login(email, password); //
+      console.log('1. Login Response:', loginResponse.data);
 
-     if (response.data.success) { 
-        const token = response.data.token;
-        await AsyncStorage.setItem('userToken', token);
-        if (response.data.user && response.data.user.id) {
-           await AsyncStorage.setItem('userId', String(response.data.user.id));
+      if (loginResponse.data.success) { 
+        const token = loginResponse.data.token;
+        
+        // CRITICAL: Save token BEFORE making the next request
+        // The axios interceptor needs this token in AsyncStorage to attach it to the header
+        await AsyncStorage.setItem('userToken', token); 
+
+        // 2. FETCH PROFILE REQUEST
+        // Now that we have the token, we fetch the full user details
+        console.log('Fetching Profile...');
+        const profileResponse = await getProfile(); //
+        console.log('2. Profile Response:', profileResponse.data);
+
+        // Access the user object (structure based on your earlier JSON)
+        const user = profileResponse.data.user || profileResponse.data.data;
+
+        if (user && user.id) {
+           await AsyncStorage.setItem('userId', String(user.id));
+           // Save the whole user object for easy retrieval later
+           await AsyncStorage.setItem('userData', JSON.stringify(user));
+           console.log('✅ User Data Saved:', user.id);
+
+            // 3. UPDATE CONTEXT
+            // Ensure we map the nested objects (branch, role) correctly
+            setUserData({
+                user: user, // Store the whole object so Header can access .branch, .role
+                name: user.name,
+                branchName: user.branch?.name || 'No Branch Assigned',
+                email: user.email,
+                profilePic: user.profile_pic,
+                role: user.role?.name
+            });
+
+            navigation.replace('Dashboard'); //
+        } else {
+           throw new Error('Profile fetched but user data is missing.');
         }
-        console.log('Token & UserID Saved');
-        navigation.replace('Dashboard');
+
       } else {
-        const msg = response.data.message || 'Invalid credentials';
+        const msg = loginResponse.data.message || 'Invalid credentials';
         Alert.alert('Login Failed', msg);
       }
 
     } catch (error) {
-      console.log('Login Error:', error.response?.data);
-      const errorMsg = error.response?.data?.message || 'Something went wrong';
+      console.log('Login Process Error:', error);
+      const errorMsg = error.response?.data?.message || 'Login failed or Profile load failed';
       Alert.alert('Error', errorMsg);
     } finally {
       setLoading(false);
@@ -46,8 +80,7 @@ export default function LoginScreen({ navigation }) { // <--- 1. Receive navigat
   };
 
   return (
- <View style={styles.container}>
-      {/* ... inputs and buttons ... */}
+    <View style={styles.container}>
        <Text style={styles.title}>Welcome Back!</Text>
 
       <TextInput

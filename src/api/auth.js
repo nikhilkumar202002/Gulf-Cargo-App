@@ -14,3 +14,7 @@ export const getStaffDetails = (id) => {
 export const getRoles = () => {
   return API.get('/roles');
 };
+
+export const getProfile = () => {
+  return API.get('/profile');
+};

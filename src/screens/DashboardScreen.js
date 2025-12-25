@@ -1,48 +1,57 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native'; // Use View instead of SafeAreaView
+import { View, Text } from 'react-native'; 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { getStaffDetails } from '../api/auth'; 
+import { getProfile } from '../api/auth'; // Switch to getProfile
 import { useUser } from '../context/UserContext'; 
 import styles from '../styles/screenStyles';
 import colors from '../styles/colors';
 
 export default function DashboardScreen() {
-  const { setUserData } = useUser();
+  const { userData, setUserData } = useUser();
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchData();
+    const initDashboard = async () => {
+        // 1. Check if Context already has data
+        if (userData && userData.name) {
+            setLoading(false);
+            return;
+        }
+        
+        // 2. If not, try to fetch fresh profile
+        try {
+            const token = await AsyncStorage.getItem('userToken');
+            if (!token) return; // Stay on loading or redirect
+
+            console.log('Dashboard: Fetching fresh profile...');
+            const response = await getProfile(); //
+            const user = response.data.user || response.data.data;
+
+            if (user) {
+                setUserData({
+                    user: user, // Store full object
+                    name: user.name,
+                    branchName: user.branch?.name,
+                    email: user.email,
+                    profilePic: user.profile_pic,
+                    role: user.role?.name
+                });
+            }
+        } catch (error) {
+            console.log('Dashboard Fetch Error:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    initDashboard();
   }, []);
 
-  const fetchData = async () => {
-    try {
-      const storedUserId = await AsyncStorage.getItem('userId');
-      const userId = storedUserId || '10'; 
-      const staffResponse = await getStaffDetails(userId);
-      const staff = staffResponse.data.user; 
-
-      if (staff) {
-        setUserData({
-          name: staff.name || 'Unknown User',
-          branchName: staff.branch?.name || 'No Branch Assigned', 
-          email: staff.email,
-          profilePic: staff.profile_pic 
-        });
-      }
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
-    // FIX: Use View instead of SafeAreaView to remove top gap
     <View style={{ flex: 1}}>
-
       <View style={styles.statsContainer}>
-        {/* Card 1: Total Cargos */}
+        {/* Card 1 */}
         <View style={styles.statCard}>
           <View style={[styles.iconBox, { backgroundColor: '#ffe5e5' }]}>
             <MaterialCommunityIcons name="truck-delivery" size={28} color={colors.primary} />
@@ -53,7 +62,7 @@ export default function DashboardScreen() {
           </View>
         </View>
 
-        {/* Card 2: Total Customers (Fixed Label/Icon) */}
+        {/* Card 2 */}
         <View style={styles.statCard}>
           <View style={[styles.iconBox, { backgroundColor: '#e5e7ff' }]}>
             <MaterialCommunityIcons name="account-group" size={28} color={colors.secondary} />

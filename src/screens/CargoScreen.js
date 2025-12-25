@@ -5,8 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function CargoScreen() {
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
-      {/* <Header title="Cargo Management" />  */}
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#f7f7f7ff' }}>
       <View style={styles.content}>
         <Text>Cargo Screen Content</Text>
       </View>
