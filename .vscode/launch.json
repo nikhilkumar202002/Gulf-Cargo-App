@@ -1,0 +1,14 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Attach to React Native",
+      "type": "reactnative",
+      "request": "attach",
+      "cwd": "${workspaceFolder}",
+      "platform": "android",
+      "port": 8081,
+      "sourceMaps": true
+    }
+  ]
+}
