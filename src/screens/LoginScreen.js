@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native';
-// Ensure you have icons installed: npm install @expo/vector-icons
+import AsyncStorage from '@react-native-async-storage/async-storage'; // <--- Import this
 import { MaterialCommunityIcons } from '@expo/vector-icons'; 
 import { login } from '../api/auth';
 import styles from '../styles/screenStyles';
@@ -22,11 +22,15 @@ export default function LoginScreen({ navigation }) { // <--- 1. Receive navigat
 
     try {
       const response = await login(email, password);
-      console.log('API Response:', response.data);
 
-      if (response.data.success) { 
-        // 3. SUCCESS: Redirect to Dashboard
-        navigation.replace('Dashboard'); 
+     if (response.data.success) { 
+        const token = response.data.token;
+        await AsyncStorage.setItem('userToken', token);
+        if (response.data.user && response.data.user.id) {
+           await AsyncStorage.setItem('userId', String(response.data.user.id));
+        }
+        console.log('Token & UserID Saved');
+        navigation.replace('Dashboard');
       } else {
         const msg = response.data.message || 'Invalid credentials';
         Alert.alert('Login Failed', msg);
@@ -42,8 +46,9 @@ export default function LoginScreen({ navigation }) { // <--- 1. Receive navigat
   };
 
   return (
-     <View style={styles.container}>
-      <Text style={styles.title}>Welcome Back!</Text>
+ <View style={styles.container}>
+      {/* ... inputs and buttons ... */}
+       <Text style={styles.title}>Welcome Back!</Text>
 
       <TextInput
         placeholder="Email"
@@ -53,16 +58,13 @@ export default function LoginScreen({ navigation }) { // <--- 1. Receive navigat
         autoCapitalize="none"
       />
 
-      {/* Password Container */}
       <View style={styles.passwordContainer}>
         <TextInput
           placeholder="Password"
           value={password}
           onChangeText={setPassword}
           style={styles.passwordInput}
-          // 4. CRITICAL FIX: This must be a boolean { ... } not a string " ... "
-          secureTextEntry={!showPassword}
-
+          secureTextEntry={!showPassword} 
         />
         <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
           <MaterialCommunityIcons 
@@ -75,7 +77,7 @@ export default function LoginScreen({ navigation }) { // <--- 1. Receive navigat
 
       <TouchableOpacity style={styles.button} onPress={handleLogin}>
         <Text style={styles.buttonText}>
-          {loading ? 'Please wait...' : 'LOGIN'}
+          {loading ? 'Logging in...' : 'LOGIN'}
         </Text>
       </TouchableOpacity>
     </View>

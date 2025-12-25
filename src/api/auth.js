@@ -6,3 +6,11 @@ export const login = (email, password) => {
     password
   });
 };
+
+export const getStaffDetails = (id) => {
+  return API.get(`/staff/${id}`);
+};
+
+export const getRoles = () => {
+  return API.get('/roles');
+};
