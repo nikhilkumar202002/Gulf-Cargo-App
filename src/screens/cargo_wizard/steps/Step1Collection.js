@@ -4,7 +4,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { getActiveCollectedBy } from '../../../services/coreServices'; 
 import BottomSheetSelect from '../components/BottomSheetSelect'; 
 import colors from '../../../styles/colors';
-import { useUser } from '../../../context/UserContext'; //
+import { useUser } from '../../../context/UserContext'; 
 
 export default function Step1Collection({ data, update }) {
   const { userData } = useUser(); 
@@ -24,36 +24,21 @@ export default function Step1Collection({ data, update }) {
   // 1. Load Roles on Mount
   useEffect(() => {
     if (data.branch_id) {
-        console.log("🟢 1. useEffect Triggered. Branch ID:", data.branch_id);
         loadRoles();
-    } else {
-        console.log("🔴 1. useEffect Triggered but Branch ID is MISSING:", data);
     }
   }, [data.branch_id]);
 
   const loadRoles = async () => {
     setLoading(true);
     try {
-        console.log("🟡 2. Calling API: getActiveCollectedBy...");
-        
         const response = await getActiveCollectedBy(data.branch_id);
-        
-        // DEBUG: Print the EXACT response from the server
-        console.log("🔵 3. API Response Data:", JSON.stringify(response.data, null, 2));
-
-        // Handle both structures: { data: [...] } OR [...]
         const list = response.data.data || response.data;
         
         if (Array.isArray(list)) {
-            console.log(`🟢 4. Found ${list.length} roles. Updating State.`);
             setRolesList(list); 
-        } else {
-            console.error("🔴 4. Error: Expected array but got:", typeof list);
-        }
-
+        } 
     } catch (e) {
-        console.error("🔴 API ERROR:", e);
-        Alert.alert("API Error", "Could not fetch roles. Check console.");
+        console.log("Error loading roles", e);
     } finally {
         setLoading(false);
     }
@@ -61,28 +46,29 @@ export default function Step1Collection({ data, update }) {
 
   // 2. Handle Role Selection
   const handleRoleSelect = (role) => {
-    console.log("Selected Role:", role);
     setSelectedRole(role);
 
-    // --- LOGIC: AUTO-FILL IF OFFICE ---
-    // Check 'name' case-insensitively just in case
+    // --- FIX IS HERE ---
     if (role.name && role.name.toLowerCase() === 'office') {
         
-        const currentUserPerson = {
-            id: userData.id || userData.name_id,
-            name: userData.name || 'Current User'
+        // We must use role.id (e.g. 1), NOT userData.id
+        // We create a "hybrid" object that has the valid ID but shows the User's name
+        const officeCollector = {
+            id: role.id, // <--- CRITICAL: Use the ID from the API list (Valid Collector ID)
+            name: `${role.name} (${userData.name})`, // Visual Name
+            type: 'office'
         };
 
-        console.log("Auto-selecting Office User:", currentUserPerson);
+        console.log("Auto-selecting Office:", officeCollector);
 
-        update('collected_by', currentUserPerson);
-        setPeopleList([currentUserPerson]);
+        update('collected_by', officeCollector);
+        setPeopleList([officeCollector]); // Show in the second dropdown for clarity
         
     } else {
-        // --- LOGIC: RESET FOR OTHER ROLES ---
+        // For Drivers/Others, reset and force them to pick a person
         update('collected_by', null);
         setPeopleList([]); 
-        // Alert.alert("Note", `Please select a person for ${role.name}`);
+        // TODO: If you have an API to fetch drivers for a role, call it here.
     }
   };
 
@@ -108,15 +94,12 @@ export default function Step1Collection({ data, update }) {
       <Text style={styles.label}>1. Select Role</Text>
       <TouchableOpacity 
         style={[styles.selectButton, { marginBottom: 15 }]} 
-        onPress={() => {
-            console.log("Opening Role Modal. Current List:", rolesList);
-            setRoleModalVisible(true);
-        }}
+        onPress={() => setRoleModalVisible(true)}
       >
          <View style={{flexDirection: 'row', alignItems: 'center'}}>
             <MaterialCommunityIcons name="briefcase-account" size={24} color={colors.secondary} style={{marginRight: 10}} />
             <Text style={styles.selectText}>
-                {selectedRole ? selectedRole.name : 'Select Role'}
+                {selectedRole ? selectedRole.name : 'Select Role (e.g. Office)'}
             </Text>
          </View>
          {loading ? <ActivityIndicator size="small" color={colors.primary}/> : <MaterialCommunityIcons name="chevron-down" size={24} color="#666" />}
