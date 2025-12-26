@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Alert } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import colors from '../../../styles/colors';
+import colors from '../../../styles/colors'; // Adjust path if needed
 
 export default function Step4Items({ data, update }) {
   
@@ -9,7 +9,8 @@ export default function Step4Items({ data, update }) {
   const addBox = () => {
     const newBox = {
         weight: '',
-        items: [{ name: '', qty: '1', price: '', weight: '' }] // Start with 1 empty item
+        // Initialize new items with weight instead of price focus
+        items: [{ name: '', qty: '1', weight: '' }] 
     };
     update('boxes', [...data.boxes, newBox]);
   };
@@ -29,7 +30,8 @@ export default function Step4Items({ data, update }) {
   // --- ITEM ACTIONS ---
   const addItem = (boxIndex) => {
     const newBoxes = [...data.boxes];
-    newBoxes[boxIndex].items.push({ name: '', qty: '1', price: '', weight: '' });
+    // Add new item structure
+    newBoxes[boxIndex].items.push({ name: '', qty: '1', weight: '' });
     update('boxes', newBoxes);
   };
 
@@ -86,6 +88,7 @@ export default function Step4Items({ data, update }) {
             <View style={styles.itemsContainer}>
                 {box.items.map((item, itemIndex) => (
                     <View key={itemIndex} style={styles.itemRow}>
+                        {/* ITEM NAME */}
                         <View style={{flex: 1}}>
                             <Text style={styles.itemLabel}>Item Name</Text>
                             <TextInput 
@@ -95,6 +98,8 @@ export default function Step4Items({ data, update }) {
                                 onChangeText={(t) => updateItem(boxIndex, itemIndex, 'name', t)}
                             />
                         </View>
+
+                        {/* QTY */}
                         <View style={{width: 60, marginLeft: 10}}>
                             <Text style={styles.itemLabel}>Qty</Text>
                             <TextInput 
@@ -105,16 +110,19 @@ export default function Step4Items({ data, update }) {
                                 onChangeText={(t) => updateItem(boxIndex, itemIndex, 'qty', t)}
                             />
                         </View>
+
+                        {/* CHANGED: PRICE -> WEIGHT */}
                         <View style={{width: 80, marginLeft: 10}}>
-                            <Text style={styles.itemLabel}>Price</Text>
+                            <Text style={styles.itemLabel}>Weight</Text>
                             <TextInput 
                                 style={styles.itemInput} 
-                                placeholder="0.00" 
+                                placeholder="0.0" 
                                 keyboardType="numeric" 
-                                value={String(item.price)}
-                                onChangeText={(t) => updateItem(boxIndex, itemIndex, 'price', t)}
+                                value={String(item.weight)}
+                                onChangeText={(t) => updateItem(boxIndex, itemIndex, 'weight', t)}
                             />
                         </View>
+
                         {/* Remove Item Button */}
                         {box.items.length > 1 && (
                             <TouchableOpacity onPress={() => removeItem(boxIndex, itemIndex)} style={{marginTop: 18, marginLeft: 8}}>

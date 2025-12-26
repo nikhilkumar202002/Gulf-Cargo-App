@@ -28,7 +28,7 @@ export const getSenderParties = () => {
 export const getReceiverParties = () => {
   return API.get('/parties', {
     params: { 
-      status: 0, 
+      status: 1,  // <--- CHANGE THIS FROM 0 TO 1
       customer_type_id: 2 
     }
   });
