@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { getActiveShipmentMethods, getActiveDeliveryTypes, getActivePaymentMethods } from '../../../services/coreServices'; 
 import BottomSheetSelect from '../components/BottomSheetSelect'; 
@@ -27,23 +27,41 @@ export default function Step3Shipment({ data, update }) {
             getActiveDeliveryTypes(),
             getActivePaymentMethods()
         ]);
-        setShipmentMethods(sm.data.data || sm.data || []);
-        setDeliveryTypes(dt.data.data || dt.data || []);
-        setPaymentMethods(pm.data.data || pm.data || []);
+        
+        const smList = sm.data.data || sm.data || [];
+        const dtList = dt.data.data || dt.data || [];
+        const pmList = pm.data.data || pm.data || [];
+
+        setShipmentMethods(smList);
+        setDeliveryTypes(dtList);
+        setPaymentMethods(pmList);
+
+        // --- FIX: AUTO-FILL NAMES FOR DEFAULTS ---
+        // If the form has an ID (like 1) but no Name, find it and save it.
+        if (data.shipping_method_id && !data.shipping_method_name) {
+            const item = smList.find(i => i.id === data.shipping_method_id);
+            if (item) update('shipping_method_name', item.name);
+        }
+        if (data.delivery_type_id && !data.delivery_type_name) {
+            const item = dtList.find(i => i.id === data.delivery_type_id);
+            if (item) update('delivery_type_name', item.name);
+        }
+        if (data.payment_method_id && !data.payment_method_name) {
+            const item = pmList.find(i => i.id === data.payment_method_id);
+            if (item) update('payment_method_name', item.name);
+        }
+
     } catch (e) {
         console.log("Error loading shipment master data", e);
     }
   };
 
-  // Helper to find name by ID
-  const getName = (list, id) => list.find(i => i.id === id)?.name || 'Select Option';
-
-  const renderSelect = (label, valueId, list, openFn) => (
+  const renderSelect = (label, valueName, openFn) => (
     <View style={styles.inputGroup}>
         <Text style={styles.label}>{label}</Text>
         <TouchableOpacity style={styles.selectBtn} onPress={openFn}>
-            <Text style={[styles.selectText, !valueId && { color: '#999' }]}>
-                {getName(list, valueId)}
+            <Text style={[styles.selectText, !valueName && { color: '#999' }]}>
+                {valueName || 'Select Option'}
             </Text>
             <MaterialCommunityIcons name="chevron-down" size={24} color="#666" />
         </TouchableOpacity>
@@ -54,9 +72,10 @@ export default function Step3Shipment({ data, update }) {
     <ScrollView style={styles.container}>
       <Text style={styles.title}>Shipment Details</Text>
 
-      {renderSelect("Shipment Method", data.shipping_method_id, shipmentMethods, () => setShowShipMethod(true))}
-      {renderSelect("Delivery Type", data.delivery_type_id, deliveryTypes, () => setShowDelType(true))}
-      {renderSelect("Payment Method", data.payment_method_id, paymentMethods, () => setShowPayMethod(true))}
+      {/* Uses _name fields for display now */}
+      {renderSelect("Shipment Method", data.shipping_method_name, () => setShowShipMethod(true))}
+      {renderSelect("Delivery Type", data.delivery_type_name, () => setShowDelType(true))}
+      {renderSelect("Payment Method", data.payment_method_name, () => setShowPayMethod(true))}
 
       <View style={styles.inputGroup}>
         <Text style={styles.label}>LRL Tracking Code (Optional)</Text>
@@ -80,21 +99,30 @@ export default function Step3Shipment({ data, update }) {
         />
       </View>
 
-      {/* MODALS */}
+      {/* MODALS - Now update BOTH ID and Name */}
       <BottomSheetSelect 
         visible={showShipMethod} title="Shipment Method" data={shipmentMethods} 
         onClose={() => setShowShipMethod(false)} 
-        onSelect={(i) => update('shipping_method_id', i.id)} 
+        onSelect={(i) => { 
+            update('shipping_method_id', i.id); 
+            update('shipping_method_name', i.name); // Save Name
+        }} 
       />
       <BottomSheetSelect 
         visible={showDelType} title="Delivery Type" data={deliveryTypes} 
         onClose={() => setShowDelType(false)} 
-        onSelect={(i) => update('delivery_type_id', i.id)} 
+        onSelect={(i) => { 
+            update('delivery_type_id', i.id); 
+            update('delivery_type_name', i.name); // Save Name
+        }} 
       />
       <BottomSheetSelect 
         visible={showPayMethod} title="Payment Method" data={paymentMethods} 
         onClose={() => setShowPayMethod(false)} 
-        onSelect={(i) => update('payment_method_id', i.id)} 
+        onSelect={(i) => { 
+            update('payment_method_id', i.id); 
+            update('payment_method_name', i.name); // Save Name
+        }} 
       />
     </ScrollView>
   );
