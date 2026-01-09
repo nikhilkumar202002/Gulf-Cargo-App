@@ -5,6 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import colors from '../styles/colors';
 import { useUser } from '../context/UserContext';
 import { createCargo } from '../services/cargoService'; // CHECK: Ensure file name matches (plural/singular)
+import { generateInvoicePDF } from '../services/pdfGenerator';
 
 // --- IMPORT STEPS ---
 import Step1Collection from './cargo_wizard/steps/Step1Collection'; 
@@ -142,6 +143,22 @@ export default function CargoScreen() {
         items: flatItemsList,
         no_of_pieces: flatItemsList.length
     };
+
+    Alert.alert(
+                "Success", 
+                "Invoice Created Successfully!", 
+                [
+                    { 
+                        text: "Generate PDF", 
+                        onPress: () => generateInvoicePDF(createdInvoiceData) // <--- CALL PDF HERE
+                    },
+                    { 
+                        text: "Close", 
+                        onPress: () => navigation.goBack(),
+                        style: 'cancel'
+                    }
+                ]
+            );
 
     console.log("🚀 Payload Fixed:", JSON.stringify(payload, null, 2));
 

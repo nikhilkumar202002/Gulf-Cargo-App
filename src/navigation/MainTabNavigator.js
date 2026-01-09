@@ -8,6 +8,7 @@ import Header from '../components/Header'; // Import Header
 import DashboardScreen from '../screens/DashboardScreen';
 import CargoScreen from '../screens/CargoScreen';
 import SettingScreen from '../screens/SettingScreen';
+import CargoListScreen from '../screens/CargoListScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -33,6 +34,16 @@ export default function MainTabNavigator() {
       <Tab.Screen name="Home" component={DashboardScreen} />
       <Tab.Screen name="Cargo" component={CargoScreen} />
       <Tab.Screen name="Setting" component={SettingScreen} />
+      <Tab.Screen 
+          name="History" 
+          component={CargoListScreen} 
+          options={{
+            title: 'History', // Tab label
+            tabBarIcon: ({ color, size }) => (
+              <MaterialCommunityIcons name="history" size={size} color={color} />
+            ),
+          }}
+        />
     </Tab.Navigator>
   );
 }
