@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, SafeAreaView, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import colors from '../styles/colors';
 import { useUser } from '../context/UserContext';
-import { createCargo } from '../services/cargoService'; // CHECK: Ensure file name matches (plural/singular)
+import { createCargo } from '../services/cargoService'; 
 import { generateInvoicePDF } from '../services/pdfGenerator';
 
 // --- IMPORT STEPS ---
@@ -64,16 +65,20 @@ export default function CargoScreen() {
     quantity_vat_amount: 1, unit_rate_vat_amount: 0, amount_vat_amount: 0,
   });
 
-  // --- SYNC USER DATA ---
+  // --- SYNC USER DATA (FIXED) ---
   useEffect(() => {
     if (userData) {
-        const foundBranchId = userData.branch_id || userData.branch?.id;
+        // Handle nested structure: userData.user.branch.id OR userData.branch_id
+        const userObj = userData.user || userData; 
+        const foundBranchId = userObj.branch_id || userObj.branch?.id;
+        const foundBranchName = userObj.branchName || userObj.branch?.name || '';
+
         if (foundBranchId) {
             setFormData(prev => ({
                 ...prev,
                 branch_id: foundBranchId,
-                branch_name: userData.branchName || userData.branch?.name || '',
-                name_id: userData.id,
+                branch_name: foundBranchName,
+                name_id: userObj.id,
             }));
         }
     }
@@ -83,17 +88,15 @@ export default function CargoScreen() {
     setFormData(prev => ({ ...prev, [key]: value }));
   };
 
-  // --- SUBMIT LOGIC (FIXED) ---
+  // --- SUBMIT LOGIC ---
   const handleSubmitInvoice = async () => {
     setLoading(true);
 
-    // 1. Calculate Total Weight Dynamically
     let calculatedTotalWeight = 0;
     formData.boxes.forEach(box => {
         calculatedTotalWeight += parseFloat(box.weight) || 0;
     });
 
-    // 2. Prepare Items with 'slno'
     const boxWeightMap = {};
     const flatItemsList = [];
     let serialNumberCounter = 1; 
@@ -105,7 +108,7 @@ export default function CargoScreen() {
         if (box.items) {
             box.items.forEach(item => {
                 flatItemsList.push({
-                    slno: serialNumberCounter++, // <--- FIX: Added Serial Number
+                    slno: serialNumberCounter++, 
                     box_number: boxNum,
                     name: item.name || 'Item',
                     piece_no: parseInt(item.qty) || 1,
@@ -117,40 +120,34 @@ export default function CargoScreen() {
         }
     });
 
-    // 3. Construct Payload
     const payload = {
         ...formData,
         branch_id: formData.branch_id,
-        
-        // IDs
         sender_id: formData.sender?.id, 
         receiver_id: formData.receiver?.id, 
         collected_by_id: formData.collected_by?.id, 
-        
-        // Dates
         date: new Date(formData.date).toISOString().split('T')[0],
-
-        // Weight Fields (CRITICAL FIXES)
         total_weight: calculatedTotalWeight,
-        
-        // The API requires these 3 fields for weight charges. 
         quantity_total_weight: calculatedTotalWeight,
         unit_rate_total_weight: formData.unit_rate_total_weight || 0, 
         amount_total_weight: formData.amount_total_weight || 0,
-
-        // Lists
         box_weight: boxWeightMap,
         items: flatItemsList,
         no_of_pieces: flatItemsList.length
     };
 
-    Alert.alert(
+    try {
+        const response = await createCargo(payload);
+        if(response.data.success || response.status === 200) {
+            const createdInvoiceData = response.data.data || response.data.cargo || { ...payload, id: response.data.id };
+            
+             Alert.alert(
                 "Success", 
                 "Invoice Created Successfully!", 
                 [
                     { 
                         text: "Generate PDF", 
-                        onPress: () => generateInvoicePDF(createdInvoiceData) // <--- CALL PDF HERE
+                        onPress: () => generateInvoicePDF(createdInvoiceData) 
                     },
                     { 
                         text: "Close", 
@@ -159,15 +156,6 @@ export default function CargoScreen() {
                     }
                 ]
             );
-
-    console.log("🚀 Payload Fixed:", JSON.stringify(payload, null, 2));
-
-    try {
-        const response = await createCargo(payload);
-        if(response.data.success || response.status === 200) {
-             Alert.alert("Success", "Invoice Created Successfully!", [
-                { text: "OK", onPress: () => navigation.goBack() }
-            ]);
         } else {
              Alert.alert("Error", response.data.message || "Failed to create invoice");
         }
@@ -175,11 +163,9 @@ export default function CargoScreen() {
         console.error("❌ SUBMISSION ERROR:", error);
         
         if (error.response?.data?.errors) {
-            // Format the validation errors nicely
             const errorData = error.response.data.errors;
             const firstErrorKey = Object.keys(errorData)[0];
             const firstErrorMessage = errorData[firstErrorKey][0];
-            
             Alert.alert("Validation Error", `${firstErrorKey}: ${firstErrorMessage}`);
         } else {
             Alert.alert("Error", "Server returned an error. Check console.");
@@ -190,7 +176,6 @@ export default function CargoScreen() {
   };
 
   const handleNext = () => {
-    // Validation
     if (currentStep === 1 && !formData.collected_by) return Alert.alert("Required", "Select Collector");
     if (currentStep === 2 && (!formData.sender || !formData.receiver)) return Alert.alert("Required", "Select Sender and Receiver");
     if (currentStep === 4 && formData.boxes.length === 0) return Alert.alert("Required", "Add at least one box");

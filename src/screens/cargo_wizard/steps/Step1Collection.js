@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { getActiveCollectedBy } from '../../../services/coreServices'; 
+import { getActiveCollectedBy, getAllCollectedBy } from '../../../services/coreServices'; 
 import BottomSheetSelect from '../components/BottomSheetSelect'; 
 import colors from '../../../styles/colors';
 import { useUser } from '../../../context/UserContext'; 
@@ -11,15 +11,8 @@ export default function Step1Collection({ data, update }) {
 
   // Data State
   const [rolesList, setRolesList] = useState([]); 
-  const [peopleList, setPeopleList] = useState([]);
-  
-  // Selection State
-  const [selectedRole, setSelectedRole] = useState(null);
-
-  // UI State
   const [loading, setLoading] = useState(false);
   const [roleModalVisible, setRoleModalVisible] = useState(false);
-  const [personModalVisible, setPersonModalVisible] = useState(false);
 
   // 1. Load Roles on Mount
   useEffect(() => {
@@ -31,9 +24,17 @@ export default function Step1Collection({ data, update }) {
   const loadRoles = async () => {
     setLoading(true);
     try {
-        const response = await getActiveCollectedBy(data.branch_id);
-        const list = response.data.data || response.data;
+        // 1. Try fetching Active Collected By for this Branch
+        let response = await getActiveCollectedBy(data.branch_id);
+        let list = response.data.data || response.data || [];
         
+        // 2. Fallback: If empty, try getting ALL (helps if API logic varies)
+        if (!Array.isArray(list) || list.length === 0) {
+            console.log("⚠️ Active list empty, trying ALL...");
+            response = await getAllCollectedBy();
+            list = response.data.data || response.data || [];
+        }
+
         if (Array.isArray(list)) {
             setRolesList(list); 
         } 
@@ -44,115 +45,105 @@ export default function Step1Collection({ data, update }) {
     }
   };
 
-  // 2. Handle Role Selection
   const handleRoleSelect = (role) => {
-    setSelectedRole(role);
-
-    // --- FIX IS HERE ---
-    if (role.name && role.name.toLowerCase() === 'office') {
-        
-        // We must use role.id (e.g. 1), NOT userData.id
-        // We create a "hybrid" object that has the valid ID but shows the User's name
-        const officeCollector = {
-            id: role.id, // <--- CRITICAL: Use the ID from the API list (Valid Collector ID)
-            name: `${role.name} (${userData.name})`, // Visual Name
-            type: 'office'
-        };
-
-        console.log("Auto-selecting Office:", officeCollector);
-
-        update('collected_by', officeCollector);
-        setPeopleList([officeCollector]); // Show in the second dropdown for clarity
-        
-    } else {
-        // For Drivers/Others, reset and force them to pick a person
-        update('collected_by', null);
-        setPeopleList([]); 
-        // TODO: If you have an API to fetch drivers for a role, call it here.
-    }
+    update('collected_by', role);
   };
 
   return (
-    <View>
-      <Text style={styles.stepTitle}>Collection Details</Text>
+    <View style={styles.container}>
+      <View style={{flexDirection:'row', justifyContent:'space-between', alignItems:'center'}}>
+          <Text style={styles.mainTitle}>Collection Details</Text>
+          <TouchableOpacity onPress={loadRoles} style={{padding:5}}>
+            <MaterialCommunityIcons name="refresh" size={20} color={colors.primary} />
+          </TouchableOpacity>
+      </View>
       
-      {/* Branch & Date Info */}
-      <View style={styles.card}>
-        <Text style={styles.label}>Branch</Text>
-        <Text style={styles.value}>{data.branch_name || 'Loading...'}</Text>
+      {/* 1. Context Info Card */}
+      <View style={styles.infoCard}>
+        <View style={styles.infoRow}>
+            <View style={styles.iconBox}>
+                <MaterialCommunityIcons name="office-building" size={20} color={colors.secondary} />
+            </View>
+            <View>
+                <Text style={styles.infoLabel}>Branch</Text>
+                <Text style={styles.infoValue}>{data.branch_name || 'Loading...'}</Text>
+            </View>
+        </View>
+        
+        <View style={styles.divider} />
+
+        <View style={styles.infoRow}>
+            <View style={[styles.iconBox, { backgroundColor: '#fff0f0' }]}>
+                <MaterialCommunityIcons name="calendar-clock" size={20} color={colors.primary} />
+            </View>
+            <View>
+                <Text style={styles.infoLabel}>Date</Text>
+                <Text style={styles.infoValue}>
+                    {data.date instanceof Date ? data.date.toDateString() : new Date().toDateString()}
+                </Text>
+            </View>
+        </View>
       </View>
-      <View style={styles.card}>
-        <Text style={styles.label}>Date</Text>
-        <Text style={styles.value}>
-            {data.date instanceof Date ? data.date.toDateString() : new Date().toDateString()}
-        </Text>
+
+      {/* 2. Collection Form */}
+      <Text style={styles.sectionTitle}>Who collected this cargo?</Text>
+
+      {/* Role Selector */}
+      <View style={styles.inputGroup}>
+        <Text style={styles.inputLabel}>Collected By</Text>
+        <TouchableOpacity 
+            style={styles.dropdownBtn} 
+            onPress={() => setRoleModalVisible(true)}
+            activeOpacity={0.7}
+        >
+            <View style={styles.dropdownContent}>
+                <MaterialCommunityIcons name="account-tie" size={22} color={colors.secondary} style={styles.dropdownIcon} />
+                <Text style={[styles.dropdownText, !data.collected_by && styles.placeholderText]}>
+                    {data.collected_by ? data.collected_by.name : 'Select Collector'}
+                </Text>
+            </View>
+            {loading ? <ActivityIndicator size="small" color={colors.primary}/> : <MaterialCommunityIcons name="chevron-down" size={24} color="#aaa" />}
+        </TouchableOpacity>
       </View>
 
-      <Text style={styles.sectionHeader}>Who collected the cargo?</Text>
-
-      {/* 1. SELECT ROLE */}
-      <Text style={styles.label}>1. Select Role</Text>
-      <TouchableOpacity 
-        style={[styles.selectButton, { marginBottom: 15 }]} 
-        onPress={() => setRoleModalVisible(true)}
-      >
-         <View style={{flexDirection: 'row', alignItems: 'center'}}>
-            <MaterialCommunityIcons name="briefcase-account" size={24} color={colors.secondary} style={{marginRight: 10}} />
-            <Text style={styles.selectText}>
-                {selectedRole ? selectedRole.name : 'Select Role (e.g. Office)'}
-            </Text>
-         </View>
-         {loading ? <ActivityIndicator size="small" color={colors.primary}/> : <MaterialCommunityIcons name="chevron-down" size={24} color="#666" />}
-      </TouchableOpacity>
-
-      {/* 2. SELECT PERSON */}
-      <Text style={styles.label}>2. Select Person</Text>
-      <TouchableOpacity 
-        style={[
-            styles.selectButton, 
-            (!selectedRole) && { backgroundColor: '#f9f9f9', opacity: 0.6 }
-        ]} 
-        onPress={() => {
-            if (selectedRole) setPersonModalVisible(true);
-            else Alert.alert("Select Role", "Please select a role first.");
-        }}
-        disabled={!selectedRole}
-      >
-         <View style={{flexDirection: 'row', alignItems: 'center'}}>
-            <MaterialCommunityIcons name="account" size={24} color={data.collected_by ? colors.secondary : '#ccc'} style={{marginRight: 10}} />
-            <Text style={[styles.selectText, !data.collected_by && { color: '#999' }]}>
-                {data.collected_by ? data.collected_by.name : 'Select Person'}
-            </Text>
-         </View>
-         <MaterialCommunityIcons name="chevron-down" size={24} color="#666" />
-      </TouchableOpacity>
-
-      {/* Modals */}
+      {/* Modal */}
       <BottomSheetSelect 
         visible={roleModalVisible} 
-        title="Select Role" 
+        title="Select Collector" 
         data={rolesList} 
         onClose={() => setRoleModalVisible(false)} 
         onSelect={handleRoleSelect} 
-      />
-      
-      <BottomSheetSelect 
-        visible={personModalVisible} 
-        title="Select Person" 
-        data={peopleList} 
-        onClose={() => setPersonModalVisible(false)} 
-        onSelect={(item) => update('collected_by', item)} 
       />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-    stepTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 15, color: colors.secondary },
-    card: { backgroundColor: '#fff', padding: 12, borderRadius: 8, marginBottom: 10, borderWidth: 1, borderColor: '#eee' },
-    label: { fontSize: 10, color: '#888', marginBottom: 4, fontWeight: 'bold', textTransform: 'uppercase' },
-    value: { fontSize: 16, fontWeight: '600', color: '#333' },
-    sectionHeader: { fontSize: 14, fontWeight: 'bold', marginTop: 10, marginBottom: 10 },
-    selectButton: { backgroundColor: '#fff', padding: 15, borderRadius: 8, borderWidth: 1, borderColor: '#ccc', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    selectText: { fontSize: 16, color: '#333' }
+    container: { flex: 1 },
+    mainTitle: { fontSize: 22, fontWeight: 'bold', color: colors.secondary, marginBottom: 20 },
+    infoCard: {
+        backgroundColor: '#fff', borderRadius: 16, padding: 20, marginBottom: 30,
+        elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 5,
+        borderWidth: 1, borderColor: '#f0f0f0',
+    },
+    infoRow: { flexDirection: 'row', alignItems: 'center' },
+    iconBox: {
+        width: 40, height: 40, borderRadius: 12, backgroundColor: '#eef2ff',
+        justifyContent: 'center', alignItems: 'center', marginRight: 15,
+    },
+    infoLabel: { fontSize: 12, color: '#888', fontWeight: '600', marginBottom: 2, textTransform: 'uppercase' },
+    infoValue: { fontSize: 16, fontWeight: 'bold', color: '#333' },
+    divider: { height: 1, backgroundColor: '#f0f0f0', marginVertical: 15 },
+    sectionTitle: { fontSize: 16, fontWeight: '700', color: '#333', marginBottom: 15 },
+    inputGroup: { marginBottom: 20 },
+    inputLabel: { fontSize: 13, fontWeight: '600', color: '#555', marginBottom: 8, marginLeft: 4 },
+    dropdownBtn: {
+        backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: '#e0e0e0', height: 55,
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 15,
+        elevation: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2,
+    },
+    dropdownContent: { flexDirection: 'row', alignItems: 'center' },
+    dropdownIcon: { marginRight: 10 },
+    dropdownText: { fontSize: 15, color: '#333', fontWeight: '500' },
+    placeholderText: { color: '#999', fontWeight: 'normal' },
 });

@@ -1,242 +1,367 @@
 import React, { useState, useEffect } from 'react';
 import { 
   View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, 
-  TextInput, Modal, KeyboardAvoidingView, Platform, ScrollView 
+  TextInput, Modal, KeyboardAvoidingView, Platform, ScrollView, Image 
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import * as DocumentPicker from 'expo-document-picker'; // npx expo install expo-document-picker
+
 import { getSenderParties, getReceiverParties, createParty } from '../../../services/partiesServices'; 
+import { 
+  getAllCountries, getStatesByCountry, getDistrictsByState, 
+  getAllPhoneCodes, getAllDocumentTypes 
+} from '../../../services/coreServices';
+
 import BottomSheetSelect from '../components/BottomSheetSelect'; 
 import colors from '../../../styles/colors';
+import { useUser } from '../../../context/UserContext'; 
 
 export default function Step2Parties({ data, update }) {
-  // --- STATE ---
+  const { userData } = useUser();
+
+  // --- LISTS STATE ---
   const [sendersList, setSendersList] = useState([]);
   const [receiversList, setReceiversList] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // Selection Modals
+  // --- MASTER DATA STATE ---
+  const [phoneCodes, setPhoneCodes] = useState([]);
+  const [countries, setCountries] = useState([]);
+  const [states, setStates] = useState([]);
+  const [districts, setDistricts] = useState([]);
+  const [docTypes, setDocTypes] = useState([]);
+
+  // --- MODAL VISIBILITY ---
   const [showSenderSelect, setShowSenderSelect] = useState(false);
   const [showReceiverSelect, setShowReceiverSelect] = useState(false);
-
-  // Create New Party Modal State
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [createType, setCreateType] = useState(null); 
-  const [newPartyName, setNewPartyName] = useState('');
-  const [newPartyPhone, setNewPartyPhone] = useState('');
-  const [newPartyAddress, setNewPartyAddress] = useState('');
+  
+  // --- CREATE FORM STATE ---
+  const [createType, setCreateType] = useState(null); // 'sender' | 'receiver'
   const [creating, setCreating] = useState(false);
+  const [modalType, setModalType] = useState(null); // Controls which dropdown is open inside modal
 
-  // --- 1. LOAD DATA ON MOUNT ---
+  const initialForm = {
+    name: '',
+    email: '',
+    whatsapp_code: '+966', whatsapp_number: '',
+    contact_code: '+966', contact_number: '',
+    use_same_number: false,
+    country_id: '', country_name: '',
+    state_id: '', state_name: '',
+    district_id: '', district_name: '',
+    city: '', post: '', postal_code: '', address: '',
+    document_type_id: '', document_type_name: '',
+    document_id: '', document_file: null
+  };
+  const [form, setForm] = useState(initialForm);
+
+  // --- 1. INITIAL LOAD ---
   useEffect(() => {
     fetchParties();
+    loadMasterData();
   }, []);
 
   const fetchParties = async () => {
     setLoading(true);
     try {
-      console.log("🟡 Starting Party Fetch...");
-
-      // Run both fetches in parallel
-      const [sendersRes, receiversRes] = await Promise.all([
-        getSenderParties(),
-        getReceiverParties()
-      ]);
-
-      // --- DEBUGGING SENDER DATA ---
-      console.log("📦 Senders API Raw Response:", JSON.stringify(sendersRes.data, null, 2));
-      const sList = sendersRes.data.data || sendersRes.data || [];
-      console.log(`✅ Found ${sList.length} Senders`);
-      if (sList.length > 0) {
-        console.log("🔍 First Sender Object Keys:", Object.keys(sList[0]));
-      }
-
-      // --- DEBUGGING RECEIVER DATA ---
-      console.log("📦 Receivers API Raw Response:", JSON.stringify(receiversRes.data, null, 2));
-      const rList = receiversRes.data.data || receiversRes.data || [];
-      console.log(`✅ Found ${rList.length} Receivers`);
-      if (rList.length > 0) {
-        console.log("🔍 First Receiver Object Keys:", Object.keys(rList[0]));
-        console.log("🔍 First Receiver Data:", JSON.stringify(rList[0], null, 2));
-      }
-
-      setSendersList(sList);
-      setReceiversList(rList);
-      
-    } catch (error) {
-      console.error("🔴 Error fetching parties:", error);
-      Alert.alert("Error", "Could not load customers list. Check console.");
-    } finally {
-      setLoading(false);
-    }
+      const [sRes, rRes] = await Promise.all([getSenderParties(), getReceiverParties()]);
+      setSendersList(sRes.data.data || []);
+      setReceiversList(rRes.data.data || []);
+    } catch (e) { console.error(e); } finally { setLoading(false); }
   };
 
-  // --- RENDER HELPERS ---
-  const renderPartyCard = (title, type, selectedParty, list, onSelectOpen, onCreateOpen) => (
-    <View style={styles.sectionContainer}>
-      <View style={styles.headerRow}>
-        <Text style={styles.sectionTitle}>{title}</Text>
-        <TouchableOpacity onPress={onCreateOpen}>
-            <Text style={styles.addText}>+ Add New</Text>
-        </TouchableOpacity>
-      </View>
+  const loadMasterData = async () => {
+    try {
+      const [pc, co, dt] = await Promise.all([getAllPhoneCodes(), getAllCountries(), getAllDocumentTypes()]);
+      setPhoneCodes(pc.data.data || []);
+      setCountries(co.data.data || []);
+      setDocTypes(dt.data.data || []);
+    } catch(e) {}
+  };
 
-      {selectedParty ? (
-        <View style={styles.cardSelected}>
-          <View style={styles.cardHeader}>
-             <View style={styles.avatarBox}>
-                <Text style={styles.avatarText}>{selectedParty.name ? selectedParty.name.charAt(0).toUpperCase() : '?'}</Text>
-             </View>
-             <View style={{flex: 1}}>
-                <Text style={styles.partyName}>{selectedParty.name}</Text>
-                
-                {/* DYNAMIC PHONE DISPLAY: Check all possible keys */}
-                <Text style={styles.partyPhone}>
-                    📞 {selectedParty.phone || selectedParty.mobile || selectedParty.contact_number || 'No Phone'}
-                </Text>
-                
-                {/* WHATSAPP DISPLAY: If available */}
-                {(selectedParty.whatsapp_number || selectedParty.whatsapp) && (
-                    <Text style={[styles.partyPhone, { color: 'green', marginTop: 2 }]}>
-                        💬 {selectedParty.whatsapp_number || selectedParty.whatsapp}
-                    </Text>
-                )}
-             </View>
-             <TouchableOpacity onPress={onSelectOpen} style={styles.changeBtn}>
-                <Text style={styles.changeBtnText}>Change</Text>
-             </TouchableOpacity>
-          </View>
-          
-          <View style={styles.divider} />
-          
-          <View style={styles.detailRow}>
-            <MaterialCommunityIcons name="map-marker" size={16} color="#888" />
-            <Text style={styles.partyAddress} numberOfLines={2}>
-                {/* DYNAMIC ADDRESS DISPLAY */}
-                {selectedParty.address || selectedParty.location || selectedParty.full_address || 'No Address Provided'}
-            </Text>
-          </View>
-        </View>
-      ) : (
-        <TouchableOpacity style={styles.cardEmpty} onPress={onSelectOpen}>
-           <View style={styles.emptyIcon}>
-              <MaterialCommunityIcons name="account-search" size={28} color="#999" />
-           </View>
-           <Text style={styles.emptyText}>Tap to select {type}</Text>
-           <MaterialCommunityIcons name="chevron-down" size={24} color="#ccc" />
-        </TouchableOpacity>
-      )}
-    </View>
-  );
+  // --- 2. DYNAMIC LOCATION ---
+  const handleCountrySelect = async (item) => {
+    setForm(p => ({ ...p, country_id: item.id, country_name: item.name, state_id: '', district_id: '' }));
+    try {
+        const res = await getStatesByCountry(item.id);
+        setStates(res.data.data || []);
+    } catch(e) {}
+  };
 
-  // ... (Keep handleCreateParty and the rest of your Render Logic the same) ...
-  
-  // For brevity, here is the modal rendering part again so you can paste the whole file
-  // --- 2. CREATE NEW PARTY LOGIC ---
+  const handleStateSelect = async (item) => {
+    setForm(p => ({ ...p, state_id: item.id, state_name: item.name, district_id: '' }));
+    try {
+        const res = await getDistrictsByState(item.id);
+        setDistricts(res.data.data || []);
+    } catch(e) {}
+  };
+
+  // --- 3. ACTIONS ---
   const openCreateModal = (type) => {
-    setCreateType(type); // 'sender' or 'receiver'
-    setNewPartyName('');
-    setNewPartyPhone('');
-    setNewPartyAddress('');
+    setCreateType(type);
+    setForm({ 
+        ...initialForm, 
+        // Auto-fill City for Sender based on Branch
+        city: type === 'sender' ? (userData?.branch?.city || 'Riyadh') : '',
+        // Default Receiver Country to India (Example ID: 101) or Empty
+        country_id: type === 'receiver' ? '' : 1,
+        country_name: type === 'receiver' ? '' : 'Saudi Arabia'
+    });
+    // Trigger state load for default country if Sender
+    if(type === 'sender') handleCountrySelect({id: 1, name: 'Saudi Arabia'});
     setShowCreateModal(true);
   };
 
-  const handleCreateParty = async () => {
-    if (!newPartyName || !newPartyPhone) {
-      Alert.alert("Validation", "Name and Phone are required.");
-      return;
-    }
-
-    setCreating(true);
+  const pickDocument = async () => {
     try {
-      const typeId = createType === 'sender' ? 1 : 2;
-      
-      const payload = {
-        name: newPartyName,
-        phone: newPartyPhone,
-        address: newPartyAddress,
-        customer_type_id: typeId,
-        status: 1 
-      };
-
-      console.log("Creating Party Payload:", payload); // DEBUG
-      const response = await createParty(payload);
-      console.log("Create Response:", response.data); // DEBUG
-      
-      if (response.data && response.data.success) {
-        const newParty = response.data.data || response.data.party; 
-        
-        if (createType === 'sender') {
-          setSendersList(prev => [...prev, newParty]);
-          update('sender', newParty); 
-        } else {
-          setReceiversList(prev => [...prev, newParty]);
-          update('receiver', newParty); 
+        const res = await DocumentPicker.getDocumentAsync({ type: '*/*', copyToCacheDirectory: true });
+        if (!res.canceled && res.assets && res.assets.length > 0) {
+            setForm(p => ({ ...p, document_file: res.assets[0] }));
         }
-
-        setShowCreateModal(false);
-        Alert.alert("Success", "Party Created!");
-      } else {
-        Alert.alert("Error", "Failed to create party.");
-      }
-
-    } catch (error) {
-      console.error("Create Party Error:", error);
-      Alert.alert("Error", "Failed to create party.");
-    } finally {
-      setCreating(false);
-    }
+    } catch(e) {}
   };
+
+  const toggleSameNumber = (val) => {
+      setForm(p => ({
+          ...p, use_same_number: val,
+          contact_number: val ? p.whatsapp_number : p.contact_number,
+          contact_code: val ? p.whatsapp_code : p.contact_code
+      }));
+  };
+
+  const handleSubmit = async () => {
+      if(!form.name) return Alert.alert("Required", "Name is required");
+      if(!form.whatsapp_number) return Alert.alert("Required", "WhatsApp is required");
+      
+      setCreating(true);
+      try {
+          const typeId = createType === 'sender' ? 1 : 2;
+          const formData = new FormData();
+          
+          formData.append('name', form.name);
+          formData.append('email', form.email || `user${Date.now()}@gulfcargo.com`);
+          formData.append('branch_id', userData.branch_id);
+          formData.append('customer_type_id', typeId);
+          formData.append('whatsapp_number', form.whatsapp_number); // Code usually merged or separate based on backend
+          formData.append('contact_number', form.use_same_number ? form.whatsapp_number : form.contact_number);
+          
+          formData.append('address', form.address);
+          formData.append('city', form.city);
+          formData.append('post', form.post);
+          formData.append('postal_code', form.postal_code);
+          if(form.country_id) formData.append('country_id', form.country_id);
+          if(form.state_id) formData.append('state_id', form.state_id);
+          if(form.district_id) formData.append('district_id', form.district_id);
+          
+          if(form.document_type_id) formData.append('document_type_id', form.document_type_id);
+          if(form.document_id) formData.append('document_id', form.document_id);
+          
+          if (form.document_file) {
+              formData.append('documents[]', {
+                  uri: form.document_file.uri,
+                  name: form.document_file.name,
+                  type: form.document_file.mimeType || 'image/jpeg'
+              });
+          }
+          
+          formData.append('status', 1);
+
+          const response = await createParty(formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+          
+          if (response.data?.success) {
+              const newParty = response.data.data;
+              if (createType === 'sender') {
+                  setSendersList(p => [...p, newParty]);
+                  update('sender', newParty);
+              } else {
+                  setReceiversList(p => [...p, newParty]);
+                  update('receiver', newParty);
+              }
+              setShowCreateModal(false);
+          } else {
+              Alert.alert("Error", response.data.message || "Failed");
+          }
+      } catch(e) {
+          Alert.alert("Error", "Check connection or fields.");
+      } finally {
+          setCreating(false);
+      }
+  };
+
+  // --- RENDERERS ---
+  const renderDropdown = (label, value, placeholder, type) => (
+      <View style={{flex: 1}}>
+          <Text style={styles.label}>{label}</Text>
+          <TouchableOpacity style={styles.dropdown} onPress={() => setModalType(type)}>
+              <Text style={[styles.ddText, !value && {color: '#999'}]}>{value || placeholder}</Text>
+              <MaterialCommunityIcons name="chevron-down" size={20} color="#999" />
+          </TouchableOpacity>
+      </View>
+  );
+
+  const renderPhoneInput = (label, codeField, numField, isContact) => (
+      <View style={{flex: 1}}>
+          <Text style={styles.label}>{label}</Text>
+          <View style={styles.phoneRow}>
+              <TouchableOpacity style={styles.codeBtn} onPress={() => setModalType(isContact ? 'c_code' : 'w_code')}>
+                  <Text>{form[codeField]}</Text>
+                  <MaterialCommunityIcons name="chevron-down" size={16} color="#666"/>
+              </TouchableOpacity>
+              <TextInput 
+                  style={[styles.phoneInput, isContact && form.use_same_number && styles.disabledInput]}
+                  value={form[numField]}
+                  onChangeText={t => {
+                      if(isContact) setForm(p=>({...p, [numField]: t}));
+                      else setForm(p=>({...p, [numField]: t, contact_number: p.use_same_number ? t : p.contact_number}));
+                  }}
+                  keyboardType="phone-pad"
+                  editable={!(isContact && form.use_same_number)}
+              />
+          </View>
+      </View>
+  );
+
+  const renderCreateForm = () => (
+      <ScrollView contentContainerStyle={{paddingBottom: 20}}>
+          
+          {/* 1. ADDRESS SECTION (RECEIVER ONLY) */}
+          {createType === 'receiver' && (
+              <View style={styles.sectionCard}>
+                  <View style={styles.sectionTitleRow}><View style={styles.badge}><Text style={styles.badgeText}>1</Text></View><Text style={styles.sectionTitleText}>Address</Text></View>
+                  
+                  <View style={[styles.row, {zIndex: 10}]}>
+                      {renderDropdown("Country", form.country_name, "Select Country", 'country')}
+                      <View style={{width: 10}}/>
+                      {renderDropdown("State", form.state_name, "Select State", 'state')}
+                  </View>
+                  
+                  <View style={[styles.row, {marginTop: 15}]}>
+                      {renderDropdown("District", form.district_name, "Select District", 'district')}
+                      <View style={{width: 10}}/>
+                      <View style={{flex: 1}}>
+                          <Text style={styles.label}>City</Text>
+                          <TextInput style={styles.input} value={form.city} onChangeText={t => setForm(p => ({...p, city: t}))} placeholder="Enter city" />
+                      </View>
+                  </View>
+
+                  <View style={[styles.row, {marginTop: 15}]}>
+                      <View style={{flex: 1}}>
+                          <Text style={styles.label}>Post</Text>
+                          <TextInput style={styles.input} value={form.post} onChangeText={t => setForm(p => ({...p, post: t}))} placeholder="Post office" />
+                      </View>
+                      <View style={{width: 10}}/>
+                      <View style={{flex: 1}}>
+                          <Text style={styles.label}>Postal Code</Text>
+                          <TextInput style={styles.input} value={form.postal_code} onChangeText={t => setForm(p => ({...p, postal_code: t}))} placeholder="PIN / ZIP" />
+                      </View>
+                  </View>
+
+                  <View style={{marginTop: 15}}>
+                      <Text style={styles.label}>Address</Text>
+                      <TextInput style={[styles.input, {height: 80, textAlignVertical: 'top'}]} multiline value={form.address} onChangeText={t => setForm(p => ({...p, address: t}))} placeholder="House / Building, Street" />
+                  </View>
+              </View>
+          )}
+
+          {/* 2. IDENTITY SECTION */}
+          <View style={[styles.sectionCard, {marginTop: 15}]}>
+               {createType === 'receiver' && (
+                  <View style={styles.sectionTitleRow}><View style={styles.badge}><Text style={styles.badgeText}>2</Text></View><Text style={styles.sectionTitleText}>Receiver Identity</Text></View>
+               )}
+               
+               <View style={styles.row}>
+                   <View style={{flex: 1.5}}>
+                       <Text style={styles.label}>Name *</Text>
+                       <TextInput style={styles.input} value={form.name} onChangeText={t => setForm(p => ({...p, name: t}))} placeholder="Full name" />
+                   </View>
+                   {createType === 'sender' && (
+                       <View style={{flex: 1, marginLeft: 10}}>
+                           <Text style={styles.label}>City</Text>
+                           <TextInput style={styles.input} value={form.city} onChangeText={t => setForm(p => ({...p, city: t}))} />
+                       </View>
+                   )}
+               </View>
+
+               <View style={[styles.row, {marginTop: 15}]}>
+                   {renderPhoneInput("WhatsApp Number", "whatsapp_code", "whatsapp_number")}
+                   <View style={{width: 10}}/>
+                   {renderPhoneInput("Contact Number", "contact_code", "contact_number", true)}
+               </View>
+
+               <TouchableOpacity style={{flexDirection:'row', alignItems:'center', marginTop: 10}} onPress={() => toggleSameNumber(!form.use_same_number)}>
+                   <MaterialCommunityIcons name={form.use_same_number ? "checkbox-marked" : "checkbox-blank-outline"} size={20} color={colors.primary} />
+                   <Text style={{marginLeft: 8, color: '#666'}}>Use same for Contact Number</Text>
+               </TouchableOpacity>
+
+               <View style={[styles.row, {marginTop: 15}]}>
+                   {renderDropdown("ID Type", form.document_type_name, "Select ID Type", 'dtype')}
+                   <View style={{width: 10}}/>
+                   <View style={{flex: 1.5}}>
+                       <Text style={styles.label}>Document ID</Text>
+                       <TextInput style={styles.input} value={form.document_id} onChangeText={t => setForm(p => ({...p, document_id: t}))} placeholder="Document number" />
+                   </View>
+               </View>
+
+               <View style={{marginTop: 15}}>
+                   <Text style={styles.label}>Upload Documents</Text>
+                   <TouchableOpacity style={styles.fileBtn} onPress={pickDocument}>
+                       <Text style={{color: '#333'}}>{form.document_file ? form.document_file.name : "Choose Files"}</Text>
+                       <Text style={{color: '#999'}}>{form.document_file ? "Change" : "No file chosen"}</Text>
+                   </TouchableOpacity>
+               </View>
+          </View>
+
+          <View style={{flexDirection: 'row', justifyContent: 'flex-end', marginTop: 20, gap: 10}}>
+              <TouchableOpacity style={styles.btnCancel} onPress={() => setShowCreateModal(false)}><Text style={{color: '#666'}}>Cancel</Text></TouchableOpacity>
+              <TouchableOpacity style={styles.btnSubmit} onPress={handleSubmit} disabled={creating}>
+                  {creating ? <ActivityIndicator color="#fff"/> : <Text style={{color: '#fff', fontWeight: 'bold'}}>Submit</Text>}
+              </TouchableOpacity>
+          </View>
+      </ScrollView>
+  );
 
   return (
     <View style={styles.container}>
-      {renderPartyCard(
-        "Sender Details", "Sender", data.sender, sendersList, 
-        () => setShowSenderSelect(true), () => openCreateModal('sender')
-      )}
+      <Text style={styles.mainTitle}>Parties</Text>
 
-      {renderPartyCard(
-        "Receiver Details", "Receiver", data.receiver, receiversList, 
-        () => setShowReceiverSelect(true), () => openCreateModal('receiver')
-      )}
+      {/* Render Party Selection Cards */}
+      <View style={{marginBottom: 20}}>
+          <View style={{flexDirection:'row', justifyContent:'space-between'}}><Text style={styles.secHeader}>SENDER</Text><TouchableOpacity onPress={() => openCreateModal('sender')}><Text style={{color:colors.primary}}>+ Add New</Text></TouchableOpacity></View>
+          <TouchableOpacity style={styles.card} onPress={() => setShowSenderSelect(true)}>
+             {data.sender ? <Text style={styles.selectedText}>{data.sender.name}</Text> : <Text style={styles.placeholder}>Select Sender</Text>}
+             <MaterialCommunityIcons name="chevron-down" size={24} color="#ccc" />
+          </TouchableOpacity>
+      </View>
 
-      {loading && (
-        <View style={styles.loadingOverlay}>
-            <ActivityIndicator size="large" color={colors.primary} />
-        </View>
-      )}
+      <View style={{marginBottom: 20}}>
+          <View style={{flexDirection:'row', justifyContent:'space-between'}}><Text style={styles.secHeader}>RECEIVER</Text><TouchableOpacity onPress={() => openCreateModal('receiver')}><Text style={{color:colors.primary}}>+ Add New</Text></TouchableOpacity></View>
+          <TouchableOpacity style={styles.card} onPress={() => setShowReceiverSelect(true)}>
+             {data.receiver ? <Text style={styles.selectedText}>{data.receiver.name}</Text> : <Text style={styles.placeholder}>Select Receiver</Text>}
+             <MaterialCommunityIcons name="chevron-down" size={24} color="#ccc" />
+          </TouchableOpacity>
+      </View>
 
-      <BottomSheetSelect
-        visible={showSenderSelect} title="Select Sender" data={sendersList}
-        onClose={() => setShowSenderSelect(false)} onSelect={(item) => update('sender', item)}
-      />
+      {/* Modals for Selection */}
+      <BottomSheetSelect visible={showSenderSelect} title="Select Sender" data={sendersList} onClose={() => setShowSenderSelect(false)} onSelect={i => update('sender', i)} />
+      <BottomSheetSelect visible={showReceiverSelect} title="Select Receiver" data={receiversList} onClose={() => setShowReceiverSelect(false)} onSelect={i => update('receiver', i)} />
+      
+      {/* Modals for Master Data */}
+      <BottomSheetSelect visible={modalType === 'country'} title="Country" data={countries} onClose={() => setModalType(null)} onSelect={handleCountrySelect} />
+      <BottomSheetSelect visible={modalType === 'state'} title="State" data={states} onClose={() => setModalType(null)} onSelect={handleStateSelect} />
+      <BottomSheetSelect visible={modalType === 'district'} title="District" data={districts} onClose={() => setModalType(null)} onSelect={i => setForm(p=>({...p, district_id:i.id, district_name:i.name}))} />
+      <BottomSheetSelect visible={modalType === 'dtype'} title="Document Type" data={docTypes} onClose={() => setModalType(null)} onSelect={i => setForm(p=>({...p, document_type_id:i.id, document_type_name:i.name}))} />
+      <BottomSheetSelect visible={modalType === 'w_code'} title="Code" data={phoneCodes} onClose={() => setModalType(null)} onSelect={i => setForm(p=>({...p, whatsapp_code:i.code}))} />
+      <BottomSheetSelect visible={modalType === 'c_code'} title="Code" data={phoneCodes} onClose={() => setModalType(null)} onSelect={i => setForm(p=>({...p, contact_code:i.code}))} />
 
-      <BottomSheetSelect
-        visible={showReceiverSelect} title="Select Receiver" data={receiversList}
-        onClose={() => setShowReceiverSelect(false)} onSelect={(item) => update('receiver', item)}
-      />
-
+      {/* CREATE MODAL */}
       <Modal visible={showCreateModal} animationType="slide" transparent>
-        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Add New {createType}</Text>
-              <TouchableOpacity onPress={() => setShowCreateModal(false)}>
-                <MaterialCommunityIcons name="close" size={24} color="#666" />
-              </TouchableOpacity>
-            </View>
-            <ScrollView>
-              <Text style={styles.inputLabel}>Name *</Text>
-              <TextInput style={styles.input} value={newPartyName} onChangeText={setNewPartyName} />
-              <Text style={styles.inputLabel}>Phone *</Text>
-              <TextInput style={styles.input} keyboardType="phone-pad" value={newPartyPhone} onChangeText={setNewPartyPhone} />
-              <Text style={styles.inputLabel}>Address</Text>
-              <TextInput style={[styles.input, { height: 80 }]} multiline value={newPartyAddress} onChangeText={setNewPartyAddress} />
-            </ScrollView>
-            <TouchableOpacity style={styles.saveBtn} onPress={handleCreateParty} disabled={creating}>
-                {creating ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>Save</Text>}
-            </TouchableOpacity>
-          </View>
-        </KeyboardAvoidingView>
+          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.overlay}>
+              <View style={styles.modalBody}>
+                  <Text style={styles.modalTitle}>{createType === 'sender' ? 'GULF CARGO KSA RIYADH' : 'GULF CARGO KSA RIYADH'}</Text>
+                  {renderCreateForm()}
+              </View>
+          </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -244,31 +369,36 @@ export default function Step2Parties({ data, update }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  sectionContainer: { marginBottom: 25 },
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
-  sectionTitle: { fontSize: 16, fontWeight: 'bold', color: colors.secondary },
-  addText: { color: colors.primary, fontWeight: '600', fontSize: 14 },
-  cardEmpty: { backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: '#e0e0e0', borderStyle: 'dashed', padding: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  emptyIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#f5f5f5', justifyContent: 'center', alignItems: 'center' },
-  emptyText: { flex: 1, marginLeft: 15, color: '#888', fontSize: 16 },
-  cardSelected: { backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: '#e0e0e0', padding: 16, elevation: 2 },
-  cardHeader: { flexDirection: 'row', alignItems: 'center' },
-  avatarBox: { width: 45, height: 45, borderRadius: 25, backgroundColor: '#e0e7ff', justifyContent: 'center', alignItems: 'center', marginRight: 12 },
-  avatarText: { fontSize: 18, fontWeight: 'bold', color: colors.secondary },
-  partyName: { fontSize: 16, fontWeight: 'bold', color: '#333' },
-  partyPhone: { fontSize: 14, color: '#666', marginTop: 2 },
-  changeBtn: { paddingHorizontal: 10, paddingVertical: 5, backgroundColor: '#f0f0f0', borderRadius: 6 },
-  changeBtnText: { fontSize: 12, color: '#666', fontWeight: '600' },
-  divider: { height: 1, backgroundColor: '#eee', marginVertical: 12 },
-  detailRow: { flexDirection: 'row', alignItems: 'center' },
-  partyAddress: { fontSize: 13, color: '#666', marginLeft: 8, flex: 1 },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  modalContent: { backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, maxHeight: '80%' },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-  modalTitle: { fontSize: 18, fontWeight: 'bold', color: colors.secondary },
-  inputLabel: { fontSize: 12, fontWeight: '600', color: '#666', marginBottom: 5, marginTop: 10 },
-  input: { borderWidth: 1, borderColor: '#ddd', borderRadius: 8, padding: 12, fontSize: 16, backgroundColor: '#fafafa' },
-  saveBtn: { backgroundColor: colors.primary, padding: 15, borderRadius: 8, alignItems: 'center', marginTop: 20 },
-  saveBtnText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-  loadingOverlay: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(255,255,255,0.7)', justifyContent: 'center', alignItems: 'center', zIndex: 10 }
+  mainTitle: { fontSize: 20, fontWeight: 'bold', color: colors.secondary, marginBottom: 15 },
+  secHeader: { fontSize: 12, fontWeight: 'bold', color: '#888', marginBottom: 5 },
+  card: { backgroundColor: '#fff', padding: 15, borderRadius: 8, borderWidth: 1, borderColor: '#ddd', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  selectedText: { fontSize: 16, fontWeight: 'bold', color: '#333' },
+  placeholder: { fontSize: 16, color: '#999' },
+  
+  // Modal Styles
+  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 },
+  modalBody: { backgroundColor: '#f8f9fa', borderRadius: 10, padding: 20, maxHeight: '90%' },
+  modalTitle: { fontSize: 16, fontWeight: 'bold', color: colors.secondary, marginBottom: 15, textTransform: 'uppercase' },
+  
+  sectionCard: { backgroundColor: '#fff', padding: 15, borderRadius: 8, borderWidth: 1, borderColor: '#eee' },
+  sectionTitleRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 15 },
+  badge: { backgroundColor: '#222', width: 20, height: 20, borderRadius: 4, justifyContent: 'center', alignItems: 'center', marginRight: 8 },
+  badgeText: { color: '#fff', fontSize: 12, fontWeight: 'bold' },
+  sectionTitleText: { fontSize: 14, fontWeight: 'bold', color: '#333' },
+  
+  row: { flexDirection: 'row' },
+  label: { fontSize: 12, fontWeight: 'bold', color: '#555', marginBottom: 5 },
+  input: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#e0e0e0', borderRadius: 6, padding: 8, fontSize: 14, height: 45 },
+  dropdown: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#e0e0e0', borderRadius: 6, paddingHorizontal: 10, height: 45, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  ddText: { fontSize: 14, color: '#333' },
+  
+  phoneRow: { flexDirection: 'row', height: 45 },
+  codeBtn: { width: 70, backgroundColor: '#fff', borderWidth: 1, borderColor: '#e0e0e0', borderRightWidth: 0, borderTopLeftRadius: 6, borderBottomLeftRadius: 6, justifyContent: 'center', alignItems: 'center', flexDirection: 'row' },
+  phoneInput: { flex: 1, backgroundColor: '#fff', borderWidth: 1, borderColor: '#e0e0e0', borderTopRightRadius: 6, borderBottomRightRadius: 6, paddingHorizontal: 10, fontSize: 14 },
+  disabledInput: { backgroundColor: '#f0f0f0', color: '#999' },
+  
+  fileBtn: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#ddd', borderRadius: 6, padding: 10, flexDirection: 'row', justifyContent: 'space-between' },
+  
+  btnCancel: { padding: 10, borderWidth: 1, borderColor: '#ccc', borderRadius: 6, width: 80, alignItems: 'center' },
+  btnSubmit: { padding: 10, backgroundColor: colors.primary, borderRadius: 6, width: 100, alignItems: 'center' }
 });
