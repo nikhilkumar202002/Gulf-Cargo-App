@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+// REMOVED SafeAreaView to prevent auto-padding at top/bottom
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import colors from '../styles/colors';
@@ -65,10 +65,9 @@ export default function CargoScreen() {
     quantity_vat_amount: 1, unit_rate_vat_amount: 0, amount_vat_amount: 0,
   });
 
-  // --- SYNC USER DATA (FIXED) ---
+  // --- SYNC USER DATA ---
   useEffect(() => {
     if (userData) {
-        // Handle nested structure: userData.user.branch.id OR userData.branch_id
         const userObj = userData.user || userData; 
         const foundBranchId = userObj.branch_id || userObj.branch?.id;
         const foundBranchName = userObj.branchName || userObj.branch?.name || '';
@@ -199,39 +198,123 @@ export default function CargoScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
+      {/* Header - No extra padding */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>New Invoice</Text>
         <View style={styles.stepBadge}><Text style={styles.stepText}>Step {currentStep}/{totalSteps}</Text></View>
       </View>
+      
       <View style={styles.progressBarBg}>
         <View style={[styles.progressBarFill, { width: `${(currentStep/totalSteps)*100}%` }]} />
       </View>
-      <View style={styles.contentContainer}>{renderStep()}</View>
+      
+      {/* Content - Removed vertical padding */}
+      <View style={styles.contentContainer}>
+        {renderStep()}
+      </View>
+      
+      {/* Footer - Minimized vertical padding */}
       <View style={styles.footer}>
         {currentStep > 1 ? (
-             <TouchableOpacity style={styles.backBtn} onPress={handleBack}><Text style={styles.backBtnText}>Back</Text></TouchableOpacity>
+             <TouchableOpacity style={styles.backBtn} onPress={handleBack}>
+                <Text style={styles.backBtnText}>Back</Text>
+             </TouchableOpacity>
         ) : <View style={{width: 10}} />}
+        
         <TouchableOpacity style={styles.nextBtn} onPress={handleNext} disabled={loading}>
-            {loading ? <ActivityIndicator color="#fff"/> : <Text style={styles.nextBtnText}>{currentStep === totalSteps ? 'Submit' : 'Next Step'}</Text>}
+            {loading ? (
+                <ActivityIndicator color="#fff"/> 
+            ) : (
+                <Text style={styles.nextBtnText}>
+                    {currentStep === totalSteps ? 'Submit' : 'Next Step'}
+                </Text>
+            )}
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f5f7fa' },
-  header: { flexDirection: 'row', justifyContent: 'space-between', padding: 16, backgroundColor: '#fff', borderBottomWidth: 1, borderColor: '#eee' },
-  headerTitle: { fontSize: 18, fontWeight: 'bold', color: colors.secondary },
-  stepBadge: { backgroundColor: '#e0e7ff', padding: 8, borderRadius: 12 },
-  stepText: { fontSize: 12, fontWeight: 'bold', color: colors.secondary },
-  progressBarBg: { height: 4, backgroundColor: '#eee' },
-  progressBarFill: { height: '100%', backgroundColor: colors.primary },
-  contentContainer: { flex: 1, padding: 16 },
-  footer: { flexDirection: 'row', padding: 16, backgroundColor: '#fff', borderTopWidth: 1, borderColor: '#eee', justifyContent: 'space-between' },
-  backBtn: { padding: 12, borderWidth: 1, borderColor: '#ddd', borderRadius: 8 },
-  backBtnText: { fontWeight: '600', color: '#666' },
-  nextBtn: { flex: 1, marginLeft: 10, backgroundColor: colors.primary, padding: 12, borderRadius: 8, flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
-  nextBtnText: { color: '#fff', fontWeight: 'bold' }
+  container: { 
+    flex: 1, 
+    backgroundColor: '#f5f7fa' 
+  },
+  
+  header: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    paddingHorizontal: 16, 
+    paddingVertical: 10, // Reduced from 16 to 10
+    backgroundColor: '#fff', 
+    borderBottomWidth: 1, 
+    borderColor: '#eee' 
+  },
+  headerTitle: { 
+    fontSize: 18, 
+    fontWeight: 'bold', 
+    color: colors.secondary 
+  },
+  stepBadge: { 
+    backgroundColor: '#e0e7ff', 
+    paddingHorizontal: 10, 
+    paddingVertical: 4, 
+    borderRadius: 12 
+  },
+  stepText: { 
+    fontSize: 12, 
+    fontWeight: 'bold', 
+    color: colors.secondary 
+  },
+  
+  progressBarBg: { 
+    height: 4, 
+    backgroundColor: '#eee' 
+  },
+  progressBarFill: { 
+    height: '100%', 
+    backgroundColor: colors.primary 
+  },
+  
+  contentContainer: { 
+    flex: 1, 
+    paddingHorizontal: 16, 
+    paddingTop: 8,  // Minimal top padding to separate content slightly from bar
+    paddingBottom: 0 
+  },
+  
+  footer: { 
+    flexDirection: 'row', 
+    paddingHorizontal: 16, 
+    paddingVertical: 10, // Reduced from 16 to 10
+    backgroundColor: '#fff', 
+    borderTopWidth: 1, 
+    borderColor: '#eee', 
+    justifyContent: 'space-between' 
+  },
+  backBtn: { 
+    padding: 10, 
+    borderWidth: 1, 
+    borderColor: '#ddd', 
+    borderRadius: 8 
+  },
+  backBtnText: { 
+    fontWeight: '600', 
+    color: '#666' 
+  },
+  nextBtn: { 
+    flex: 1, 
+    marginLeft: 10, 
+    backgroundColor: colors.primary, 
+    padding: 10, 
+    borderRadius: 8, 
+    flexDirection: 'row', 
+    justifyContent: 'center', 
+    alignItems: 'center' 
+  },
+  nextBtnText: { 
+    color: '#fff', 
+    fontWeight: 'bold' 
+  }
 });

@@ -4,15 +4,12 @@ import {
   TouchableWithoutFeedback, TextInput, KeyboardAvoidingView, Platform 
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-
-// FIX: Ensure this path points to your actual colors file
 import colors from '../../../styles/colors'; 
 
-export default function BottomSheetSelect({ visible, title, data, onClose, onSelect, placeholder = "Search..." }) {
+export default function BottomSheetSelect({ visible, title, data, onClose, onSelect, placeholder = "Search Name or Number..." }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredData, setFilteredData] = useState([]);
 
-  // Reset list and search when the modal opens or data changes
   useEffect(() => {
     if (visible) {
         setFilteredData(data || []);
@@ -23,13 +20,14 @@ export default function BottomSheetSelect({ visible, title, data, onClose, onSel
   const handleSearch = (text) => {
     setSearchQuery(text);
     if (text) {
+      const lowerText = text.toLowerCase();
       const newData = data.filter(item => {
-        const itemName = item.name ? item.name.toUpperCase() : '';
-        const itemPhone = item.phone ? String(item.phone).toUpperCase() : '';
-        const textData = text.toUpperCase();
+        const name = (item.name || '').toLowerCase();
+        // Check all possible number fields
+        const phone = (item.phone || item.mobile || item.contact_number || '').toString();
+        const whatsapp = (item.whatsapp_number || item.whatsapp || '').toString();
         
-        // Search by Name OR Phone
-        return itemName.indexOf(textData) > -1 || itemPhone.indexOf(textData) > -1;
+        return name.includes(lowerText) || phone.includes(lowerText) || whatsapp.includes(lowerText);
       });
       setFilteredData(newData);
     } else {
@@ -41,11 +39,10 @@ export default function BottomSheetSelect({ visible, title, data, onClose, onSel
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <TouchableWithoutFeedback onPress={onClose}>
         <View style={styles.overlay}>
-            {/* Stop propagation so clicking the sheet doesn't close it */}
             <TouchableWithoutFeedback> 
             <View style={styles.sheet}>
               
-              {/* 1. Header */}
+              {/* Header */}
               <View style={styles.header}>
                 <Text style={styles.title}>{title}</Text>
                 <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
@@ -53,7 +50,7 @@ export default function BottomSheetSelect({ visible, title, data, onClose, onSel
                 </TouchableOpacity>
               </View>
 
-              {/* 2. Search Bar (Auto Suggestion) */}
+              {/* Search Bar */}
               <View style={styles.searchContainer}>
                 <MaterialCommunityIcons name="magnify" size={20} color="#888" style={{marginRight: 8}} />
                 <TextInput
@@ -63,7 +60,7 @@ export default function BottomSheetSelect({ visible, title, data, onClose, onSel
                   onChangeText={handleSearch}
                   autoCorrect={false}
                   autoCapitalize="none"
-                  returnKeyType="search"
+                  keyboardType={searchQuery.match(/^[0-9]+$/) ? "phone-pad" : "default"} 
                 />
                 {searchQuery.length > 0 && (
                    <TouchableOpacity onPress={() => handleSearch('')}>
@@ -72,31 +69,50 @@ export default function BottomSheetSelect({ visible, title, data, onClose, onSel
                 )}
               </View>
 
-              {/* 3. List Data */}
+              {/* List Data */}
               <FlatList
                 data={filteredData}
                 keyExtractor={(item) => item.id ? item.id.toString() : Math.random().toString()}
                 contentContainerStyle={{ paddingBottom: 40 }}
                 keyboardShouldPersistTaps="handled"
+                renderItem={({ item }) => {
+                    // normalize data for display
+                    const contactNum = item.phone || item.mobile || item.contact_number;
+                    const whatsAppNum = item.whatsapp_number || item.whatsapp;
+
+                    return (
+                      <TouchableOpacity
+                        style={styles.item}
+                        onPress={() => { onSelect(item); onClose(); }}
+                      >
+                        <View style={{flex: 1}}>
+                            <Text style={styles.itemText}>{item.name}</Text>
+                            
+                            {/* Display Numbers Row */}
+                            <View style={styles.numberRow}>
+                                {contactNum ? (
+                                    <View style={styles.badge}>
+                                        <MaterialCommunityIcons name="phone" size={12} color="#666" style={{marginRight:4}} />
+                                        <Text style={styles.subText}>{contactNum}</Text>
+                                    </View>
+                                ) : null}
+
+                                {whatsAppNum ? (
+                                    <View style={[styles.badge, {marginLeft: 8, backgroundColor: '#e8f5e9'}]}>
+                                        <MaterialCommunityIcons name="whatsapp" size={12} color="green" style={{marginRight:4}} />
+                                        <Text style={[styles.subText, {color: 'green'}]}>{whatsAppNum}</Text>
+                                    </View>
+                                ) : null}
+                            </View>
+                        </View>
+                        <MaterialCommunityIcons name="chevron-right" size={20} color="#eee" />
+                      </TouchableOpacity>
+                    );
+                }}
                 ListEmptyComponent={() => (
                     <View style={styles.emptyState}>
                         <Text style={styles.emptyText}>No results found</Text>
                     </View>
-                )}
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    style={styles.item}
-                    onPress={() => {
-                      onSelect(item);
-                      onClose();
-                    }}
-                  >
-                    <View>
-                        <Text style={styles.itemText}>{item.name}</Text>
-                        {item.phone && <Text style={styles.subText}>{item.phone}</Text>}
-                    </View>
-                    <MaterialCommunityIcons name="chevron-right" size={20} color="#eee" />
-                  </TouchableOpacity>
                 )}
               />
             </View>
@@ -113,44 +129,31 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff', 
         borderTopLeftRadius: 20, 
         borderTopRightRadius: 20, 
-        maxHeight: '85%', 
-        minHeight: '50%',
+        height: '70%', // Fixed height to prevent gaps or overflow issues
         paddingTop: 10
     },
     header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingBottom: 15, borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
     title: { fontWeight: 'bold', fontSize: 18, color: '#333' },
     closeBtn: { padding: 5 },
     
-    // Search Styles
     searchContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#f5f7fa',
-        margin: 15,
-        paddingHorizontal: 15,
-        height: 45,
-        borderRadius: 10,
-        borderWidth: 1,
-        borderColor: '#eee'
+        flexDirection: 'row', alignItems: 'center', backgroundColor: '#f5f7fa',
+        margin: 15, paddingHorizontal: 15, height: 45, borderRadius: 10, borderWidth: 1, borderColor: '#eee'
     },
-    searchInput: {
-        flex: 1,
-        fontSize: 16,
-        color: '#333',
-        height: '100%'
-    },
+    searchInput: { flex: 1, fontSize: 16, color: '#333', height: '100%' },
 
-    // List Styles
     item: { 
-        padding: 16, 
-        borderBottomWidth: 1, 
-        borderBottomColor: '#f9f9f9', 
-        flexDirection: 'row', 
-        justifyContent: 'space-between', 
-        alignItems: 'center' 
+        padding: 16, borderBottomWidth: 1, borderBottomColor: '#f9f9f9', 
+        flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' 
     },
-    itemText: { fontSize: 16, color: '#333', fontWeight: '500' },
-    subText: { fontSize: 13, color: '#888', marginTop: 2 },
+    itemText: { fontSize: 16, color: '#333', fontWeight: '600', marginBottom: 4 },
+    
+    numberRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' },
+    badge: { 
+        flexDirection: 'row', alignItems: 'center', backgroundColor: '#f0f0f0', 
+        paddingVertical: 2, paddingHorizontal: 6, borderRadius: 4, marginTop: 2 
+    },
+    subText: { fontSize: 12, color: '#555', fontWeight: '500' },
     
     emptyState: { padding: 40, alignItems: 'center' },
     emptyText: { color: '#999', fontSize: 14 }
