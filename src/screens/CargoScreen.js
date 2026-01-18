@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
-// REMOVED SafeAreaView to prevent auto-padding at top/bottom
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import colors from '../styles/colors';
@@ -23,8 +22,8 @@ export default function CargoScreen() {
   const [loading, setLoading] = useState(false);
   const totalSteps = 6;
 
-  // --- CENTRAL FORM STATE ---
-  const [formData, setFormData] = useState({
+  // --- INITIAL STATE HELPER ---
+  const getInitialState = () => ({
     // Step 1
     branch_id: '',
     branch_name: '',
@@ -65,6 +64,8 @@ export default function CargoScreen() {
     quantity_vat_amount: 1, unit_rate_vat_amount: 0, amount_vat_amount: 0,
   });
 
+  const [formData, setFormData] = useState(getInitialState());
+
   // --- SYNC USER DATA ---
   useEffect(() => {
     if (userData) {
@@ -82,6 +83,19 @@ export default function CargoScreen() {
         }
     }
   }, [userData]);
+
+  // --- RESET FORM (REDIRECT TO STEP 1) ---
+  const resetForm = () => {
+      const freshState = getInitialState();
+      // Preserve User/Branch info
+      setFormData({
+          ...freshState,
+          branch_id: formData.branch_id,
+          branch_name: formData.branch_name,
+          name_id: formData.name_id
+      });
+      setCurrentStep(1);
+  };
 
   const updateFormData = (key, value) => {
     setFormData(prev => ({ ...prev, [key]: value }));
@@ -146,12 +160,14 @@ export default function CargoScreen() {
                 [
                     { 
                         text: "Generate PDF", 
-                        onPress: () => generateInvoicePDF(createdInvoiceData) 
+                        onPress: () => {
+                            generateInvoicePDF(createdInvoiceData);
+                            resetForm(); // Redirects to Step 1 after generating
+                        } 
                     },
                     { 
-                        text: "Close", 
-                        onPress: () => navigation.goBack(),
-                        style: 'cancel'
+                        text: "Create New", 
+                        onPress: resetForm // Redirects to Step 1 immediately
                     }
                 ]
             );
@@ -199,7 +215,7 @@ export default function CargoScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Header - No extra padding */}
+      {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>New Invoice</Text>
         <View style={styles.stepBadge}><Text style={styles.stepText}>Step {currentStep}/{totalSteps}</Text></View>
@@ -209,12 +225,12 @@ export default function CargoScreen() {
         <View style={[styles.progressBarFill, { width: `${(currentStep/totalSteps)*100}%` }]} />
       </View>
       
-      {/* Content - Removed vertical padding */}
+      {/* Content */}
       <View style={styles.contentContainer}>
         {renderStep()}
       </View>
       
-      {/* Footer - Minimized vertical padding */}
+      {/* Footer */}
       <View style={styles.footer}>
         {currentStep > 1 ? (
              <TouchableOpacity style={styles.backBtn} onPress={handleBack}>
@@ -241,12 +257,11 @@ const styles = StyleSheet.create({
     flex: 1, 
     backgroundColor: '#f5f7fa' 
   },
-  
   header: { 
     flexDirection: 'row', 
     justifyContent: 'space-between', 
     paddingHorizontal: 16, 
-    paddingVertical: 10, // Reduced from 16 to 10
+    paddingVertical: 10,
     backgroundColor: '#fff', 
     borderBottomWidth: 1, 
     borderColor: '#eee' 
@@ -267,7 +282,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold', 
     color: colors.secondary 
   },
-  
   progressBarBg: { 
     height: 4, 
     backgroundColor: '#eee' 
@@ -276,18 +290,16 @@ const styles = StyleSheet.create({
     height: '100%', 
     backgroundColor: colors.primary 
   },
-  
   contentContainer: { 
     flex: 1, 
     paddingHorizontal: 16, 
-    paddingTop: 8,  // Minimal top padding to separate content slightly from bar
+    paddingTop: 8,
     paddingBottom: 0 
   },
-  
   footer: { 
     flexDirection: 'row', 
     paddingHorizontal: 16, 
-    paddingVertical: 10, // Reduced from 16 to 10
+    paddingVertical: 10, 
     backgroundColor: '#fff', 
     borderTopWidth: 1, 
     borderColor: '#eee', 

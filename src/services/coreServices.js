@@ -80,6 +80,7 @@ export const getStatesByCountry = (countryId) => {
   return API.get(`/states`, { params: { country_id: countryId } });
 };
 
+// FIXED: Restored params (Backend likely requires this)
 export const getDistrictsByState = (stateId) => {
   return API.get(`/districts`, { params: { state_id: stateId } });
 };
