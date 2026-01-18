@@ -89,3 +89,33 @@ export const getDistrictsByState = (stateId) => {
 export const getAllDocumentTypes = () => {
   return API.get('/document-types'); 
 };
+
+// --- NEW DASHBOARD & COUNT ENDPOINTS ---
+
+// 1. Get Overall Shipment Counts (Software vs Physical)
+export const getShipmentCounts = () => {
+  return API.get('/shipments-counts');
+};
+
+// 2. Get Branch Counts (Active vs Inactive)
+export const getBranchCounts = () => {
+  return API.get('/branches-counts');
+};
+
+export const getShipmentStatusBreakdown = () => {
+  return API.get('/shipments-status-counts'); 
+};
+
+// 4. Get Party Counts by Customer Type (Sender = 1, Receiver = 2)
+export const getSenderCount = () => {
+  return API.get('/parties/count/customer-type/1');
+};
+
+export const getReceiverCount = () => {
+  return API.get('/parties/count/customer-type/2');
+};
+
+// 5. Get Cargo Counts by Branch
+export const getCargoCountsByBranch = () => {
+  return API.get('/cargo-counts');
+};
