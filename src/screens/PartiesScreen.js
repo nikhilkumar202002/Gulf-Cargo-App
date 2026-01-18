@@ -1,23 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import { 
   View, Text, StyleSheet, FlatList, TouchableOpacity, 
-  ActivityIndicator, TextInput, RefreshControl 
+  ActivityIndicator, TextInput, RefreshControl, Modal, TouchableWithoutFeedback, Alert 
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import colors from '../styles/colors';
-import { getSenderParties, getReceiverParties } from '../services/partiesServices'; // Ensure path is correct
+import { getSenderParties, getReceiverParties, deleteParty } from '../services/partiesServices'; 
+import { useNavigation, useIsFocused } from '@react-navigation/native';
 
 export default function PartiesScreen() {
-  const [activeTab, setActiveTab] = useState('sender'); // 'sender' or 'receiver'
+
+  const [activeTab, setActiveTab] = useState('sender'); 
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredData, setFilteredData] = useState([]);
+  const [selectedParty, setSelectedParty] = useState(null);
+  const [menuVisible, setMenuVisible] = useState(false);
+
+  const navigation = useNavigation();
+  const isFocused = useIsFocused();
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Fetch based on active tab
       const response = activeTab === 'sender' 
         ? await getSenderParties() 
         : await getReceiverParties();
@@ -36,7 +42,10 @@ export default function PartiesScreen() {
     fetchData();
   }, [activeTab]);
 
-  // Handle Search
+  useEffect(() => {
+    if(isFocused) fetchData();
+  }, [activeTab, isFocused]);
+
   const handleSearch = (text) => {
     setSearchQuery(text);
     if (text) {
@@ -49,6 +58,60 @@ export default function PartiesScreen() {
       setFilteredData(filtered);
     } else {
       setFilteredData(data);
+    }
+  };
+
+  // --- ACTION HANDLERS ---
+  const openMenu = (item) => {
+    setSelectedParty(item);
+    setMenuVisible(true);
+  };
+
+  const closeMenu = () => {
+    setMenuVisible(false);
+    setSelectedParty(null);
+  };
+
+ const handleMenuAction = async (action) => {
+    closeMenu();
+    if (!selectedParty) return;
+
+    switch (action) {
+      case 'view':
+        // Navigate to Details
+        navigation.navigate('PartyDetails', { id: selectedParty.id });
+        break;
+      case 'edit':
+        // Navigate to Edit
+        navigation.navigate('EditParty', { id: selectedParty.id });
+        break;
+      case 'delete':
+        Alert.alert(
+          "Delete Party", 
+          `Are you sure you want to delete ${selectedParty.name}?`,
+          [
+            { text: "Cancel", style: "cancel" },
+            { 
+              text: "Delete", 
+              style: "destructive", 
+              onPress: async () => {
+                  try {
+                      setLoading(true);
+                      await deleteParty(selectedParty.id);
+                      // Remove from local list immediately
+                      setData(prev => prev.filter(p => p.id !== selectedParty.id));
+                      setFilteredData(prev => prev.filter(p => p.id !== selectedParty.id));
+                      Alert.alert("Success", "Party deleted successfully");
+                  } catch(e) {
+                      Alert.alert("Error", "Failed to delete party");
+                  } finally {
+                      setLoading(false);
+                  }
+              } 
+            }
+          ]
+        );
+        break;
     }
   };
 
@@ -78,8 +141,10 @@ export default function PartiesScreen() {
             </Text>
           </View>
         </View>
-        <TouchableOpacity style={styles.actionBtn}>
-           <MaterialCommunityIcons name="chevron-right" size={24} color="#ccc" />
+        
+        {/* 3 DOT MENU ICON */}
+        <TouchableOpacity style={styles.actionBtn} onPress={() => openMenu(item)}>
+           <MaterialCommunityIcons name="dots-vertical" size={24} color="#999" />
         </TouchableOpacity>
       </View>
     );
@@ -133,6 +198,49 @@ export default function PartiesScreen() {
           }
         />
       )}
+
+      {/* OPTIONS ACTION SHEET (MODAL) */}
+      <Modal visible={menuVisible} transparent animationType="fade" onRequestClose={closeMenu}>
+        <TouchableWithoutFeedback onPress={closeMenu}>
+          <View style={styles.modalOverlay}>
+            <TouchableWithoutFeedback>
+              <View style={styles.actionSheet}>
+                <View style={styles.sheetHeader}>
+                    <Text style={styles.sheetTitle}>Actions for {selectedParty?.name}</Text>
+                </View>
+
+                <TouchableOpacity style={styles.actionItem} onPress={() => handleMenuAction('view')}>
+                    <View style={[styles.iconCircle, {backgroundColor: '#e3f2fd'}]}>
+                        <MaterialCommunityIcons name="eye-outline" size={22} color="#2196f3" />
+                    </View>
+                    <Text style={styles.actionText}>View Details</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity style={styles.actionItem} onPress={() => handleMenuAction('edit')}>
+                    <View style={[styles.iconCircle, {backgroundColor: '#fff3e0'}]}>
+                        <MaterialCommunityIcons name="pencil-outline" size={22} color="#ff9800" />
+                    </View>
+                    <Text style={styles.actionText}>Edit Party</Text>
+                </TouchableOpacity>
+
+                <View style={styles.divider} />
+
+                <TouchableOpacity style={styles.actionItem} onPress={() => handleMenuAction('delete')}>
+                    <View style={[styles.iconCircle, {backgroundColor: '#ffebee'}]}>
+                        <MaterialCommunityIcons name="trash-can-outline" size={22} color="#f44336" />
+                    </View>
+                    <Text style={[styles.actionText, {color: '#f44336'}]}>Delete Party</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity style={styles.cancelBtn} onPress={closeMenu}>
+                    <Text style={styles.cancelText}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
     </View>
   );
 }
@@ -173,7 +281,31 @@ const styles = StyleSheet.create({
   name: { fontSize: 16, fontWeight: '700', color: '#333', marginBottom: 4 },
   row: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
   detailText: { fontSize: 13, color: '#666', marginLeft: 6 },
+  actionBtn: { padding: 8 },
   
   emptyState: { alignItems: 'center', marginTop: 50 },
-  emptyText: { color: '#999', marginTop: 10, fontSize: 16 }
+  emptyText: { color: '#999', marginTop: 10, fontSize: 16 },
+
+  // Modal Styles
+  modalOverlay: { 
+    flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' 
+  },
+  actionSheet: { 
+    backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20 
+  },
+  sheetHeader: { marginBottom: 15, borderBottomWidth: 1, borderBottomColor: '#eee', paddingBottom: 15 },
+  sheetTitle: { fontSize: 16, fontWeight: 'bold', color: '#333', textAlign: 'center' },
+  
+  actionItem: { 
+    flexDirection: 'row', alignItems: 'center', paddingVertical: 12 
+  },
+  iconCircle: { 
+    width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginRight: 15 
+  },
+  actionText: { fontSize: 16, fontWeight: '500', color: '#333' },
+  
+  divider: { height: 1, backgroundColor: '#f0f0f0', marginVertical: 10 },
+  
+  cancelBtn: { marginTop: 10, paddingVertical: 12, alignItems: 'center', backgroundColor: '#f5f5f5', borderRadius: 10 },
+  cancelText: { fontSize: 16, fontWeight: '600', color: '#666' }
 });

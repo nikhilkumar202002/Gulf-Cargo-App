@@ -34,7 +34,20 @@ export const getReceiverParties = () => {
   });
 };
 
-// 6. Get Single Party (GET /party/{id})
+// 1. Get Single Party Details
 export const getPartyDetails = (id) => {
   return API.get(`/party/${id}`);
+};
+
+// 2. Delete Party
+export const deleteParty = (id) => {
+  return API.delete(`/party/${id}`);
+};
+
+// 3. Update Party (POST with _method: PUT for FormData support)
+export const updateParty = (id, data, config = {}) => {
+  // We use POST because React Native FormData often has issues with PUT method directly
+  // The backend should handle _method: 'PUT'
+  data.append('_method', 'PUT'); 
+  return API.post(`/party/${id}`, data, config);
 };
