@@ -37,9 +37,9 @@ export default function CargoScreen() {
     receiver: null,
 
     // Step 3
-    shipping_method_id: 1, shipping_method_name: '',
-    delivery_type_id: 1, delivery_type_name: '',
-    payment_method_id: 1, payment_method_name: '',
+    shipping_method_id: '', shipping_method_name: '',
+    delivery_type_id: '', delivery_type_name: '',
+    payment_method_id: '', payment_method_name: '',
     status_id: 1,
     lrl_tracking_code: '',
     special_remarks: '',
