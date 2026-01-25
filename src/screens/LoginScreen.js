@@ -1,15 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   View, Text, TextInput, TouchableOpacity, Alert, 
-  StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Image, SafeAreaView, Dimensions 
+  StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Image, Dimensions 
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage'; 
 import { MaterialCommunityIcons } from '@expo/vector-icons'; 
 import { login, getProfile } from '../api/auth'; 
 import { useUser } from '../context/UserContext'; 
-import colors from '../styles/colors'; //
+import colors from '../styles/colors';
 
-// App Version
 const APP_VERSION = "v1.0.2"; 
 const { height } = Dimensions.get('window');
 
@@ -20,6 +19,21 @@ export default function LoginScreen({ navigation }) {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false); 
+
+  useEffect(() => {
+    const checkExistingSession = async () => {
+      const token = await AsyncStorage.getItem('userToken');
+      const lastActivity = await AsyncStorage.getItem('last_activity');
+      const now = Date.now();
+      const ONE_WEEK = 7 * 24 * 60 * 60 * 1000;
+
+      if (token && lastActivity && (now - parseInt(lastActivity) < ONE_WEEK)) {
+        navigation.replace('Dashboard');
+      }
+    };
+    
+    checkExistingSession();
+  }, [navigation]);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -34,7 +48,11 @@ export default function LoginScreen({ navigation }) {
       
       if (loginResponse.data.success) { 
         const token = loginResponse.data.token;
+        const nowTimestamp = Date.now().toString();
+
         await AsyncStorage.setItem('userToken', token); 
+        await AsyncStorage.setItem('session_start', nowTimestamp); 
+        await AsyncStorage.setItem('last_activity', nowTimestamp);
 
         const profileResponse = await getProfile();
         const user = profileResponse.data.user || profileResponse.data.data;
@@ -73,11 +91,8 @@ export default function LoginScreen({ navigation }) {
 
   return (
     <View style={styles.mainContainer}>
-      
-      {/* 1. Top Brand Section */}
       <View style={styles.topSection}>
          <View style={styles.logoContainer}>
-            {/* Make sure logo.png exists in assets */}
             <Image 
                 source={require('../../assets/Logo.png')} 
                 style={styles.logo} 
@@ -88,7 +103,6 @@ export default function LoginScreen({ navigation }) {
          <Text style={styles.brandTagline}>Logistics Management System</Text>
       </View>
 
-      {/* 2. Bottom White Panel (Form) */}
       <View style={styles.bottomSection}>
         <KeyboardAvoidingView 
             behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -103,9 +117,8 @@ export default function LoginScreen({ navigation }) {
                 <Text style={styles.instructionText}>Please sign in to continue</Text>
 
                 <View style={styles.formArea}>
-                    
-                    {/* Email Input */}
                     <Text style={styles.inputLabel}>Email</Text>
+                    {/* CHANGED div TO View HERE */}
                     <View style={styles.inputWrapper}>
                         <MaterialCommunityIcons name="email" size={20} color="#9ca3af" style={styles.inputIcon} />
                         <TextInput
@@ -119,8 +132,8 @@ export default function LoginScreen({ navigation }) {
                         />
                     </View>
 
-                    {/* Password Input */}
                     <Text style={styles.inputLabel}>Password</Text>
+                    {/* CHANGED div TO View HERE */}
                     <View style={styles.inputWrapper}>
                         <MaterialCommunityIcons name="lock" size={20} color="#9ca3af" style={styles.inputIcon} />
                         <TextInput
@@ -147,16 +160,10 @@ export default function LoginScreen({ navigation }) {
                         <Text style={styles.forgotText}>Forgot Password?</Text>
                     </TouchableOpacity>
 
-                    {/* Login Button */}
                     <TouchableOpacity style={styles.loginBtn} onPress={handleLogin} disabled={loading}>
-                        {loading ? (
-                            <Text style={styles.loginBtnText}>Processing...</Text>
-                        ) : (
-                            <Text style={styles.loginBtnText}>Secure Login</Text>
-                        )}
+                        <Text style={styles.loginBtnText}>{loading ? "Processing..." : "Secure Login"}</Text>
                     </TouchableOpacity>
 
-                    {/* Version Footer inside ScrollView */}
                     <View style={styles.footerContainer}>
                          <Text style={styles.versionText}>Version {APP_VERSION}</Text>
                     </View>
@@ -169,138 +176,25 @@ export default function LoginScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  mainContainer: {
-    flex: 1,
-    backgroundColor: colors.secondary, // Professional Blue Background for top
-  },
-
-  // --- TOP SECTION ---
-  topSection: {
-    height: height * 0.35, // Takes top 35% of screen
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingBottom: 20,
-  },
-  logoContainer: {
-    width: 80,
-    height: 80,
-    marginBottom: 15,
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    padding: 10,
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
-  },
-  logo: {
-    width: '100%',
-    height: '100%',
-  },
-  brandTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#fff',
-    letterSpacing: 1,
-  },
-  brandTagline: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.7)',
-    marginTop: 5,
-  },
-
-  // --- BOTTOM SECTION ---
-  bottomSection: {
-    flex: 1,
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-    overflow: 'hidden', // Ensures content respects the curved corners
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingHorizontal: 30,
-    paddingTop: 40,
-    paddingBottom: 20,
-  },
-  welcomeText: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#111827',
-    marginBottom: 5,
-  },
-  instructionText: {
-    fontSize: 14,
-    color: '#6b7280',
-    marginBottom: 30,
-  },
-
-  // --- FORM STYLES ---
-  formArea: {
-    width: '100%',
-  },
-  inputLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#374151',
-    marginBottom: 8,
-    marginLeft: 4,
-  },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f3f4f6', // Very light gray for modern feel
-    borderRadius: 12,
-    paddingHorizontal: 15,
-    height: 55,
-    marginBottom: 20,
-  },
-  inputIcon: {
-    marginRight: 12,
-  },
-  input: {
-    flex: 1,
-    fontSize: 16,
-    color: '#1f2937',
-    height: '100%',
-  },
-  forgotBtn: {
-    alignSelf: 'flex-end',
-    marginBottom: 25,
-    marginTop: -5,
-  },
-  forgotText: {
-    color: colors.primary, // Brand Red
-    fontWeight: '600',
-    fontSize: 13,
-  },
-  loginBtn: {
-    backgroundColor: colors.primary, // Brand Red Button
-    height: 56,
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  loginBtnText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-    letterSpacing: 0.5,
-  },
-
-  // --- FOOTER ---
-  footerContainer: {
-    marginTop: 40,
-    alignItems: 'center',
-  },
-  versionText: {
-    color: '#9ca3af',
-    fontSize: 12,
-  }
+  mainContainer: { flex: 1, backgroundColor: colors.secondary },
+  topSection: { height: height * 0.35, justifyContent: 'center', alignItems: 'center', paddingBottom: 20 },
+  logoContainer: { width: 80, height: 80, marginBottom: 15, backgroundColor: '#fff', borderRadius: 20, padding: 10, elevation: 5 },
+  logo: { width: '100%', height: '100%' },
+  brandTitle: { fontSize: 24, fontWeight: 'bold', color: '#fff', letterSpacing: 1 },
+  brandTagline: { fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 5 },
+  bottomSection: { flex: 1, backgroundColor: '#fff', borderTopLeftRadius: 30, borderTopRightRadius: 30, overflow: 'hidden' },
+  scrollContent: { flexGrow: 1, paddingHorizontal: 30, paddingTop: 40, paddingBottom: 20 },
+  welcomeText: { fontSize: 22, fontWeight: 'bold', color: '#111827', marginBottom: 5 },
+  instructionText: { fontSize: 14, color: '#6b7280', marginBottom: 30 },
+  formArea: { width: '100%' },
+  inputLabel: { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 8, marginLeft: 4 },
+  inputWrapper: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f3f4f6', borderRadius: 12, paddingHorizontal: 15, height: 55, marginBottom: 20 },
+  inputIcon: { marginRight: 12 },
+  input: { flex: 1, fontSize: 16, color: '#1f2937', height: '100%' },
+  forgotBtn: { alignSelf: 'flex-end', marginBottom: 25, marginTop: -5 },
+  forgotText: { color: colors.primary, fontWeight: '600', fontSize: 13 },
+  loginBtn: { backgroundColor: colors.primary, height: 56, borderRadius: 14, justifyContent: 'center', alignItems: 'center', elevation: 4 },
+  loginBtnText: { color: '#fff', fontSize: 16, fontWeight: 'bold', letterSpacing: 0.5 },
+  footerContainer: { marginTop: 40, alignItems: 'center' },
+  versionText: { color: '#9ca3af', fontSize: 12 }
 });

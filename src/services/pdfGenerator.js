@@ -163,7 +163,9 @@ const createInvoiceHTML = (data) => {
     weight: parseFloat(box.weight || 0).toFixed(3)
   }));
 
-  const totalWeight = safeBoxes.reduce((sum, box) => sum + (parseFloat(box.weight) || 0), 0);
+  const totalWeight = data.total_weight 
+    ? parseFloat(data.total_weight) 
+    : safeBoxes.reduce((sum, box) => sum + (parseFloat(box.weight) || 0), 0);
 
   const structuredItems = [];
   safeBoxes.forEach((box, index) => {

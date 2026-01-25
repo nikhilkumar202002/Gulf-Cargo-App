@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "Donewithit",
-    "slug": "Donewithit",
+    "name": "Gulf Cargo International",
+    "slug": "GulfCargoInternational",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/Logo.png",
+    "icon": "./assets/app-logo.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
@@ -20,10 +20,16 @@
         "foregroundImage": "./assets/Logo.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.nikhil_20.Donewithit"
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/app-logo.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "5a3917cb-679c-4591-adff-fb8aa40eedd7"
+      }
     }
   }
 }

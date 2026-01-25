@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { 
   View, Text, StyleSheet, ScrollView, TouchableOpacity, 
-  RefreshControl, StatusBar, ActivityIndicator, Alert 
-} from 'react-native'; 
+  RefreshControl, StatusBar, ActivityIndicator, Alert, Platform // Add Platform here
+} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
@@ -178,7 +178,7 @@ export default function DashboardScreen({ navigation }) {
             <View style={styles.actionsGrid}>
                 <TouchableOpacity style={[styles.actionBtn, { backgroundColor: colors.primary }]} onPress={() => navigation.navigate('Cargo')}>
                     <MaterialCommunityIcons name="plus-box" size={24} color="#fff" />
-                    <Text style={[styles.actionLabel, { color: '#fff', marginTop: 5 }]}>New Shipment</Text>
+                    <Text style={[styles.actionLabel, { color: '#fff', marginTop: 5 }]}>Create Cargo</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#eef2ff' }]} onPress={() => navigation.navigate('History')}>
@@ -191,37 +191,29 @@ export default function DashboardScreen({ navigation }) {
         {/* Recent Activity */}
         <View style={styles.section}>
             <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Recent Shipments</Text>
+                <Text style={styles.sectionTitle}>Recent Cargos</Text>
                 <TouchableOpacity onPress={() => navigation.navigate('History')}>
                     <Text style={styles.seeAllText}>See All</Text>
                 </TouchableOpacity>
             </View>
 
-            {loading && recentCargos.length === 0 ? (
-                <ActivityIndicator size="small" color={colors.primary} />
-            ) : (
-                recentCargos.map((item, index) => (
-                    <View key={item.id || index} style={styles.recentItem}>
-                        <View style={[styles.statusIndicator, { backgroundColor: index % 2 === 0 ? '#10b981' : '#3b82f6' }]} />
-                        <View style={{flex: 1, marginLeft: 12}}>
-                            <Text style={styles.recentId}>
-                                {item.booking_no ? item.booking_no : `#${item.id}`}
-                            </Text>
-                            <Text style={styles.partiesText} numberOfLines={1}>
-                                {item.sender?.name || 'N/A'} <MaterialCommunityIcons name="arrow-right" size={12} color="#999" /> {item.receiver?.name || 'N/A'}
-                            </Text>
-                        </View>
-                        <Text style={styles.recentAmount}>{item.net_total || '0.00'} SAR</Text>
+          {recentCargos.map((item, index) => (
+                <View key={item.id || index} style={styles.recentItem}>
+                    <View style={[styles.statusIndicator, { backgroundColor: index % 2 === 0 ? '#10b981' : '#3b82f6' }]} />
+                    <View style={{flex: 1, marginLeft: 12}}>
+                        <Text style={styles.recentId}>
+                            {item.booking_no ? item.booking_no : `#${item.id}`}
+                        </Text>
+                        {/* FIX: Use safe navigation and fallback to flat name fields */}
+                        <Text style={styles.partiesText} numberOfLines={1}>
+                            {(item.sender?.name || item.sender_name || 'N/A')} 
+                            <MaterialCommunityIcons name="arrow-right" size={12} color="#999" /> 
+                            {(item.receiver?.name || item.receiver_name || 'N/A')}
+                        </Text>
                     </View>
-                ))
-            )}
-            
-            {/* Show error message if not loading but no data */}
-            {!loading && recentCargos.length === 0 && (
-                <Text style={{ textAlign: 'center', color: '#999', marginTop: 20 }}>
-                    No recent shipments or server is unreachable.
-                </Text>
-            )}
+                    <Text style={styles.recentAmount}>{item.net_total || item.total_amount || '0.00'} SAR</Text>
+                </View>
+            ))}
         </View>
 
         <View style={{height: 30}} />
