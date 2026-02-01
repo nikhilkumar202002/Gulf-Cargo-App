@@ -1,20 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { getActiveCollectedBy, getAllCollectedBy } from '../../../services/coreServices'; 
 import BottomSheetSelect from '../components/BottomSheetSelect'; 
 import colors from '../../../styles/colors';
-import { useUser } from '../../../context/UserContext'; 
 
 export default function Step1Collection({ data, update }) {
-  const { userData } = useUser(); 
-
-  // Data State
   const [rolesList, setRolesList] = useState([]); 
   const [loading, setLoading] = useState(false);
   const [roleModalVisible, setRoleModalVisible] = useState(false);
 
-  // 1. Load Roles on Mount
+  // Load Roles as soon as branch_id is available
   useEffect(() => {
     if (data.branch_id) {
         loadRoles();
@@ -24,29 +20,27 @@ export default function Step1Collection({ data, update }) {
   const loadRoles = async () => {
     setLoading(true);
     try {
-        // 1. Try fetching Active Collected By for this Branch
         let response = await getActiveCollectedBy(data.branch_id);
-        let list = response.data.data || response.data || [];
+        let list = response.data?.data || response.data || [];
         
-        // 2. Fallback: If empty, try getting ALL (helps if API logic varies)
+        // Fallback to all collectors if branch-specific list is empty
         if (!Array.isArray(list) || list.length === 0) {
-            console.log("⚠️ Active list empty, trying ALL...");
             response = await getAllCollectedBy();
-            list = response.data.data || response.data || [];
+            list = response.data?.data || response.data || [];
         }
 
-        if (Array.isArray(list)) {
-            setRolesList(list); 
-        } 
+        setRolesList(Array.isArray(list) ? list : []); 
     } catch (e) {
-        console.log("Error loading roles", e);
+        console.error("Error loading roles", e);
     } finally {
         setLoading(false);
     }
   };
 
   const handleRoleSelect = (role) => {
+    // Correctly update both the selection object AND the ID field
     update('collected_by', role);
+    update('collected_by_id', role.id);
   };
 
   return (
@@ -58,7 +52,7 @@ export default function Step1Collection({ data, update }) {
           </TouchableOpacity>
       </View>
       
-      {/* 1. Context Info Card */}
+      {/* Branch Info Card */}
       <View style={styles.infoCard}>
         <View style={styles.infoRow}>
             <View style={styles.iconBox}>
@@ -66,7 +60,7 @@ export default function Step1Collection({ data, update }) {
             </View>
             <View>
                 <Text style={styles.infoLabel}>Branch</Text>
-                <Text style={styles.infoValue}>{data.branch_name || 'Loading...'}</Text>
+                <Text style={styles.infoValue}>{data.branch_name || 'Loading Branch...'}</Text>
             </View>
         </View>
         
@@ -85,10 +79,9 @@ export default function Step1Collection({ data, update }) {
         </View>
       </View>
 
-      {/* 2. Collection Form */}
       <Text style={styles.sectionTitle}>Who collected this cargo?</Text>
 
-      {/* Role Selector */}
+      {/* Collector Selector */}
       <View style={styles.inputGroup}>
         <Text style={styles.inputLabel}>Collected By</Text>
         <TouchableOpacity 
@@ -106,7 +99,6 @@ export default function Step1Collection({ data, update }) {
         </TouchableOpacity>
       </View>
 
-      {/* Modal */}
       <BottomSheetSelect 
         visible={roleModalVisible} 
         title="Select Collector" 

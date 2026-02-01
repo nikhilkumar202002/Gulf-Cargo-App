@@ -17,3 +17,8 @@ export const searchCargoByBookingNo = (bookingNo) => {
 export const getCargoDetails = (id) => {
   return API.get(`/cargo/${id}`);
 };
+
+// NEW: Update existing cargo
+export const updateCargo = (id, data) => {
+  return API.post(`/cargo/${id}`, { ...data, _method: 'PUT' });
+};

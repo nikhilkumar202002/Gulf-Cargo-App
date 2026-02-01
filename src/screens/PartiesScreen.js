@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   View, Text, StyleSheet, FlatList, TouchableOpacity, 
-  ActivityIndicator, TextInput, RefreshControl, Modal, TouchableWithoutFeedback, Alert 
+  ActivityIndicator, TextInput, RefreshControl, Modal, TouchableWithoutFeedback, Alert, Platform 
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import colors from '../styles/colors';
@@ -9,7 +9,6 @@ import { getSenderParties, getReceiverParties, deleteParty } from '../services/p
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 
 export default function PartiesScreen() {
-
   const [activeTab, setActiveTab] = useState('sender'); 
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState([]);
@@ -38,13 +37,8 @@ export default function PartiesScreen() {
     }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, [activeTab]);
-
-  useEffect(() => {
-    if(isFocused) fetchData();
-  }, [activeTab, isFocused]);
+  useEffect(() => { fetchData(); }, [activeTab]);
+  useEffect(() => { if(isFocused) fetchData(); }, [activeTab, isFocused]);
 
   const handleSearch = (text) => {
     setSearchQuery(text);
@@ -61,34 +55,21 @@ export default function PartiesScreen() {
     }
   };
 
-  // --- ACTION HANDLERS ---
-  const openMenu = (item) => {
-    setSelectedParty(item);
-    setMenuVisible(true);
-  };
-
-  const closeMenu = () => {
+  const handleMenuAction = async (action) => {
     setMenuVisible(false);
-    setSelectedParty(null);
-  };
-
- const handleMenuAction = async (action) => {
-    closeMenu();
     if (!selectedParty) return;
 
     switch (action) {
       case 'view':
-        // Navigate to Details
         navigation.navigate('PartyDetails', { id: selectedParty.id });
         break;
       case 'edit':
-        // Navigate to Edit
         navigation.navigate('EditParty', { id: selectedParty.id });
         break;
       case 'delete':
         Alert.alert(
           "Delete Party", 
-          `Are you sure you want to delete ${selectedParty.name}?`,
+          `Confirm deletion of ${selectedParty.name}?`,
           [
             { text: "Cancel", style: "cancel" },
             { 
@@ -98,10 +79,8 @@ export default function PartiesScreen() {
                   try {
                       setLoading(true);
                       await deleteParty(selectedParty.id);
-                      // Remove from local list immediately
                       setData(prev => prev.filter(p => p.id !== selectedParty.id));
                       setFilteredData(prev => prev.filter(p => p.id !== selectedParty.id));
-                      Alert.alert("Success", "Party deleted successfully");
                   } catch(e) {
                       Alert.alert("Error", "Failed to delete party");
                   } finally {
@@ -120,192 +99,208 @@ export default function PartiesScreen() {
     const location = item.address || item.city || item.location;
 
     return (
-      <View style={styles.card}>
-        <View style={styles.avatarContainer}>
-          <Text style={styles.avatarText}>
-            {item.name ? item.name.charAt(0).toUpperCase() : '?'}
-          </Text>
-        </View>
-        <View style={styles.cardContent}>
-          <Text style={styles.name}>{item.name}</Text>
-          
-          <View style={styles.row}>
-            <MaterialCommunityIcons name="phone" size={14} color="#666" />
-            <Text style={styles.detailText}>{contact || 'No Contact'}</Text>
-          </View>
-
-          <View style={styles.row}>
-            <MaterialCommunityIcons name="map-marker" size={14} color="#666" />
-            <Text style={styles.detailText} numberOfLines={1}>
-              {location || 'No Address'}
-            </Text>
-          </View>
-        </View>
+      <View style={styles.partyItem}>
+        {/* Visual indicator bar */}
+        <View style={[styles.roleIndicator, { backgroundColor: activeTab === 'sender' ? colors.primary : '#10B981' }]} />
         
-        {/* 3 DOT MENU ICON */}
-        <TouchableOpacity style={styles.actionBtn} onPress={() => openMenu(item)}>
-           <MaterialCommunityIcons name="dots-vertical" size={24} color="#999" />
-        </TouchableOpacity>
+        <View style={styles.itemMainContent}>
+            <View style={styles.itemTopRow}>
+                <Text style={styles.partyName} numberOfLines={1}>{item.name}</Text>
+                <TouchableOpacity onPress={() => { setSelectedParty(item); setMenuVisible(true); }}>
+                    <MaterialCommunityIcons name="dots-horizontal" size={24} color="#94A3B8" />
+                </TouchableOpacity>
+            </View>
+
+            <View style={styles.itemMetadataRow}>
+                <View style={styles.metaPill}>
+                    <MaterialCommunityIcons name="phone-outline" size={14} color="#64748B" />
+                    <Text style={styles.metaText}>{contact || 'No Contact'}</Text>
+                </View>
+                <View style={[styles.metaPill, { flex: 1 }]}>
+                    <MaterialCommunityIcons name="map-marker-outline" size={14} color="#64748B" />
+                    <Text style={styles.metaText} numberOfLines={1}>{location || 'Global Address'}</Text>
+                </View>
+            </View>
+        </View>
       </View>
     );
   };
 
   return (
     <View style={styles.container}>
-      
-      {/* Segment Tabs */}
-      <View style={styles.tabContainer}>
-        <TouchableOpacity 
-          style={[styles.tab, activeTab === 'sender' && styles.activeTab]} 
-          onPress={() => setActiveTab('sender')}
-        >
-          <Text style={[styles.tabText, activeTab === 'sender' && styles.activeTabText]}>Senders</Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={[styles.tab, activeTab === 'receiver' && styles.activeTab]} 
-          onPress={() => setActiveTab('receiver')}
-        >
-          <Text style={[styles.tabText, activeTab === 'receiver' && styles.activeTabText]}>Receivers</Text>
-        </TouchableOpacity>
+      {/* 1. Integrated Header Section */}
+      <View style={styles.topSection}>
+        <View style={styles.searchContainer}>
+            <MaterialCommunityIcons name="magnify" size={20} color="#94A3B8" />
+            <TextInput 
+            style={styles.searchInput}
+            placeholder={`Search ${activeTab}s...`}
+            placeholderTextColor="#94A3B8"
+            value={searchQuery}
+            onChangeText={handleSearch}
+            />
+        </View>
+
+        <View style={styles.tabBar}>
+            <TouchableOpacity 
+            style={[styles.tabButton, activeTab === 'sender' && styles.tabButtonActive]} 
+            onPress={() => setActiveTab('sender')}
+            >
+            <Text style={[styles.tabLabel, activeTab === 'sender' && styles.tabLabelActive]}>SENDERS</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+            style={[styles.tabButton, activeTab === 'receiver' && styles.tabButtonActive]} 
+            onPress={() => setActiveTab('receiver')}
+            >
+            <Text style={[styles.tabLabel, activeTab === 'receiver' && styles.tabLabelActive]}>RECEIVERS</Text>
+            </TouchableOpacity>
+        </View>
       </View>
 
-      {/* Search Bar */}
-      <View style={styles.searchContainer}>
-        <MaterialCommunityIcons name="magnify" size={20} color="#888" style={{marginRight: 8}} />
-        <TextInput 
-          style={styles.input}
-          placeholder={`Search ${activeTab === 'sender' ? 'Senders' : 'Receivers'}...`}
-          value={searchQuery}
-          onChangeText={handleSearch}
-        />
-      </View>
-
-      {/* List */}
-      {loading ? (
-        <ActivityIndicator size="large" color={colors.primary} style={{marginTop: 20}} />
+      {/* 2. List Body */}
+      {loading && !searchQuery ? (
+        <View style={styles.centerLoading}>
+            <ActivityIndicator size="small" color={colors.primary} />
+        </View>
       ) : (
         <FlatList
           data={filteredData}
-          keyExtractor={(item, index) => item.id ? item.id.toString() : index.toString()}
+          keyExtractor={(item) => item.id?.toString()}
           renderItem={renderItem}
-          contentContainerStyle={styles.listContent}
-          refreshControl={<RefreshControl refreshing={loading} onRefresh={fetchData} />}
+          contentContainerStyle={styles.listInside}
+          showsVerticalScrollIndicator={false}
+          refreshControl={<RefreshControl refreshing={loading} onRefresh={fetchData} tintColor={colors.primary} />}
           ListEmptyComponent={
             <View style={styles.emptyState}>
-              <MaterialCommunityIcons name="account-off-outline" size={48} color="#ccc" />
-              <Text style={styles.emptyText}>No parties found</Text>
+              <MaterialCommunityIcons name="account-off-outline" size={48} color="#E2E8F0" />
+              <Text style={styles.emptyTitle}>No parties found</Text>
+              <Text style={styles.emptySubtitle}>Try adjusting your search or category</Text>
             </View>
           }
         />
       )}
 
-      {/* OPTIONS ACTION SHEET (MODAL) */}
-      <Modal visible={menuVisible} transparent animationType="fade" onRequestClose={closeMenu}>
-        <TouchableWithoutFeedback onPress={closeMenu}>
+      {/* 3. Redesigned Centered Context Modal */}
+      <Modal visible={menuVisible} transparent animationType="fade" onRequestClose={() => setMenuVisible(false)}>
+        <TouchableWithoutFeedback onPress={() => setMenuVisible(false)}>
           <View style={styles.modalOverlay}>
             <TouchableWithoutFeedback>
-              <View style={styles.actionSheet}>
-                <View style={styles.sheetHeader}>
-                    <Text style={styles.sheetTitle}>Actions for {selectedParty?.name}</Text>
-                </View>
-
-                <TouchableOpacity style={styles.actionItem} onPress={() => handleMenuAction('view')}>
-                    <View style={[styles.iconCircle, {backgroundColor: '#e3f2fd'}]}>
-                        <MaterialCommunityIcons name="eye-outline" size={22} color="#2196f3" />
-                    </View>
-                    <Text style={styles.actionText}>View Details</Text>
+              <View style={styles.contextMenu}>
+                <Text style={styles.menuTitle}>{selectedParty?.name}</Text>
+                
+                <TouchableOpacity style={styles.menuOption} onPress={() => handleMenuAction('view')}>
+                    <MaterialCommunityIcons name="eye-outline" size={22} color="#0F172A" />
+                    <Text style={styles.optionLabel}>View Profile</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.actionItem} onPress={() => handleMenuAction('edit')}>
-                    <View style={[styles.iconCircle, {backgroundColor: '#fff3e0'}]}>
-                        <MaterialCommunityIcons name="pencil-outline" size={22} color="#ff9800" />
-                    </View>
-                    <Text style={styles.actionText}>Edit Party</Text>
+                <TouchableOpacity style={styles.menuOption} onPress={() => handleMenuAction('edit')}>
+                    <MaterialCommunityIcons name="pencil-outline" size={22} color="#0F172A" />
+                    <Text style={styles.optionLabel}>Edit Information</Text>
                 </TouchableOpacity>
 
-                <View style={styles.divider} />
+                <View style={styles.menuDivider} />
 
-                <TouchableOpacity style={styles.actionItem} onPress={() => handleMenuAction('delete')}>
-                    <View style={[styles.iconCircle, {backgroundColor: '#ffebee'}]}>
-                        <MaterialCommunityIcons name="trash-can-outline" size={22} color="#f44336" />
-                    </View>
-                    <Text style={[styles.actionText, {color: '#f44336'}]}>Delete Party</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.cancelBtn} onPress={closeMenu}>
-                    <Text style={styles.cancelText}>Cancel</Text>
+                <TouchableOpacity style={styles.menuOption} onPress={() => handleMenuAction('delete')}>
+                    <MaterialCommunityIcons name="trash-can-outline" size={22} color="#EF4444" />
+                    <Text style={[styles.optionLabel, {color: '#EF4444'}]}>Remove Customer</Text>
                 </TouchableOpacity>
               </View>
             </TouchableWithoutFeedback>
           </View>
         </TouchableWithoutFeedback>
       </Modal>
-
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f5f7fa' },
+  container: { flex: 1, backgroundColor: '#FFFFFF' },
   
-  // Tabs
-  tabContainer: { flexDirection: 'row', backgroundColor: '#fff', padding: 4, margin: 16, borderRadius: 12 },
-  tab: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 10 },
-  activeTab: { backgroundColor: colors.primary },
-  tabText: { fontWeight: '600', color: '#666' },
-  activeTabText: { color: '#fff' },
-
-  // Search
+  // Header Section
+  topSection: { 
+    paddingHorizontal: 20, 
+    paddingTop: 10, 
+    paddingBottom: 15, 
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9'
+  },
   searchContainer: { 
-    flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', 
-    marginHorizontal: 16, marginBottom: 10, paddingHorizontal: 12, height: 45, 
-    borderRadius: 10, borderWidth: 1, borderColor: '#eee' 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    backgroundColor: '#F8FAFC', 
+    height: 48, 
+    borderRadius: 12, 
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0'
   },
-  input: { flex: 1, fontSize: 15 },
+  searchInput: { flex: 1, marginLeft: 10, fontSize: 15, color: '#1E293B', fontWeight: '500' },
 
-  // List
-  listContent: { paddingHorizontal: 16, paddingBottom: 20 },
-  
-  // Card
-  card: { 
-    flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', 
-    marginBottom: 12, padding: 12, borderRadius: 12, 
-    elevation: 2, shadowColor: '#000', shadowOffset: {width:0, height:1}, shadowOpacity: 0.05, shadowRadius: 2 
+  // Tabs
+  tabBar: { 
+    flexDirection: 'row', 
+    marginTop: 15, 
+    backgroundColor: '#F1F5F9', 
+    borderRadius: 10, 
+    padding: 4 
   },
-  avatarContainer: { 
-    width: 45, height: 45, borderRadius: 23, backgroundColor: '#eef2ff', 
-    justifyContent: 'center', alignItems: 'center', marginRight: 12 
+  tabButton: { flex: 1, paddingVertical: 8, alignItems: 'center', borderRadius: 8 },
+  tabButtonActive: { 
+    backgroundColor: '#FFFFFF', 
+    shadowColor: '#000', 
+    shadowOpacity: 0.05, 
+    shadowRadius: 5, 
+    elevation: 2 
   },
-  avatarText: { fontSize: 18, fontWeight: 'bold', color: colors.secondary },
-  cardContent: { flex: 1 },
-  name: { fontSize: 16, fontWeight: '700', color: '#333', marginBottom: 4 },
-  row: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
-  detailText: { fontSize: 13, color: '#666', marginLeft: 6 },
-  actionBtn: { padding: 8 },
-  
-  emptyState: { alignItems: 'center', marginTop: 50 },
-  emptyText: { color: '#999', marginTop: 10, fontSize: 16 },
+  tabLabel: { fontSize: 11, fontWeight: '800', color: '#94A3B8', letterSpacing: 1 },
+  tabLabelActive: { color: colors.primary },
 
-  // Modal Styles
+  // List Items
+  listInside: { padding: 20 },
+  partyItem: { 
+    flexDirection: 'row', 
+    backgroundColor: '#FFFFFF', 
+    marginBottom: 16, 
+    borderRadius: 12, 
+    borderWidth: 1, 
+    borderColor: '#F1F5F9',
+    overflow: 'hidden',
+    height: 85
+  },
+  roleIndicator: { width: 5, height: '100%' },
+  itemMainContent: { flex: 1, padding: 14, justifyContent: 'center' },
+  itemTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  partyName: { fontSize: 16, fontWeight: '700', color: '#0F172A', flex: 1, marginRight: 10 },
+  
+  itemMetadataRow: { flexDirection: 'row', marginTop: 10, alignItems: 'center' },
+  metaPill: { flexDirection: 'row', alignItems: 'center', marginRight: 15 },
+  metaText: { fontSize: 12, color: '#64748B', fontWeight: '600', marginLeft: 4 },
+
+  centerLoading: { marginTop: 40, alignItems: 'center' },
+  emptyState: { alignItems: 'center', marginTop: 100 },
+  emptyTitle: { fontSize: 18, fontWeight: '700', color: '#334155', marginTop: 16 },
+  emptySubtitle: { fontSize: 14, color: '#94A3B8', marginTop: 4, textAlign: 'center' },
+
+  // Context Menu Modal
   modalOverlay: { 
-    flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' 
+    flex: 1, 
+    backgroundColor: 'rgba(15, 23, 42, 0.5)', 
+    justifyContent: 'center', 
+    alignItems: 'center' 
   },
-  actionSheet: { 
-    backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20 
+  contextMenu: { 
+    backgroundColor: '#FFFFFF', 
+    width: '82%', 
+    borderRadius: 20, 
+    padding: 24,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 5
   },
-  sheetHeader: { marginBottom: 15, borderBottomWidth: 1, borderBottomColor: '#eee', paddingBottom: 15 },
-  sheetTitle: { fontSize: 16, fontWeight: 'bold', color: '#333', textAlign: 'center' },
-  
-  actionItem: { 
-    flexDirection: 'row', alignItems: 'center', paddingVertical: 12 
-  },
-  iconCircle: { 
-    width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginRight: 15 
-  },
-  actionText: { fontSize: 16, fontWeight: '500', color: '#333' },
-  
-  divider: { height: 1, backgroundColor: '#f0f0f0', marginVertical: 10 },
-  
-  cancelBtn: { marginTop: 10, paddingVertical: 12, alignItems: 'center', backgroundColor: '#f5f5f5', borderRadius: 10 },
-  cancelText: { fontSize: 16, fontWeight: '600', color: '#666' }
+  menuTitle: { fontSize: 14, fontWeight: '800', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 20 },
+  menuOption: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14 },
+  optionLabel: { fontSize: 16, color: '#0F172A', fontWeight: '600', marginLeft: 14 },
+  menuDivider: { height: 1, backgroundColor: '#F1F5F9', marginVertical: 8 }
 });

@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { 
   View, Text, StyleSheet, ScrollView, TouchableOpacity, 
-  RefreshControl, StatusBar, ActivityIndicator, Alert, Platform // Add Platform here
+  RefreshControl, StatusBar, ActivityIndicator, Alert, Platform 
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
-// Make sure these paths match your project structure
 import { getProfile } from '../api/auth'; 
 import { getCargoList } from '../services/cargoService'; 
 import { 
@@ -22,113 +21,89 @@ export default function DashboardScreen({ navigation }) {
   const { userData, setUserData } = useUser();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [recentCargos, setRecentCargos] = useState([]); 
+  const [recentCargos, setRecentCargos] = useState([]);
 
-  // Stats State
   const [stats, setStats] = useState({
-    shipments: 0,
-    consignees: 0,
-    receivers: 0,
-    staff: 0,
-    branches: 0,
-    delivery: 0,
-    cargos: 0,
-    clearance: 0
+    shipments: 0, consignees: 0, receivers: 0, staff: 17,
+    branches: 0, delivery: 40, cargos: 0, clearance: 1
   });
 
   const fetchDashboardData = async () => {
     try {
         const token = await AsyncStorage.getItem('userToken');
-        if (!token) {
-            // Redirect to login if no token
-            setLoading(false);
-            return;
-        }
+        if (!token) return;
 
-        // 1. Fetch Profile
+        // 1. Fetch Profile first to determine permissions
         const profileRes = await getProfile();
         const user = profileRes.data.user || profileRes.data.data;
-
         if (user) {
-            setUserData({
-                user: user,
-                name: user.name,
-                branchName: user.branch?.name,
-                email: user.email,
-                profilePic: user.profile_pic,
-                role_id: user.role_id || user.role?.id, 
-                role: user.role?.name
-            });
+            setUserData({ ...user, role_id: user.role_id || user.role?.id });
         }
 
-        // 2. Fetch Counts (Parallel Requests)
-        // If any of these fail, the catch block will trigger
-        const [shipRes, senderRes, receiverRes, branchRes] = await Promise.all([
-            getShipmentCounts(),
-            getSenderCount(),
-            getReceiverCount(),
-            getBranchCounts()
+        // 2. Fetch stats using allSettled to prevent total failure
+        const results = await Promise.allSettled([
+            getShipmentCounts(), 
+            getSenderCount(),    
+            getReceiverCount(),  
+            getBranchCounts(),   
+            getCargoList(1),     
         ]);
 
+        const extract = (index) => results[index].status === 'fulfilled' ? results[index].value.data : null;
+
+        const shipData = extract(0);
+        const senderData = extract(1);
+        const receiverData = extract(2);
+        const branchData = extract(3);
+        const cargoData = extract(4);
+
         setStats({
-            shipments: shipRes.data?.total_count || 0,
-            consignees: senderRes.data?.count || 0,
-            receivers: receiverRes.data?.count || 0,
-            staff: 17, // Static or fetch from API
-            branches: branchRes.data?.active_count || 0,
-            delivery: 40, // Static or fetch from API
-            cargos: 1680, // Static or fetch from API
-            clearance: 1  // Static or fetch from API
+            shipments: shipData?.total_count || shipData?.data?.total_count || 0,
+            consignees: senderData?.count || senderData?.data?.count || 0,
+            receivers: receiverData?.count || receiverData?.data?.count || 0,
+            staff: 17, 
+            branches: branchData?.active_count || branchData?.data?.active_count || 0,
+            delivery: 40,
+            cargos: cargoData?.meta?.total || cargoData?.total || 0,
+            clearance: 1
         });
 
-        // 3. Fetch Latest Cargos
-        const cargoRes = await getCargoList(1);
-        const list = cargoRes.data.data || cargoRes.data || [];
-        setRecentCargos(list.slice(0, 5));
+        const list = cargoData?.data || cargoData || [];
+        setRecentCargos(Array.isArray(list) ? list.slice(0, 5) : []);
 
     } catch (error) {
-        console.log('Dashboard Fetch Error:', error);
-        
-        let errorMessage = "Unable to connect to the server.";
-        
-        // Handle specific Network Error
-        if (error.message === "Network Error") {
-             errorMessage = "Network Error: Cannot reach server.\n\n1. Check your internet.\n2. If using emulator, use '10.0.2.2' instead of 'localhost'.\n3. If using device, use your PC's IP address.";
-        } else if (error.response) {
-             // Server responded with a status code outside 2xx
-             errorMessage = `Server Error: ${error.response.status} - ${error.response.data?.message || 'Unknown Error'}`;
-        }
-
-        Alert.alert("Connection Failed", errorMessage);
-        
+        console.error("Dashboard Fetch Error:", error);
+        Alert.alert("Sync Error", "Some dashboard data could not be refreshed.");
     } finally {
         setLoading(false);
         setRefreshing(false);
     }
   };
 
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
+  useEffect(() => { fetchDashboardData(); }, []);
 
-  const onRefresh = () => {
-    setRefreshing(true);
-    fetchDashboardData();
-  };
+  // Full-screen Loader for initial load (Optimized for iOS)
+  if (loading && !refreshing) {
+    return (
+      <View style={styles.loaderContainer}>
+        <StatusBar barStyle="dark-content" />
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={styles.loadingText}>Synchronizing Data...</Text>
+      </View>
+    );
+  }
 
-  // --- ROLE BASED LOGIC ---
-  const userRoleId = userData?.user?.role_id || userData?.role_id || 0;
-  const isSuperAdmin = userRoleId === 1;
+  const isSuperAdmin = (userData?.user?.role_id || userData?.role_id) === 1;
 
   const allWidgets = [
-    { id: 'shipments', label: 'Total Shipments', value: stats.shipments, icon: 'truck-check', color: '#dc2626' },
-    { id: 'consignees', label: 'Total Consignees', value: stats.consignees, icon: 'email', color: '#dc2626' },
-    { id: 'receivers', label: 'Total Receivers', value: stats.receivers, icon: 'account-check', color: '#dc2626' },
-    { id: 'staff', label: 'Total Staff', value: stats.staff, icon: 'account-group', color: '#dc2626' },
-    { id: 'branches', label: 'Total Branches', value: stats.branches, icon: 'office-building', color: '#dc2626' },
-    { id: 'delivery', label: 'Out for Delivery', value: stats.delivery, icon: 'truck-fast', color: '#dc2626' },
-    { id: 'cargos', label: 'Total Cargos', value: stats.cargos, icon: 'package-variant', color: '#dc2626' },
-    { id: 'clearance', label: 'Waiting Clearance', value: stats.clearance, icon: 'clock-alert', color: '#dc2626' },
+    { id: 'shipments', label: 'SHIPMENTS', value: stats.shipments, icon: 'truck-delivery', color: '#4F46E5' },
+    { id: 'consignees', label: 'CONSIGNEES', value: stats.consignees, icon: 'account-arrow-right', color: '#10B981' },
+    { id: 'receivers', label: 'RECEIVERS', value: stats.receivers, icon: 'account-arrow-left', color: '#F59E0B' },
+    { id: 'staff', label: 'TOTAL STAFF', value: stats.staff, icon: 'account-group', color: '#6366F1' },
+    { id: 'branches', label: 'BRANCHES', value: stats.branches, icon: 'office-building', color: '#8B5CF6' },
+    { id: 'delivery', label: 'IN TRANSIT', value: stats.delivery, icon: 'truck-fast', color: '#EC4899' },
+    { id: 'cargos', label: 'TOTAL CARGOS', value: stats.cargos, icon: 'package-variant-closed', color: '#F43F5E' },
+    { id: 'clearance', label: 'CLEARANCE', value: stats.clearance, icon: 'clock-check', color: '#06B6D4' },
   ];
 
   const displayedWidgets = isSuperAdmin 
@@ -137,37 +112,26 @@ export default function DashboardScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f8f9fa" />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
       
       <ScrollView 
         contentContainerStyle={styles.scrollContent}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => {setRefreshing(true); fetchDashboardData();}} tintColor={colors.primary} />}
         showsVerticalScrollIndicator={false}
       >
-        {/* Render Grid */}
+        <Text style={styles.pageHeader}>Overview</Text>
+
+        {/* Stats Grid */}
         <View style={styles.statsGrid}>
-            {displayedWidgets.map((widget, index) => (
-                <View 
-                    key={widget.id} 
-                    style={[
-                        styles.statCard, 
-                        // Fix layout for odd number of items
-                        (!isSuperAdmin && index === displayedWidgets.length - 1 && displayedWidgets.length % 2 !== 0) 
-                        ? { width: '100%' } 
-                        : {} 
-                    ]}
-                >
-                    <View style={[styles.iconBox, { backgroundColor: widget.color }]}>
-                        <MaterialCommunityIcons name={widget.icon} size={22} color="#fff" />
+            {displayedWidgets.map((widget) => (
+                <View key={widget.id} style={styles.statCard}>
+                    <View style={styles.cardTop}>
+                        <View style={[styles.iconWrapper, { backgroundColor: widget.color + '10' }]}>
+                            <MaterialCommunityIcons name={widget.icon} size={20} color={widget.color} />
+                        </View>
+                        <Text style={styles.statValue}>{widget.value}</Text>
                     </View>
-                    <View style={styles.textContainer}>
-                        <Text style={styles.statNumber}>
-                            {loading ? '-' : widget.value}
-                        </Text>
-                        <Text style={styles.statLabel} numberOfLines={1}>
-                            {widget.label}
-                        </Text>
-                    </View>
+                    <Text style={styles.statLabel}>{widget.label}</Text>
                 </View>
             ))}
         </View>
@@ -175,174 +139,111 @@ export default function DashboardScreen({ navigation }) {
         {/* Quick Actions */}
         <View style={styles.section}>
             <Text style={styles.sectionTitle}>Quick Actions</Text>
-            <View style={styles.actionsGrid}>
-                <TouchableOpacity style={[styles.actionBtn, { backgroundColor: colors.primary }]} onPress={() => navigation.navigate('Cargo')}>
-                    <MaterialCommunityIcons name="plus-box" size={24} color="#fff" />
-                    <Text style={[styles.actionLabel, { color: '#fff', marginTop: 5 }]}>Create Cargo</Text>
+            <View style={styles.actionRow}>
+                <TouchableOpacity 
+                    style={[styles.actionBtn, { backgroundColor: '#0F172A' }]} 
+                    onPress={() => navigation.navigate('Cargo')}
+                >
+                    <MaterialCommunityIcons name="plus" size={22} color="#FFF" />
+                    <Text style={styles.actionBtnText}>CREATE CARGO</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#eef2ff' }]} onPress={() => navigation.navigate('History')}>
-                    <MaterialCommunityIcons name="file-document-outline" size={24} color={colors.secondary} />
-                    <Text style={[styles.actionLabel, { color: colors.secondary, marginTop: 5 }]}>View History</Text>
+                <TouchableOpacity 
+                    style={[styles.actionBtn, { backgroundColor: '#F1F5F9', borderWidth: 1, borderColor: '#E2E8F0' }]} 
+                    onPress={() => navigation.navigate('History')}
+                >
+                    <MaterialCommunityIcons name="history" size={20} color="#0F172A" />
+                    <Text style={[styles.actionBtnText, { color: '#0F172A' }]}>HISTORY</Text>
                 </TouchableOpacity>
             </View>
         </View>
 
         {/* Recent Activity */}
         <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Recent Cargos</Text>
+            <View style={styles.activityHeader}>
+                <Text style={styles.sectionTitle}>Recent Shipments</Text>
                 <TouchableOpacity onPress={() => navigation.navigate('History')}>
-                    <Text style={styles.seeAllText}>See All</Text>
+                    <Text style={styles.seeAllText}>View All</Text>
                 </TouchableOpacity>
             </View>
 
-          {recentCargos.map((item, index) => (
-                <View key={item.id || index} style={styles.recentItem}>
-                    <View style={[styles.statusIndicator, { backgroundColor: index % 2 === 0 ? '#10b981' : '#3b82f6' }]} />
-                    <View style={{flex: 1, marginLeft: 12}}>
-                        <Text style={styles.recentId}>
-                            {item.booking_no ? item.booking_no : `#${item.id}`}
-                        </Text>
-                        {/* FIX: Use safe navigation and fallback to flat name fields */}
-                        <Text style={styles.partiesText} numberOfLines={1}>
-                            {(item.sender?.name || item.sender_name || 'N/A')} 
-                            <MaterialCommunityIcons name="arrow-right" size={12} color="#999" /> 
-                            {(item.receiver?.name || item.receiver_name || 'N/A')}
+            {recentCargos.map((item, index) => (
+                <View key={item.id || index} style={styles.activityRow}>
+                    <View style={styles.activityIndicator} />
+                    <View style={styles.activityContent}>
+                        <Text style={styles.bookingNo}>{item.booking_no || `#${item.id}`}</Text>
+                        <Text style={styles.bookingParties} numberOfLines={1}>
+                            {item.sender?.name || item.sender_name} → {item.receiver?.name || item.receiver_name}
                         </Text>
                     </View>
-                    <Text style={styles.recentAmount}>{item.net_total || item.total_amount || '0.00'} SAR</Text>
+                    <View style={styles.activityPrice}>
+                        <Text style={styles.priceText}>{item.net_total || '0.00'}</Text>
+                        <Text style={styles.currencyText}>SAR</Text>
+                    </View>
                 </View>
             ))}
         </View>
-
-        <View style={{height: 30}} />
+        
+        <View style={{ height: 40 }} />
       </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  // Loader Styles
+  loaderContainer: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
-  },
-  scrollContent: {
-    paddingHorizontal: 16,
-    paddingTop: 20,
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-  },
-  statCard: {
-    backgroundColor: '#fff',
-    width: '48%', 
-    borderRadius: 12,
-    padding: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12, 
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    borderWidth: 1,
-    borderColor: '#f0f0f0'
-  },
-  iconBox: {
-    width: 38,
-    height: 38,
-    borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 10,
+    backgroundColor: '#FFFFFF',
   },
-  textContainer: {
-    flex: 1,
-  },
-  statNumber: {
-    fontSize: 16,
-    fontWeight: '800', 
-    color: '#1f2937',
-  },
-  statLabel: {
-    fontSize: 11,
-    color: '#6b7280',
-    marginTop: 2,
-    fontWeight: '500'
-  },
-  section: {
-    marginBottom: 25,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 10,
-  },
-  seeAllText: {
-    color: colors.primary, 
+  loadingText: {
+    marginTop: 15,
+    fontSize: 14,
     fontWeight: '600',
-    fontSize: 14,
+    color: '#64748B',
+    letterSpacing: 0.5,
   },
-  actionsGrid: {
+  scrollContent: { paddingHorizontal: 20, paddingTop: 10 },
+  pageHeader: { fontSize: 20, fontWeight: '700', color: '#0F172A', marginBottom: 15, letterSpacing: -0.5 },
+  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
+  statCard: {
+    width: '48%',
+    backgroundColor: '#FFFFFF',
+    padding: 16,
+    borderRadius: 16,
+    marginBottom: 16,
+    borderWidth: 1.5,
+    borderColor: '#F1F5F9',
+  },
+  cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  iconWrapper: { width: 36, height: 36, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
+  statValue: { fontSize: 22, fontWeight: '800', color: '#0F172A' },
+  statLabel: { fontSize: 10, fontWeight: '800', color: '#94A3B8', letterSpacing: 1 },
+  section: { marginTop: 10, marginBottom: 24 },
+  sectionTitle: { fontSize: 11, fontWeight: '900', color: '#94A3B8', letterSpacing: 1.5, marginBottom: 16, textTransform: 'uppercase' },
+  actionRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  actionBtn: { 
+    flex: 1, height: 54, borderRadius: 12, flexDirection: 'row', 
+    alignItems: 'center', justifyContent: 'center', marginHorizontal: 4
+  },
+  actionBtnText: { color: '#FFF', fontWeight: '800', fontSize: 12, marginLeft: 8, letterSpacing: 0.5 },
+  activityHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  seeAllText: { fontSize: 12, fontWeight: '800', color: '#4F46E5' },
+  activityRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  actionBtn: {
-    width: '48%', 
-    paddingVertical: 15,
-    borderRadius: 12,
     alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F8FAFC'
   },
-  actionLabel: {
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  recentItem: {
-    backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: '#f0f0f0',
-  },
-  statusIndicator: {
-    width: 4,
-    height: 35,
-    borderRadius: 2,
-  },
-  recentId: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  partiesText: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 4,
-  },
-  recentAmount: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: colors.secondary, 
-  },
+  activityIndicator: { width: 4, height: 24, backgroundColor: '#E2E8F0', borderRadius: 2, marginRight: 12 },
+  activityContent: { flex: 1 },
+  bookingNo: { fontSize: 15, fontWeight: '700', color: '#0F172A' },
+  bookingParties: { fontSize: 13, color: '#64748B', marginTop: 2 },
+  activityPrice: { alignItems: 'flex-end' },
+  priceText: { fontSize: 15, fontWeight: '800', color: '#0F172A' },
+  currencyText: { fontSize: 10, fontWeight: '700', color: '#94A3B8' }
 });

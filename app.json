@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Gulf Cargo International",
-    "slug": "GulfCargoInternational",
+    "slug": "gulf-cargo-international",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/app-logo.png",
@@ -17,7 +17,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/Logo.png",
+        "foregroundImage": "./assets/app-logo.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
@@ -28,8 +28,9 @@
     },
     "extra": {
       "eas": {
-        "projectId": "5a3917cb-679c-4591-adff-fb8aa40eedd7"
+        "projectId": "bed95264-cff1-41ed-9ac9-93315a0dc1e7"
       }
-    }
+    },
+    "owner": "nikhil_20"
   }
 }

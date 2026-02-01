@@ -9,6 +9,8 @@ import PartiesScreen from './src/screens/PartiesScreen';
 import PartyDetailsScreen from './src/screens/PartyDetailsScreen';
 import EditPartyScreen from './src/screens/EditPartyScreen';
 
+import CargoDetailsScreen from './src/screens/CargoDetailsScreen'; // Ensure this file exists
+
 const Stack = createStackNavigator();
 
 export default function App() {
@@ -43,6 +45,12 @@ export default function App() {
   component={EditPartyScreen} 
   options={{ title: 'Edit Party' }} 
 />
+
+<Stack.Screen 
+          name="CargoDetails" 
+          component={CargoDetailsScreen} 
+          options={{ title: 'Cargo Details' }} 
+        />
         </Stack.Navigator>
       </NavigationContainer>
     </UserProvider>

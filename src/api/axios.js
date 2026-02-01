@@ -10,6 +10,7 @@ const API = axios.create({
   },
 });
 
+// --- REQUEST INTERCEPTOR ---
 API.interceptors.request.use(
   async (config) => {
     const token = await AsyncStorage.getItem('userToken');
@@ -21,26 +22,39 @@ API.interceptors.request.use(
       const ONE_WEEK = 7 * 24 * 60 * 60 * 1000;
       const ONE_MONTH = 30 * 24 * 60 * 60 * 1000;
 
-      // Check Inactivity (1 Week)
+      // Local Inactivity check
       if (lastActivity && (now - parseInt(lastActivity) > ONE_WEEK)) {
         await AsyncStorage.clear();
         return Promise.reject(new Error("SESSION_EXPIRED_INACTIVITY"));
       }
 
-      // Check Absolute Session (1 Month)
+      // Local Absolute Session check
       if (sessionStart && (now - parseInt(sessionStart) > ONE_MONTH)) {
         await AsyncStorage.clear();
         return Promise.reject(new Error("SESSION_EXPIRED_MONTHLY"));
       }
 
-      // Update Activity Timestamp
       await AsyncStorage.setItem('last_activity', now.toString());
       config.headers.Authorization = `Bearer ${token}`;
     }
-    
     return config;
   },
   (error) => Promise.reject(error)
+);
+
+// --- RESPONSE INTERCEPTOR (New Fix for 401) ---
+API.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    // If the server returns 401, the token is invalid or expired on the backend
+    if (error.response && error.response.status === 401) {
+      console.log("Global 401 Detected: Clearing local session...");
+      await AsyncStorage.multiRemove(['userToken', 'session_start', 'last_activity']);
+      // Note: You may want to use a navigation reference or an event emitter 
+      // here to force a redirect to the Login screen.
+    }
+    return Promise.reject(error);
+  }
 );
 
 export default API;
