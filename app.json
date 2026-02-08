@@ -7,13 +7,18 @@
     "icon": "./assets/app-logo.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
+    "scheme": "gulfcargo",
     "splash": {
       "image": "./assets/Logo.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "y",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {

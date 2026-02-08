@@ -10,6 +10,8 @@ import PartyDetailsScreen from './src/screens/PartyDetailsScreen';
 import EditPartyScreen from './src/screens/EditPartyScreen';
 
 import CargoDetailsScreen from './src/screens/CargoDetailsScreen'; // Ensure this file exists
+import EditProfileScreen from './src/screens/EditProfileScreen';
+import ChangePasswordScreen from './src/screens/ChangePasswordScreen';
 
 const Stack = createStackNavigator();
 
@@ -44,6 +46,18 @@ export default function App() {
   name="EditParty" 
   component={EditPartyScreen} 
   options={{ title: 'Edit Party' }} 
+/>
+
+<Stack.Screen 
+  name="EditProfile" 
+  component={EditProfileScreen} 
+  options={{ title: 'Edit Profile' }} 
+/>
+
+<Stack.Screen 
+  name="ChangePassword" 
+  component={ChangePasswordScreen} 
+  options={{ title: 'Change Password' }} 
 />
 
 <Stack.Screen 

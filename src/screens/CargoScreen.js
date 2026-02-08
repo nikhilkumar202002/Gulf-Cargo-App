@@ -122,14 +122,19 @@ export default function CargoScreen() {
                   text: "Generate PDF", 
                   onPress: () => {
                     generateInvoicePDF(res.data.data || res.data.cargo);
-                    navigation.navigate('History'); // Redirect to History
+                    // Reset form data and redirect to History
+                    setFormData(getInitialState());
+                    setCurrentStep(1); // Reset to first step
+                    navigation.navigate('History');
                   } 
                 },
                 { 
                   text: "OK", 
                   onPress: () => {
+                    // Reset form data and redirect to History
                     setFormData(getInitialState());
-                    navigation.navigate('History'); // Redirect to History
+                    setCurrentStep(1); // Reset to first step
+                    navigation.navigate('History');
                   } 
                 }
             ]);

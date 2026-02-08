@@ -12,7 +12,7 @@ import {
     getShipmentCounts, 
     getSenderCount, 
     getReceiverCount,
-    getBranchCounts 
+    getBranchCounts
 } from '../services/coreServices'; 
 import { useUser } from '../context/UserContext'; 
 import colors from '../styles/colors'; 
@@ -40,13 +40,17 @@ export default function DashboardScreen({ navigation }) {
             setUserData({ ...user, role_id: user.role_id || user.role?.id });
         }
 
+        // Get branch ID for filtering cargo counts (use the fresh user data)
+        const branchId = user?.branch_id || user?.branch?.id;
+        const isSuperAdmin = (user?.role_id || user?.role?.id) === 1;
+
         // 2. Fetch stats using allSettled to prevent total failure
         const results = await Promise.allSettled([
             getShipmentCounts(), 
             getSenderCount(),    
             getReceiverCount(),  
             getBranchCounts(),   
-            getCargoList(1),     
+            getCargoList(1, isSuperAdmin ? null : branchId),     
         ]);
 
         const extract = (index) => results[index].status === 'fulfilled' ? results[index].value.data : null;
@@ -55,7 +59,7 @@ export default function DashboardScreen({ navigation }) {
         const senderData = extract(1);
         const receiverData = extract(2);
         const branchData = extract(3);
-        const cargoData = extract(4);
+        const cargoListData = extract(4);
 
         setStats({
             shipments: shipData?.total_count || shipData?.data?.total_count || 0,
@@ -64,11 +68,12 @@ export default function DashboardScreen({ navigation }) {
             staff: 17, 
             branches: branchData?.active_count || branchData?.data?.active_count || 0,
             delivery: 40,
-            cargos: cargoData?.meta?.total || cargoData?.total || 0,
+            // Use total from cargo list API instead of separate cargo-counts endpoint
+            cargos: cargoListData?.total_cargos || cargoListData?.pagination?.total_items || cargoListData?.data?.length || 0,
             clearance: 1
         });
 
-        const list = cargoData?.data || cargoData || [];
+        const list = cargoListData?.data || cargoListData || [];
         setRecentCargos(Array.isArray(list) ? list.slice(0, 5) : []);
 
     } catch (error) {
@@ -161,7 +166,7 @@ export default function DashboardScreen({ navigation }) {
         {/* Recent Activity */}
         <View style={styles.section}>
             <View style={styles.activityHeader}>
-                <Text style={styles.sectionTitle}>Recent Shipments</Text>
+                <Text style={styles.sectionTitle}>Recent Bills</Text>
                 <TouchableOpacity onPress={() => navigation.navigate('History')}>
                     <Text style={styles.seeAllText}>View All</Text>
                 </TouchableOpacity>
@@ -184,7 +189,6 @@ export default function DashboardScreen({ navigation }) {
             ))}
         </View>
         
-        <View style={{ height: 40 }} />
       </ScrollView>
     </View>
   );
@@ -206,7 +210,7 @@ const styles = StyleSheet.create({
     color: '#64748B',
     letterSpacing: 0.5,
   },
-  scrollContent: { paddingHorizontal: 20, paddingTop: 10 },
+  scrollContent: { paddingHorizontal: 20, paddingTop: 10, paddingBottom: Platform.OS === 'ios' ? 120 : 100 },
   pageHeader: { fontSize: 20, fontWeight: '700', color: '#0F172A', marginBottom: 15, letterSpacing: -0.5 },
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
   statCard: {

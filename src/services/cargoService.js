@@ -4,8 +4,10 @@ export const createCargo = (data) => {
   return API.post('/cargo', data);
 };
 
-export const getCargoList = (page = 1) => {
-  return API.get(`/cargos?page=${page}`);
+export const getCargoList = (page = 1, branchId = null) => {
+  const params = { page };
+  if (branchId) params.branch_id = branchId;
+  return API.get('/cargos', { params });
 };
 
 export const searchCargoByBookingNo = (bookingNo) => {

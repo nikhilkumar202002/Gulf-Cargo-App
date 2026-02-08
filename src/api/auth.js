@@ -18,3 +18,7 @@ export const getRoles = () => {
 export const getProfile = () => {
   return API.get('/profile');
 };
+
+export const updateProfile = (data) => {
+  return API.put('/profile/update', data);
+};

@@ -116,6 +116,12 @@ export const getReceiverCount = () => {
 };
 
 // 5. Get Cargo Counts by Branch
-export const getCargoCountsByBranch = () => {
-  return API.get('/cargo-counts');
+export const getCargoCountsByBranch = (branchId) => {
+  const params = branchId ? { branch_id: branchId } : {};
+  return API.get('/cargo-counts', { params });
+};
+
+// --- STAFF ---
+export const getStaffByBranch = (branchId) => {
+  return API.get('/staff', { params: { branch_id: branchId } });
 };

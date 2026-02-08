@@ -85,19 +85,13 @@ export default function SettingScreen() {
           <SettingItem 
             icon="account-edit-outline" 
             label="Edit Profile" 
-            onPress={() => Alert.alert("Edit Profile", "Feature coming soon")}
+            onPress={() => navigation.navigate('EditProfile')}
           />
         </View>
 
         {/* 3. SECURITY & SESSION SECTION */}
         <Text style={styles.sectionTitle}>Security</Text>
         <View style={styles.sectionCard}>
-          <SettingItem 
-            icon="lock-reset" 
-            label="Change Password" 
-            onPress={() => Alert.alert("Security", "Contact Admin to reset password")}
-          />
-          <View style={styles.divider} />
           <SettingItem 
             icon="history" 
             label="Session Info" 
@@ -114,12 +108,6 @@ export default function SettingScreen() {
             label="App Version" 
             value="v1.0.2" 
             showChevron={false}
-          />
-          <View style={styles.divider} />
-          <SettingItem 
-            icon="shield-check-outline" 
-            label="Terms & Conditions" 
-            onPress={() => Alert.alert("Terms", "Legal documents loading...")}
           />
         </View>
 

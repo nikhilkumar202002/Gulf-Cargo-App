@@ -1,6 +1,5 @@
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
-// Using legacy import to handle moveAsync/copyAsync deprecation in newer Expo SDKs
 import * as FileSystem from 'expo-file-system/legacy';
 import { getCargoDetails } from './cargoService';
 import { getBranchDetails } from './coreServices';
@@ -14,6 +13,13 @@ const fmtMoney = (amount) => {
 const formatDate = (dateString) => {
   if (!dateString) return new Date().toLocaleDateString("en-GB");
   return new Date(dateString).toLocaleDateString("en-GB");
+};
+
+const formatPhone = (phone) => {
+  if (!phone) return '';
+  // Remove country code and ensure it starts with 0
+  let cleaned = phone.replace(/^\+?\d{1,3}/, '').replace(/^0+/, '');
+  return '0' + cleaned;
 };
 
 // --- 1. DATA FETCHING ---
@@ -141,6 +147,7 @@ const fetchInvoiceData = async (input) => {
       branch_name_ar: branchData.branch_name_ar || 'جلف كارغو',
       branch_address: branchData.branch_address || 'KINGDOM OF SAUDI ARABIA',
       branch_contact: branchData.branch_contact_number || branchData.branch_alternative_number || '',
+      branch_alt_contact: branchData.branch_alternative_number || '',
       branch_logo: branchData.logo_url || null,
       boxes: boxes 
     };
@@ -163,9 +170,13 @@ const createInvoiceHTML = (data) => {
     weight: parseFloat(box.weight || 0).toFixed(3)
   }));
 
-  const totalWeight = data.total_weight 
+  const totalWeight = data.total_weight && parseFloat(data.total_weight) > 0
     ? parseFloat(data.total_weight) 
-    : safeBoxes.reduce((sum, box) => sum + (parseFloat(box.weight) || 0), 0);
+    : safeBoxes.reduce((sum, box) => {
+        const boxItems = Array.isArray(box.items) ? box.items : [];
+        const boxWeight = boxItems.reduce((itemSum, item) => itemSum + (parseFloat(item.weight) || 0), 0);
+        return sum + boxWeight;
+      }, 0);
 
   const structuredItems = [];
   safeBoxes.forEach((box, index) => {
@@ -262,9 +273,9 @@ const createInvoiceHTML = (data) => {
           .logo-img { width: 90px; height:auto object-fit: contain; }
           .qr-img { height: 85px; width: 85px; margin: 0 auto; }
           
-          .branch-name { font-size: 18px; font-weight: 700; color: var(--secondary-color); text-transform: uppercase; }
-          .branch-name-ar { font-size: 20px; font-weight: 600; color: var(--primary-color); }
-          .branch-contact { font-size: 13px; font-weight: 600; color: #333; margin-top: 2px; }
+          .branch-name { font-size: 20px; font-weight: 700; color: var(--secondary-color); text-transform: uppercase; }
+          .branch-name-ar { font-size: 22px; font-weight: 600; color: var(--primary-color); line-height: 25px;}
+          .branch-contact { font-size: 15px; font-weight: 600; color: #333; margin-top: 2px; }
           .branch-address { font-size: 12px; font-weight: 700; color: var(--primary-color); text-transform: uppercase; margin-top: 4px; line-height: 1.2; }
 
           /* INFO BAR */
@@ -276,7 +287,7 @@ const createInvoiceHTML = (data) => {
           .track-pill { background-color: #000; color: #fff; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; margin-left: 5px; }
 
           /* MAIN GRID */
-          .main-grid { display: flex; gap: 10px; margin-bottom: 10px; height: 165px; }
+          .main-grid { display: flex; gap: 10px; margin-bottom: 10px; }
           .col-party { flex: 2; border: 1px solid #e2e8f0; border-radius: 4px; overflow: hidden; display: flex; flex-direction: column; }
           .col-summary { flex: 1; display: flex; flex-direction: column; }
           
@@ -295,7 +306,7 @@ const createInvoiceHTML = (data) => {
           .grid-val { font-weight: 700; color: #111827; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; text-transform: uppercase; }
 
           /* BOX TABLE */
-          .box-wrapper { border: 1px solid #cbd5e1; border-radius: 4px; overflow: hidden; height: 100%; }
+          .box-wrapper { overflow: hidden; }
           .box-table { width: 100%; border-collapse: collapse; font-size: 9px; }
           .box-table th { background-color: #f1f5f9; border-bottom: 1px solid #cbd5e1; padding: 3px; font-weight: 700; }
           .box-table td { border-bottom: 1px solid #cbd5e1; padding: 3px; text-align: center; border-right: 1px solid #eee; }
@@ -342,7 +353,7 @@ const createInvoiceHTML = (data) => {
             <div class="header-right">
               <div class="branch-name">${data.branch_name}</div>
               <div class="branch-name-ar">${data.branch_name_ar}</div>
-              <div class="branch-contact">${data.branch_contact}</div>
+              <div class="branch-contact">${data.branch_contact}${data.branch_alt_contact ? ' / ' + data.branch_alt_contact : ''}</div>
             </div>
           </div>
 
@@ -368,7 +379,7 @@ const createInvoiceHTML = (data) => {
               <div class="party-content">
                 <div class="party-row"><div class="p-label">Name</div><div class="p-val">: ${data.sender?.name || '-'}</div></div>
                 <div class="party-row"><div class="p-label">ID No</div><div class="p-val">: ${data.sender?.document_id || '-'}</div></div>
-                <div class="party-row"><div class="p-label">Tel</div><div class="p-val">: ${data.sender?.phone || '-'}</div></div>
+                <div class="party-row"><div class="p-label">Tel</div><div class="p-val">: ${formatPhone(data.sender?.phone) || '-'}</div></div>
                 <div class="party-row"><div class="p-label">No. Pcs</div><div class="p-val">: ${data.no_of_pieces || safeBoxes.length}</div></div>
                 <div class="party-row"><div class="p-label">Weight</div><div class="p-val">: ${parseFloat(totalWeight).toFixed(3)} kg</div></div>
                 <div class="party-row"><div class="p-label">Date</div><div class="p-val">: ${formatDate(data.date)}</div></div>
@@ -417,7 +428,7 @@ const createInvoiceHTML = (data) => {
 
                 <div class="party-row" style="margin-top: 2px;">
                     <div class="p-label">Tel</div>
-                    <div class="p-val">: ${data.receiver?.phone || '-'}</div>
+                    <div class="p-val">: ${formatPhone(data.receiver?.phone) || '-'}</div>
                 </div>
               </div>
             </div>
@@ -493,7 +504,16 @@ const createInvoiceHTML = (data) => {
 
 // --- 3. PUBLIC METHODS ---
 
+// Flag to prevent multiple simultaneous sharing operations
+let isSharing = false;
+
 export const printInvoice = async (idOrData) => {
+  if (isSharing) {
+    console.warn('Share operation already in progress, ignoring duplicate request');
+    return;
+  }
+
+  isSharing = true;
   try {
     const data = await fetchInvoiceData(idOrData);
     const html = createInvoiceHTML(data);
@@ -512,23 +532,39 @@ export const printInvoice = async (idOrData) => {
     } catch (e) {
         console.warn("Failed to rename PDF (moveAsync failed):", e);
         // Fallback to sharing original if move fails
-        await Sharing.shareAsync(uri, { 
-            UTI: '.pdf', 
-            mimeType: 'application/pdf',
-            dialogTitle: `Share Invoice ${bookingNo}` 
-        });
+        try {
+          await Sharing.shareAsync(uri, { 
+              UTI: '.pdf', 
+              mimeType: 'application/pdf',
+              dialogTitle: `Share Invoice ${bookingNo}` 
+          });
+        } catch (shareError) {
+          console.error('Error sharing PDF (fallback):', shareError);
+          throw shareError; // Re-throw to be caught by outer catch
+        }
         return;
     }
 
     // 4. Share Renamed File
-    await Sharing.shareAsync(newUri, { 
-        UTI: '.pdf', 
-        mimeType: 'application/pdf',
-        dialogTitle: `Share Invoice ${bookingNo}` 
-    });
+    try {
+      await Sharing.shareAsync(newUri, { 
+          UTI: '.pdf', 
+          mimeType: 'application/pdf',
+          dialogTitle: `Share Invoice ${bookingNo}` 
+      });
+    } catch (shareError) {
+      console.error('Error sharing PDF:', shareError);
+      throw shareError; // Re-throw to be caught by outer catch
+    }
 
   } catch (error) {
     console.error('Error printing invoice:', error);
+    // Check if it's the sharing conflict error
+    if (error.message && error.message.includes('Another share request is being processed')) {
+      console.warn('Share request blocked - another share operation is in progress');
+    }
+  } finally {
+    isSharing = false;
   }
 };
 
