@@ -125,7 +125,8 @@ const styles = StyleSheet.create({
   tabBarLabel: {
     fontSize: 12,
     fontWeight: '500',
-    marginTop: 14, 
+    marginTop: 14,
+    fontFamily: 'InstrumentSans-Regular'
   },
   iconContainer: {
     alignItems: 'center',

@@ -145,8 +145,8 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#fff',
   },
-  userName: { fontSize: 20, fontWeight: 'bold', color: '#333' },
-  userEmail: { fontSize: 14, color: '#666', marginTop: 4 },
+  userName: { fontSize: 20, fontWeight: 'bold', color: '#333', fontFamily: 'InstrumentSans-Regular' },
+  userEmail: { fontSize: 14, color: '#666', marginTop: 4, fontFamily: 'InstrumentSans-Regular' },
   roleBadge: {
     backgroundColor: '#eef2ff',
     paddingHorizontal: 12,
@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginTop: 10,
   },
-  roleText: { color: colors.secondary, fontSize: 12, fontWeight: 'bold' },
+  roleText: { color: colors.secondary, fontSize: 12, fontWeight: 'bold', fontFamily: 'InstrumentSans-Regular' },
   
   content: { padding: 16 },
   sectionTitle: {
@@ -165,6 +165,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     marginLeft: 4,
     letterSpacing: 0.5,
+    fontFamily: 'InstrumentSans-Regular'
   },
   sectionCard: {
     backgroundColor: '#fff',
@@ -192,8 +193,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 15,
   },
-  itemLabel: { fontSize: 15, fontWeight: '600', color: '#333' },
-  itemValue: { fontSize: 12, color: '#888', marginTop: 2 },
+  itemLabel: { fontSize: 15, fontWeight: '600', color: '#333', fontFamily: 'InstrumentSans-Regular' },
+  itemValue: { fontSize: 12, color: '#888', marginTop: 2, fontFamily: 'InstrumentSans-Regular' },
   divider: { height: 1, backgroundColor: '#f0f0f0', marginHorizontal: 15 },
   
   logoutBtn: {
@@ -207,6 +208,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ffebee',
   },
-  logoutText: { color: colors.primary, fontWeight: 'bold', fontSize: 16, marginLeft: 10 },
-  footerNote: { textAlign: 'center', color: '#ccc', fontSize: 12, marginTop: 20 },
+  logoutText: { color: colors.primary, fontWeight: 'bold', fontSize: 16, marginLeft: 10, fontFamily: 'InstrumentSans-Regular' },
+  footerNote: { textAlign: 'center', color: '#ccc', fontSize: 12, marginTop: 20, fontFamily: 'InstrumentSans-Regular' },
 });

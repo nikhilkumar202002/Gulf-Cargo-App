@@ -14,14 +14,16 @@ export default StyleSheet.create({
     fontWeight: '600',
     marginBottom: 24,
     textAlign: 'center',
-    color: colors.seconday
+    color: colors.seconday,
+    fontFamily: 'InstrumentSans-Regular'
   },
   subheadline: {
     fontSize: 16,
     fontWeight: '400',
     marginBottom: 24,
     marginTop: -25,
-    textAlign: 'center'
+    textAlign: 'center',
+    fontFamily: 'InstrumentSans-Regular'
   },
   input: {
     borderWidth: 1,
@@ -52,7 +54,8 @@ export default StyleSheet.create({
     color: '#fff',
     textAlign: 'center',
     fontWeight: '600',
-    fontSize: 16
+    fontSize: 16,
+    fontFamily: 'InstrumentSans-Regular'
   },
 
 //   DASHOARD STYLES
@@ -93,11 +96,13 @@ statsContainer: {
     fontSize: 12,
     color: '#666',
     fontWeight: '500',
+    fontFamily: 'InstrumentSans-Regular'
   },
   statCount: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#333',
     marginTop: 2,
+    fontFamily: 'InstrumentSans-Regular'
   },
 });

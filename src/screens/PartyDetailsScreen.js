@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1, borderBottomColor: '#eee', elevation: 2
   },
   backButton: { padding: 4 },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: '#333' },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: '#333', fontFamily: 'InstrumentSans-Regular' },
 
   scrollContent: { paddingTop: 10 },
   
@@ -190,11 +190,11 @@ const styles = StyleSheet.create({
     width: 80, height: 80, borderRadius: 40, backgroundColor: '#eef2ff', 
     justifyContent: 'center', alignItems: 'center', marginBottom: 10 
   },
-  avatarText: { fontSize: 32, fontWeight: 'bold', color: colors.secondary },
-  name: { fontSize: 22, fontWeight: 'bold', color: '#333' },
+  avatarText: { fontSize: 32, fontWeight: 'bold', color: colors.secondary, fontFamily: 'InstrumentSans-Regular' },
+  name: { fontSize: 22, fontWeight: 'bold', color: '#333', fontFamily: 'InstrumentSans-Regular' },
   type: { 
     fontSize: 14, marginTop: 4, paddingHorizontal: 12, paddingVertical: 4, 
-    borderRadius: 12, overflow: 'hidden', fontWeight: '600'
+    borderRadius: 12, overflow: 'hidden', fontWeight: '600', fontFamily: 'InstrumentSans-Regular'
   },
   
   // Section Styles
@@ -202,14 +202,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff', padding: 16, marginBottom: 15, marginHorizontal: 16, 
     borderRadius: 12, elevation: 1, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 2, shadowOffset: {width:0, height:1}
   },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: '#333', marginBottom: 15, borderBottomWidth: 1, borderBottomColor: '#eee', paddingBottom: 8 },
+  sectionTitle: { fontSize: 16, fontWeight: '700', color: '#333', marginBottom: 15, borderBottomWidth: 1, borderBottomColor: '#eee', paddingBottom: 8, fontFamily: 'InstrumentSans-Regular' },
   
   // Row Styles
   row: { flexDirection: 'row', marginBottom: 16 },
   iconBox: { width: 40, alignItems: 'center', paddingTop: 2 },
   detailContent: { flex: 1 },
-  label: { fontSize: 12, color: '#888', marginBottom: 2 },
-  value: { fontSize: 15, color: '#333', fontWeight: '500' },
+  label: { fontSize: 12, color: '#888', marginBottom: 2, fontFamily: 'InstrumentSans-Regular' },
+  value: { fontSize: 15, color: '#333', fontWeight: '500', fontFamily: 'InstrumentSans-Regular' },
   
   // Doc Image
   docContainer: { marginTop: 10 },

@@ -56,7 +56,7 @@ export default function SplashScreen({ navigation }) {
 
       {/* Optional: Simple Loader at the bottom */}
       <View style={styles.bottomLoader}>
-        <Animated.Text style={{ opacity: fadeAnim, color: colors.secondary, fontWeight: 'bold' }}>
+        <Animated.Text style={{ opacity: fadeAnim, color: colors.secondary, fontWeight: 'bold', fontFamily: 'InstrumentSans-Regular' }}>
           GULF CARGO INTERNATIONAL
         </Animated.Text>
       </View>

@@ -235,7 +235,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E2E8F0'
   },
-  searchInput: { flex: 1, marginLeft: 10, fontSize: 15, color: '#1E293B', fontWeight: '500' },
+  searchInput: { flex: 1, marginLeft: 10, fontSize: 15, color: '#1E293B', fontWeight: '500', fontFamily: 'InstrumentSans-Regular' },
 
   // Tabs
   tabBar: { 
@@ -253,8 +253,8 @@ const styles = StyleSheet.create({
     shadowRadius: 5, 
     elevation: 2 
   },
-  tabLabel: { fontSize: 11, fontWeight: '800', color: '#94A3B8', letterSpacing: 1 },
-  tabLabelActive: { color: colors.primary },
+  tabLabel: { fontSize: 11, fontWeight: '800', color: '#94A3B8', letterSpacing: 1, fontFamily: 'InstrumentSans-Regular' },
+  tabLabelActive: { color: colors.primary, fontFamily: 'InstrumentSans-Regular' },
 
   // List Items
   listInside: { padding: 20 },
@@ -271,16 +271,16 @@ const styles = StyleSheet.create({
   roleIndicator: { width: 5, height: '100%' },
   itemMainContent: { flex: 1, padding: 14, justifyContent: 'center' },
   itemTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  partyName: { fontSize: 16, fontWeight: '700', color: '#0F172A', flex: 1, marginRight: 10 },
+  partyName: { fontSize: 16, fontWeight: '700', color: '#0F172A', flex: 1, marginRight: 10, fontFamily: 'InstrumentSans-Regular' },
   
   itemMetadataRow: { flexDirection: 'row', marginTop: 10, alignItems: 'center' },
   metaPill: { flexDirection: 'row', alignItems: 'center', marginRight: 15 },
-  metaText: { fontSize: 12, color: '#64748B', fontWeight: '600', marginLeft: 4 },
+  metaText: { fontSize: 12, color: '#64748B', fontWeight: '600', marginLeft: 4, fontFamily: 'InstrumentSans-Regular' },
 
   centerLoading: { marginTop: 40, alignItems: 'center' },
   emptyState: { alignItems: 'center', marginTop: 100 },
-  emptyTitle: { fontSize: 18, fontWeight: '700', color: '#334155', marginTop: 16 },
-  emptySubtitle: { fontSize: 14, color: '#94A3B8', marginTop: 4, textAlign: 'center' },
+  emptyTitle: { fontSize: 18, fontWeight: '700', color: '#334155', marginTop: 16, fontFamily: 'InstrumentSans-Regular' },
+  emptySubtitle: { fontSize: 14, color: '#94A3B8', marginTop: 4, textAlign: 'center', fontFamily: 'InstrumentSans-Regular' },
 
   // Context Menu Modal
   modalOverlay: { 

@@ -218,11 +218,13 @@ const styles = StyleSheet.create({
     fontSize: 28, 
     fontWeight: '600', 
     color: '#111827', 
-    marginBottom: 8
+    marginBottom: 8,
+    fontFamily: 'InstrumentSans-Regular'
   },
   instructionText: { 
     fontSize: 15, 
-    color: '#6B7280', 
+    color: '#6B7280',
+    fontFamily: 'InstrumentSans-Regular'
   },
   formContainer: {
     width: '100%',
@@ -247,7 +249,8 @@ const styles = StyleSheet.create({
     flex: 1, 
     fontSize: 15, 
     color: '#111827', 
-    height: '100%'
+    height: '100%',
+    fontFamily: 'InstrumentSans-Regular'
   },
   eyeIconContainer: {
     paddingLeft: 10,
@@ -259,7 +262,8 @@ const styles = StyleSheet.create({
   forgotLink: { 
     color: '#E83D48', // Red color matching the design
     fontSize: 13,
-    fontWeight: '400'
+    fontWeight: '400',
+    fontFamily: 'InstrumentSans-Regular'
   },
   actionButtonTouchable: { 
     height: 54, 
@@ -277,7 +281,8 @@ const styles = StyleSheet.create({
   actionButtonText: { 
     color: '#FFFFFF', 
     fontSize: 18, 
-    fontWeight: '500', 
+    fontWeight: '500',
+    fontFamily: 'InstrumentSans-Regular'
   },
   footerInfo: {
     position: 'absolute', 
@@ -291,6 +296,7 @@ const styles = StyleSheet.create({
   versionLabel: { 
     color: '#6B7280', 
     fontSize: 11,
+    fontFamily: 'InstrumentSans-Regular'
   },
   dotSeparator: {
     width: 3,
