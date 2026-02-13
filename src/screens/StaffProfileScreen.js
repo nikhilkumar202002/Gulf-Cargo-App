@@ -47,7 +47,7 @@ export default function StaffProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 20, flex: 1, backgroundColor: '#fff' },
+  container: { padding: 20, flex: 1, backgroundColor: '#F9F9F9' },
   title: { fontSize: 22, fontWeight: 'bold', marginBottom: 20 },
   label: { fontSize: 16, fontWeight: '600', marginTop: 10 },
   value: { fontWeight: 'normal' }

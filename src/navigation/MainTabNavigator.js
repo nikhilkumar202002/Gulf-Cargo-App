@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Platform, View, StyleSheet, Animated } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import colors from '../styles/colors'; // Brand colors: primary (#ed2624) and secondary (#283891)
 import Header from '../components/Header'; 
 
@@ -14,47 +14,38 @@ import PartiesScreen from '../screens/PartiesScreen';
 
 const Tab = createBottomTabNavigator();
 
-const TabIcon = ({ focused, route }) => {
-  const scaleAnim = useRef(new Animated.Value(focused ? 1 : 0.8)).current;
+// Custom component to handle the smooth spring animation
+const AnimatedTabIcon = ({ iconName, focused }) => {
+  const scaleValue = useRef(new Animated.Value(focused ? 1 : 0)).current;
 
   useEffect(() => {
-    Animated.spring(scaleAnim, {
-      toValue: focused ? 1 : 0.8,
+    Animated.spring(scaleValue, {
+      toValue: focused ? 1 : 0,
       useNativeDriver: true,
-      tension: 100,
-      friction: 8,
+      friction: 5,
+      tension: 50, // Adjust for a bouncier or stiffer animation
     }).start();
-  }, [focused, scaleAnim]);
+  }, [focused]);
 
-  let iconName;
-  
-  // Using outline variants for all to match the design aesthetics
-  if (route.name === 'Home') {
-    iconName = 'home-outline';
-  } else if (route.name === 'Customers') {
-    iconName = 'account-group-outline';
-  } else if (route.name === 'Cargo') {
-    iconName = 'truck-outline'; // Changed to match the box truck outline in the image
-  } else if (route.name === 'History') {
-    iconName = 'history';
-  } else if (route.name === 'Setting') {
-    iconName = 'cog-outline';
-  }
-  
-  // Render the active state with the red circle background
-  if (focused) {
-    return (
-      <Animated.View style={[styles.activeIconContainer, { transform: [{ scale: scaleAnim }] }]}>
-        <MaterialCommunityIcons name={iconName} size={24} color="#FFFFFF" />
-      </Animated.View>
-    );
-  }
-
-  // Render the inactive state (just the icon)
   return (
-    <Animated.View style={[styles.iconContainer, { transform: [{ scale: scaleAnim }] }]}>
-      <MaterialCommunityIcons name={iconName} size={24} color="#1F2937" />
-    </Animated.View>
+    <View style={styles.iconContainer}>
+      <Animated.View
+        style={[
+          styles.activeBackground,
+          {
+            opacity: scaleValue,
+            transform: [{ scale: scaleValue }],
+          },
+        ]}
+      />
+      {/* Render the Ionicons */}
+      <Ionicons 
+        name={iconName} 
+        size={24} 
+        color={focused ? "#FFFFFF" : "#1F2937"} 
+        style={styles.iconElement}
+      />
+    </View>
   );
 };
 
@@ -66,10 +57,27 @@ export default function MainTabNavigator() {
         header: () => <Header />, 
         
         tabBarActiveTintColor: colors.primary, 
-        tabBarInactiveTintColor: '#1F2937', // Darker gray/black for inactive text to match design
+        tabBarInactiveTintColor: '#1F2937', 
         tabBarStyle: styles.tabBar,
         tabBarLabelStyle: styles.tabBarLabel,
-        tabBarIcon: ({ focused }) => <TabIcon focused={focused} route={route} />,
+        tabBarIcon: ({ focused }) => {
+          let iconName;
+          
+          // Map routes to their respective Ionicons
+          if (route.name === 'Home') {
+            iconName = 'home-outline';
+          } else if (route.name === 'Customers') {
+            iconName = 'people-outline';
+          } else if (route.name === 'Cargo') {
+            iconName = 'car-outline'; 
+          } else if (route.name === 'History') {
+            iconName = 'time-outline';
+          } else if (route.name === 'Setting') {
+            iconName = 'settings-outline';
+          }
+          
+          return <AnimatedTabIcon iconName={iconName} focused={focused} />;
+        },
       })}
     >
       <Tab.Screen name="Home" component={DashboardScreen} />
@@ -91,7 +99,7 @@ export default function MainTabNavigator() {
       <Tab.Screen 
         name="Setting" 
         component={SettingScreen} 
-        options={{ title: 'Settings' }} // Updated to plural "Settings" to match image text
+        options={{ title: 'Settings' }} 
       />
     </Tab.Navigator>
   );
@@ -102,8 +110,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderTopWidth: 0, 
     height: Platform.OS === 'ios' ? 110 : 100,
-    paddingBottom: Platform.OS === 'ios' ? 34 : 10,
-    paddingTop: 10, 
+    paddingBottom: Platform.OS === 'ios' ? 30 : 10,
+    paddingTop: 8, 
     elevation: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -4 },
@@ -117,21 +125,21 @@ const styles = StyleSheet.create({
   tabBarLabel: {
     fontSize: 12,
     fontWeight: '500',
-    marginTop: 16,
-    textAlign: 'center' 
+    marginTop: 14, 
   },
   iconContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 6,
-  },
-  activeIconContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.primary, // Fills the background with red
     width: 48,
     height: 48,
-    borderRadius: 24, // Makes it a perfect circle
-    marginTop: 2,
+    marginTop: 6,
+  },
+  activeBackground: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: colors.primary,
+    borderRadius: 24, 
+  },
+  iconElement: {
+    zIndex: 1, 
   }
 });

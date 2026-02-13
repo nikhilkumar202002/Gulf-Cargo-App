@@ -214,7 +214,7 @@ export default function PartiesScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  container: { flex: 1, backgroundColor: '#F9F9F9', paddingHorizontal: 20 },
   
   // Header Section
   topSection: { 

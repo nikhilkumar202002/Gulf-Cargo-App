@@ -1,6 +1,8 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
+import { useFonts } from 'expo-font';
+import { Inter_400Regular } from '@expo-google-fonts/inter';
 import { UserProvider } from './src/context/UserContext'; // <--- Import this
 import SplashScreen from './src/screens/SplashScreen';
 import LoginScreen from './src/screens/LoginScreen';
@@ -16,6 +18,14 @@ import ChangePasswordScreen from './src/screens/ChangePasswordScreen';
 const Stack = createStackNavigator();
 
 export default function App() {
+  const [fontsLoaded] = useFonts({
+    Inter_400Regular,
+  });
+
+  if (!fontsLoaded) {
+    return null; // or a loading screen
+  }
+
   return (
     <UserProvider> 
       <NavigationContainer>

@@ -125,7 +125,7 @@ export default function SettingScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8f9fa' },
+  container: { flex: 1, backgroundColor: '#F9F9F9', paddingHorizontal: 20 },
   profileHeader: {
     backgroundColor: '#fff',
     alignItems: 'center',

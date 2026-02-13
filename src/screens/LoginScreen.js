@@ -78,7 +78,7 @@ export default function LoginScreen({ navigation }) {
 
   return (
     <View style={styles.mainContainer}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      <StatusBar barStyle="dark-content" backgroundColor="#F9F9F9" />
 
       <KeyboardAvoidingView 
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -193,11 +193,11 @@ export default function LoginScreen({ navigation }) {
 const styles = StyleSheet.create({
   mainContainer: { 
     flex: 1, 
-    backgroundColor: '#FFFFFF' 
+    backgroundColor: '#F9F9F9' 
   },
   scrollContent: { 
     flexGrow: 1, 
-    paddingHorizontal: 24, 
+    paddingHorizontal: 20, 
     justifyContent: 'center',
     paddingTop: 60,
     paddingBottom: 100 // Extra padding for footer

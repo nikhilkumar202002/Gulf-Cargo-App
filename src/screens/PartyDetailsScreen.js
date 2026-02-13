@@ -166,7 +166,7 @@ export default function PartyDetailsScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#fff' },
+  safeArea: { flex: 1, backgroundColor: '#F9F9F9', paddingHorizontal: 20 },
   container: { flex: 1, backgroundColor: '#f5f7fa' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   

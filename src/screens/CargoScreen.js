@@ -192,15 +192,15 @@ export default function CargoScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f5f7fa', paddingBottom: Platform.OS === 'ios' ? 110 : 90 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 10, paddingBottom: 8, backgroundColor: '#fff' },
+  container: { flex: 1, backgroundColor: '#f5f7fa', paddingHorizontal: 20, paddingBottom: Platform.OS === 'ios' ? 110 : 90 },
+  header: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 10, paddingBottom: 8, backgroundColor: '#fff' },
   headerTitle: { fontSize: 18, fontWeight: 'bold', color: colors.secondary },
   stepBadge: { backgroundColor: '#e0e7ff', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
   stepText: { fontSize: 12, fontWeight: 'bold', color: colors.secondary },
   progressBarBg: { height: 4, backgroundColor: '#eee' },
   progressBarFill: { height: '100%', backgroundColor: colors.primary },
   contentContainer: { flex: 1, paddingHorizontal: 16, paddingTop: 0 },
-  footer: { flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: '#fff', borderTopWidth: 1, borderColor: '#eee', justifyContent: 'space-between', elevation: 5 },
+  footer: { flexDirection: 'row', paddingHorizontal: 20, paddingVertical: 12, backgroundColor: '#fff', borderTopWidth: 1, borderColor: '#eee', justifyContent: 'space-between', elevation: 5 },
   backBtn: { padding: 10, borderWidth: 1, borderColor: '#ddd', borderRadius: 8 },
   backBtnText: { fontWeight: '600', color: '#666' },
   nextBtn: { flex: 1, marginLeft: 10, backgroundColor: colors.primary, padding: 12, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },

@@ -78,7 +78,22 @@ export default function DashboardScreen({ navigation }) {
 
     } catch (error) {
         console.error("Dashboard Fetch Error:", error);
-        Alert.alert("Sync Error", "Some dashboard data could not be refreshed.");
+        // Use mock data for development when API is unavailable
+        setStats({
+            shipments: 25,
+            consignees: 12,
+            receivers: 8,
+            staff: 17,
+            branches: 3,
+            delivery: 40,
+            cargos: 15,
+            clearance: 1
+        });
+        setRecentCargos([
+            { id: 1, booking_no: 'GC-001', sender_name: 'John Doe', receiver_name: 'Jane Smith', net_total: '150.00' },
+            { id: 2, booking_no: 'GC-002', sender_name: 'Alice', receiver_name: 'Bob', net_total: '200.00' },
+        ]);
+        Alert.alert("Using Demo Data", "API unavailable, showing sample data.");
     } finally {
         setLoading(false);
         setRefreshing(false);
@@ -117,7 +132,7 @@ export default function DashboardScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      <StatusBar barStyle="dark-content" backgroundColor="#F9F9F9" />
       
       <ScrollView 
         contentContainerStyle={styles.scrollContent}
@@ -195,7 +210,7 @@ export default function DashboardScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  container: { flex: 1, backgroundColor: '#F9F9F9' },
   // Loader Styles
   loaderContainer: {
     flex: 1,
@@ -209,33 +224,33 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#64748B',
     letterSpacing: 0.5,
+    fontFamily: 'Inter_400Regular',
   },
   scrollContent: { paddingHorizontal: 20, paddingTop: 10, paddingBottom: Platform.OS === 'ios' ? 120 : 100 },
-  pageHeader: { fontSize: 20, fontWeight: '700', color: '#0F172A', marginBottom: 15, letterSpacing: -0.5 },
+  pageHeader: { fontSize: 20, fontWeight: '700', color: '#0F172A', marginBottom: 15, letterSpacing: -0.5, fontFamily: 'Inter_400Regular' },
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
   statCard: {
     width: '48%',
     backgroundColor: '#FFFFFF',
     padding: 16,
-    borderRadius: 16,
-    marginBottom: 16,
-    borderWidth: 1.5,
-    borderColor: '#F1F5F9',
+    borderRadius: 10,
+    marginBottom: 10,
+
   },
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   iconWrapper: { width: 36, height: 36, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
-  statValue: { fontSize: 22, fontWeight: '800', color: '#0F172A' },
-  statLabel: { fontSize: 10, fontWeight: '800', color: '#94A3B8', letterSpacing: 1 },
+  statValue: { fontSize: 22, fontWeight: '800', color: '#0F172A', fontFamily: 'Inter_400Regular' },
+  statLabel: { fontSize: 10, fontWeight: '800', color: '#94A3B8', letterSpacing: 1, fontFamily: 'Inter_400Regular' },
   section: { marginTop: 10, marginBottom: 24 },
-  sectionTitle: { fontSize: 11, fontWeight: '900', color: '#94A3B8', letterSpacing: 1.5, marginBottom: 16, textTransform: 'uppercase' },
+  sectionTitle: { fontSize: 11, fontWeight: '900', color: '#94A3B8', letterSpacing: 1.5, marginBottom: 16, textTransform: 'uppercase', fontFamily: 'Inter_400Regular' },
   actionRow: { flexDirection: 'row', justifyContent: 'space-between' },
   actionBtn: { 
     flex: 1, height: 54, borderRadius: 12, flexDirection: 'row', 
     alignItems: 'center', justifyContent: 'center', marginHorizontal: 4
   },
-  actionBtnText: { color: '#FFF', fontWeight: '800', fontSize: 12, marginLeft: 8, letterSpacing: 0.5 },
+  actionBtnText: { color: '#FFF', fontWeight: '800', fontSize: 12, marginLeft: 8, letterSpacing: 0.5, fontFamily: 'Inter_400Regular' },
   activityHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  seeAllText: { fontSize: 12, fontWeight: '800', color: '#4F46E5' },
+  seeAllText: { fontSize: 12, fontWeight: '800', color: '#4F46E5', fontFamily: 'Inter_400Regular' },
   activityRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -245,9 +260,9 @@ const styles = StyleSheet.create({
   },
   activityIndicator: { width: 4, height: 24, backgroundColor: '#E2E8F0', borderRadius: 2, marginRight: 12 },
   activityContent: { flex: 1 },
-  bookingNo: { fontSize: 15, fontWeight: '700', color: '#0F172A' },
-  bookingParties: { fontSize: 13, color: '#64748B', marginTop: 2 },
+  bookingNo: { fontSize: 15, fontWeight: '700', color: '#0F172A', fontFamily: 'Inter_400Regular' },
+  bookingParties: { fontSize: 13, color: '#64748B', marginTop: 2, fontFamily: 'Inter_400Regular' },
   activityPrice: { alignItems: 'flex-end' },
-  priceText: { fontSize: 15, fontWeight: '800', color: '#0F172A' },
-  currencyText: { fontSize: 10, fontWeight: '700', color: '#94A3B8' }
+  priceText: { fontSize: 15, fontWeight: '800', color: '#0F172A', fontFamily: 'Inter_400Regular' },
+  currencyText: { fontSize: 10, fontWeight: '700', color: '#94A3B8', fontFamily: 'Inter_400Regular' }
 });
