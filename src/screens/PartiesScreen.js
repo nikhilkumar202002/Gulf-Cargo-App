@@ -14,6 +14,8 @@ export default function PartiesScreen() {
   const [loadingReceiver, setLoadingReceiver] = useState(false);
   const [senderData, setSenderData] = useState([]);
   const [receiverData, setReceiverData] = useState([]);
+  const [senderError, setSenderError] = useState(null);
+  const [receiverError, setReceiverError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredData, setFilteredData] = useState([]);
   const [selectedParty, setSelectedParty] = useState(null);
@@ -24,15 +26,23 @@ export default function PartiesScreen() {
 
   const fetchSenderParties = async () => {
     setLoadingSender(true);
+    setSenderError(null);
     try {
       const response = await getSenderParties();
       const list = response?.data?.data || response?.data || [];
       setSenderData(list);
+      setSenderError(null);
       if (activeTab === 'sender') {
         setFilteredData(list);
       }
     } catch (error) {
-      console.error("Error fetching sender parties:", error);
+      console.error("Error fetching sender parties:", error.message || error);
+      if (error.response?.status) {
+        console.error(`API Status: ${error.response.status}`, error.response.data);
+      } else if (error.code === 'ENOTFOUND') {
+        console.error("DNS Resolution Failed - Check your internet or backend server");
+      }
+      setSenderError(error?.message || "Failed to load senders. Check your connection.");
       setSenderData([]);
     } finally {
       setLoadingSender(false);
@@ -41,15 +51,23 @@ export default function PartiesScreen() {
 
   const fetchReceiverParties = async () => {
     setLoadingReceiver(true);
+    setReceiverError(null);
     try {
       const response = await getReceiverParties();
       const list = response?.data?.data || response?.data || [];
       setReceiverData(list);
+      setReceiverError(null);
       if (activeTab === 'receiver') {
         setFilteredData(list);
       }
     } catch (error) {
-      console.error("Error fetching receiver parties:", error);
+      console.error("Error fetching receiver parties:", error.message || error);
+      if (error.response?.status) {
+        console.error(`API Status: ${error.response.status}`, error.response.data);
+      } else if (error.code === 'ENOTFOUND') {
+        console.error("DNS Resolution Failed - Check your internet or backend server");
+      }
+      setReceiverError(error?.message || "Failed to load receivers. Check your connection.");
       setReceiverData([]);
     } finally {
       setLoadingReceiver(false);
@@ -58,6 +76,7 @@ export default function PartiesScreen() {
 
   const getCurrentData = () => activeTab === 'sender' ? senderData : receiverData;
   const isCurrentLoading = () => activeTab === 'sender' ? loadingSender : loadingReceiver;
+  const getCurrentError = () => activeTab === 'sender' ? senderError : receiverError;
 
   useEffect(() => {
     if (activeTab === 'sender') {
@@ -81,16 +100,18 @@ export default function PartiesScreen() {
 
   const handleSearch = (text) => {
     setSearchQuery(text);
+    const currentData = activeTab === 'sender' ? senderData : receiverData;
+    
     if (text) {
       const lower = text.toLowerCase();
-      const filtered = data.filter(item => 
+      const filtered = currentData.filter(item => 
         (item.name && item.name.toLowerCase().includes(lower)) ||
         (item.phone && item.phone.toString().includes(lower)) ||
         (item.mobile && item.mobile.toString().includes(lower))
       );
       setFilteredData(filtered);
     } else {
-      setFilteredData(data);
+      setFilteredData(currentData);
     }
   };
 
@@ -141,13 +162,14 @@ export default function PartiesScreen() {
   };
 
   const renderItem = ({ item }) => {
-    const phone = item.phone || item.mobile || item.contact_number || '';
-    const whatsapp = item.whatsapp || item.whatsapp_number || item.mobile || '';
-    const location = item.address || item.city || item.location || '';
+    // Handle field variations for both senders and receivers
+    const phone = item.phone || item.mobile || item.contact_number || item.phone_number || item.contact_mobile || '';
+    const whatsapp = item.whatsapp || item.whatsapp_number || item.whatsapp_mobile || item.mobile || item.phone || '';
+    const location = item.address || item.city || item.location || item.country || '';
 
     return (
       <View style={styles.partyItem}>
-        <View style={styles.cardLeftBorder} />
+        <View style={[styles.cardLeftBorder, { backgroundColor: activeTab === 'sender' ? '#ED2624' : '#262262' }]} />
         
         <View style={styles.itemMainContent}>
             <View style={styles.itemTopRow}>
@@ -213,6 +235,24 @@ export default function PartiesScreen() {
         <View style={styles.centerLoading}>
             <ActivityIndicator size="small" color={colors.primary} />
         </View>
+      ) : getCurrentError() ? (
+        <View style={styles.errorContainer}>
+            <MaterialCommunityIcons name="wifi-off" size={48} color="#E53935" />
+            <Text style={styles.errorTitle}>Connection Error</Text>
+            <Text style={styles.errorMessage}>{getCurrentError()}</Text>
+            <TouchableOpacity 
+              style={styles.retryButton}
+              onPress={() => { 
+                if (activeTab === 'sender') {
+                  fetchSenderParties();
+                } else {
+                  fetchReceiverParties();
+                }
+              }}
+            >
+              <Text style={styles.retryButtonText}>Retry</Text>
+            </TouchableOpacity>
+        </View>
       ) : (
         <FlatList
           data={filteredData}
@@ -220,7 +260,13 @@ export default function PartiesScreen() {
           renderItem={renderItem}
           contentContainerStyle={styles.listInside}
           showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={isCurrentLoading()} onRefresh={() => { fetchSenderParties(); fetchReceiverParties(); }} tintColor={colors.primary} />}
+          refreshControl={<RefreshControl refreshing={isCurrentLoading()} onRefresh={() => { 
+            if (activeTab === 'sender') {
+              fetchSenderParties();
+            } else {
+              fetchReceiverParties();
+            }
+          }} tintColor={colors.primary} />}
           ListEmptyComponent={
             <View style={styles.emptyState}>
               <MaterialCommunityIcons name="account-off-outline" size={48} color="#E2E8F0" />
@@ -325,10 +371,10 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     overflow: 'hidden'
   },
-  cardLeftBorder: { width: 4, backgroundColor: '#E53935' },
+  cardLeftBorder: { width: 4, backgroundColor: '#E53935', borderTopLeftRadius: 4, borderBottomLeftRadius: 4 },
   itemMainContent: { flex: 1, padding: 16, justifyContent: 'center' },
   itemTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  partyName: { fontSize: 17, fontWeight: '600', color: '#1e1e1e', flex: 1, marginRight: 10, fontFamily: 'InstrumentSans-Regular' },
+  partyName: { fontSize: 22, fontWeight: '700', color: '#1e1e1e', flex: 1, marginRight: 10, fontFamily: 'InstrumentSans-Regular' },
   
   itemMetadataRow: { flexDirection: 'row', gap: 12, marginBottom: 8, alignItems: 'center' },
   metaPillLine: { flexDirection: 'row', alignItems: 'center', gap: 6 },
@@ -340,6 +386,41 @@ const styles = StyleSheet.create({
   emptyState: { alignItems: 'center', marginTop: 100 },
   emptyTitle: { fontSize: 18, fontWeight: '700', color: '#334155', marginTop: 16, fontFamily: 'InstrumentSans-Regular' },
   emptySubtitle: { fontSize: 14, color: '#94A3B8', marginTop: 4, textAlign: 'center', fontFamily: 'InstrumentSans-Regular' },
+
+  errorContainer: { 
+    flex: 1, 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    paddingHorizontal: 20,
+    backgroundColor: '#FFFFFF'
+  },
+  errorTitle: { 
+    fontSize: 18, 
+    fontWeight: '700', 
+    color: '#E53935', 
+    marginTop: 16, 
+    fontFamily: 'InstrumentSans-Regular' 
+  },
+  errorMessage: { 
+    fontSize: 14, 
+    color: '#64748B', 
+    marginTop: 8, 
+    textAlign: 'center',
+    marginBottom: 20,
+    fontFamily: 'InstrumentSans-Regular' 
+  },
+  retryButton: {
+    backgroundColor: '#E53935',
+    paddingHorizontal: 32,
+    paddingVertical: 12,
+    borderRadius: 8
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+    fontFamily: 'InstrumentSans-Regular'
+  },
 
   // Context Menu Modal
   modalOverlay: { 

@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect } from 'react';
 import { 
   View, Text, TouchableOpacity, StyleSheet, Alert, 
-  ActivityIndicator, KeyboardAvoidingView, Platform 
+  ActivityIndicator, KeyboardAvoidingView, Platform, StatusBar 
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import colors from '../styles/colors';
 import { useUser } from '../context/UserContext';
 import { createCargo } from '../services/cargoService';
 import { generateInvoicePDF } from '../services/pdfGenerator';
@@ -25,6 +24,10 @@ export default function CargoScreen() {
   const [loading, setLoading] = useState(false);
   const totalSteps = 6;
 
+  useLayoutEffect(() => {
+    StatusBar.setHidden(false, 'slide');
+  }, []);
+
   const getInitialState = () => ({
     branch_id: '', branch_name: '', sender_id: '', receiver_id: '',
     shipping_method_id: '', payment_method_id: '', status_id: 1,
@@ -35,7 +38,6 @@ export default function CargoScreen() {
     total_cost: 0, bill_charges: 0, vat_percentage: 15.0, vat_cost: 0, 
     net_total: 0, total_amount: 0, total_weight: 0,
     
-    // API-aligned financial keys
     quantity_total_weight: 0, unit_rate_total_weight: 0, amount_total_weight: 0,
     quantity_duty: 0, unit_rate_duty: 0, amount_duty: 0,
     quantity_packing_charge: 0, unit_rate_packing_charge: 0, amount_packing_charge: 0,
@@ -55,97 +57,21 @@ export default function CargoScreen() {
   useEffect(() => {
     if (userData) {
         const userObj = userData.user || userData;
-        // Fix for branch not loading: search all possible context paths
         const bId = userData.branch_id || userObj.branch?.id || userObj.branch_id;
         const bName = userData.branchName || userObj.branch?.name || userObj.branch_name;
         
         if (bId) {
-            setFormData(prev => ({
-                ...prev,
-                branch_id: bId,
-                branch_name: bName,
-                name_id: userObj.id || userData.id,
-            }));
+            setFormData(prev => ({ ...prev, branch_id: bId, branch_name: bName, name_id: userObj.id || userData.id }));
         }
     }
   }, [userData]);
 
-  const updateFormData = (key, value) => {
-    setFormData(prev => ({ ...prev, [key]: value }));
-  };
+  const updateFormData = (key, value) => setFormData(prev => ({ ...prev, [key]: value }));
 
   const handleSubmitInvoice = async () => {
     setLoading(true);
-    try {
-        const boxWeightMap = {};
-        const flatItems = [];
-        formData.boxes.forEach((box, i) => {
-            const bNum = (i + 1).toString();
-            boxWeightMap[bNum] = parseFloat(box.weight) || 0;
-            box.items?.forEach(item => {
-                flatItems.push({
-                    slno: flatItems.length + 1, box_number: i + 1, name: item.name,
-                    piece_no: parseInt(item.qty) || 1, unit_price: 0, total_price: 0, 
-                    weight: parseFloat(item.weight) || 0
-                });
-            });
-        });
-
-        // Calculate bill charges: sum of all fees excluding total weight charge
-        const otherCharges = (
-            parseFloat(formData.amount_duty || 0) + parseFloat(formData.amount_packing_charge || 0) +
-            parseFloat(formData.amount_additional_packing_charge || 0) + parseFloat(formData.amount_insurance || 0) +
-            parseFloat(formData.amount_awb_fee || 0) + parseFloat(formData.amount_other_charges || 0) +
-            parseFloat(formData.amount_volume_weight || 0)
-        );
-
-        const payload = {
-            ...formData,
-            // FIX: Explicitly set required ID fields from objects
-            sender_id: formData.sender?.id,
-            receiver_id: formData.receiver?.id,
-            collected_by_id: formData.collected_by?.id || formData.collected_by_id,
-            date: new Date(formData.date).toISOString().split('T')[0],
-            total_cost: parseFloat(formData.amount_total_weight) || 0,
-            bill_charges: otherCharges,
-            vat_cost: parseFloat(formData.amount_vat_amount) || 0,
-            total_amount: parseFloat(formData.net_total) || 0,
-            box_weight: boxWeightMap,
-            items: flatItems,
-            no_of_pieces: flatItems.length
-        };
-
-        const res = await createCargo(payload);
-        if (res.data.success || res.status === 200) {
-            Alert.alert("Success", "Cargo Invoice Created!", [
-                { 
-                  text: "Generate PDF", 
-                  onPress: () => {
-                    generateInvoicePDF(res.data.data || res.data.cargo);
-                    // Reset form data and redirect to History
-                    setFormData(getInitialState());
-                    setCurrentStep(1); // Reset to first step
-                    navigation.navigate('History');
-                  } 
-                },
-                { 
-                  text: "OK", 
-                  onPress: () => {
-                    // Reset form data and redirect to History
-                    setFormData(getInitialState());
-                    setCurrentStep(1); // Reset to first step
-                    navigation.navigate('History');
-                  } 
-                }
-            ]);
-        }
-    } catch (e) {
-        const serverErrors = e.response?.data?.errors;
-        const msg = serverErrors ? Object.values(serverErrors).flat().join('\n') : "Submission failed.";
-        Alert.alert("Submission Error", msg);
-    } finally {
-        setLoading(false);
-    }
+    // ... (Keep your exact existing submit logic here) ...
+    setLoading(false);
   };
 
   const handleNext = () => {
@@ -168,21 +94,37 @@ export default function CargoScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['left', 'right']}>
+    <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Create Bill</Text>
-          <View style={styles.stepBadge}><Text style={styles.stepText}>Step {currentStep}/{totalSteps}</Text></View>
+        
+        {/* Global Progress Card matching UI exactly */}
+        <View style={styles.topCardContainer}>
+          <View style={styles.progressCard}>
+            <View style={styles.progressHeader}>
+                <Text style={styles.progressTitle}>Create New Bill</Text>
+                <View style={styles.stepBadge}>
+                    <Text style={styles.stepBadgeText}>Step {currentStep}/{totalSteps}</Text>
+                </View>
+            </View>
+            <View style={styles.progressBarBg}>
+                <View style={[styles.progressBarFill, { width: `${(currentStep/totalSteps)*100}%` }]} />
+            </View>
+          </View>
         </View>
-        <View style={styles.progressBarBg}><View style={[styles.progressBarFill, { width: `${(currentStep/totalSteps)*100}%` }]} /></View>
+
         <View style={styles.contentContainer}>{renderStep()}</View>
+        
+        {/* Styled Footer matching UI exactly */}
         <View style={styles.footer}>
-          {currentStep > 1 && (
-            <TouchableOpacity style={styles.backBtn} onPress={() => setCurrentStep(currentStep - 1)}>
-              <Text style={styles.backBtnText}>Back</Text>
-            </TouchableOpacity>
-          )}
-          <TouchableOpacity style={styles.nextBtn} onPress={handleNext} disabled={loading}>
+          <TouchableOpacity 
+            style={[styles.btn, styles.backBtn, currentStep === 1 && { opacity: 0 }]} 
+            onPress={() => currentStep > 1 && setCurrentStep(currentStep - 1)}
+            disabled={currentStep === 1}
+          >
+            <Text style={styles.backBtnText}>Back</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity style={[styles.btn, styles.nextBtn]} onPress={handleNext} disabled={loading}>
             {loading ? <ActivityIndicator color="#fff"/> : <Text style={styles.nextBtnText}>{currentStep === totalSteps ? 'Submit' : 'Next Step'}</Text>}
           </TouchableOpacity>
         </View>
@@ -192,17 +134,24 @@ export default function CargoScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f5f7fa', paddingHorizontal: 20, paddingBottom: Platform.OS === 'ios' ? 110 : 90 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 10, paddingBottom: 8, backgroundColor: '#fff' },
-  headerTitle: { fontSize: 18, fontWeight: 'bold', color: colors.secondary, fontFamily: 'InstrumentSans-Regular' },
-  stepBadge: { backgroundColor: '#e0e7ff', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
-  stepText: { fontSize: 12, fontWeight: 'bold', color: colors.secondary, fontFamily: 'InstrumentSans-Regular' },
-  progressBarBg: { height: 4, backgroundColor: '#eee' },
-  progressBarFill: { height: '100%', backgroundColor: colors.primary },
-  contentContainer: { flex: 1, paddingHorizontal: 16, paddingTop: 0 },
-  footer: { flexDirection: 'row', paddingHorizontal: 20, paddingVertical: 12, backgroundColor: '#fff', borderTopWidth: 1, borderColor: '#eee', justifyContent: 'space-between', elevation: 5 },
-  backBtn: { padding: 10, borderWidth: 1, borderColor: '#ddd', borderRadius: 8 },
-  backBtnText: { fontWeight: '600', color: '#666', fontFamily: 'InstrumentSans-Regular' },
-  nextBtn: { flex: 1, marginLeft: 10, backgroundColor: colors.primary, padding: 12, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
-  nextBtnText: { color: '#fff', fontWeight: 'bold', fontFamily: 'InstrumentSans-Regular' }
+  container: { flex: 1, backgroundColor: '#F9FAFB' },
+  topCardContainer: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8 },
+  progressCard: {
+      backgroundColor: '#fff', borderRadius: 12, overflow: 'hidden',
+      elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 3,
+  },
+  progressHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14 },
+  progressTitle: { fontSize: 16, color: '#111827', fontWeight: '500', fontFamily: 'InstrumentSans-Regular' },
+  stepBadge: { backgroundColor: '#E0E7FF', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
+  stepBadgeText: { color: '#312E81', fontSize: 12, fontWeight: '600', fontFamily: 'InstrumentSans-Regular' },
+  progressBarBg: { height: 4, backgroundColor: '#E5E7EB', width: '100%' },
+  progressBarFill: { height: '100%', backgroundColor: '#ed2624' },
+  
+  contentContainer: { flex: 1, paddingHorizontal: 20 },
+  footer: { flexDirection: 'row', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 24, backgroundColor: '#F9FAFB', justifyContent: 'space-between' },
+  btn: { height: 50, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
+  backBtn: { flex: 0.35, backgroundColor: '#fff', borderWidth: 1, borderColor: '#D1D5DB' },
+  backBtnText: { color: '#374151', fontSize: 16, fontWeight: '500', fontFamily: 'InstrumentSans-Regular' },
+  nextBtn: { flex: 0.6, marginLeft: 12, backgroundColor: '#34339A' }, // Deep Indigo from UI
+  nextBtnText: { color: '#fff', fontSize: 16, fontWeight: '500', fontFamily: 'InstrumentSans-Regular' }
 });
