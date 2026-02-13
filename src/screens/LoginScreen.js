@@ -8,7 +8,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialCommunityIcons } from '@expo/vector-icons'; 
 import { login, getProfile } from '../api/auth'; 
 import { useUser } from '../context/UserContext'; 
-import colors from '../styles/colors';
+import { LinearGradient } from 'expo-linear-gradient'; 
 
 const { width, height } = Dimensions.get('window');
 const APP_VERSION = "v1.0.2"; 
@@ -78,12 +78,7 @@ export default function LoginScreen({ navigation }) {
 
   return (
     <View style={styles.mainContainer}>
-      <StatusBar barStyle="dark-content" />
-      
-      {/* Background Pattern Layer */}
-      <View style={styles.patternOverlay}>
-        <View style={styles.dotGrid} />
-      </View>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
       <KeyboardAvoidingView 
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -94,35 +89,32 @@ export default function LoginScreen({ navigation }) {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Minimal Header */}
+          {/* Logo Section */}
           <View style={styles.headerSection}>
-            <View style={styles.logoContainer}>
-              <Image 
-                source={require('../../assets/Logo.png')} 
-                style={styles.logo} 
-                resizeMode="contain" 
-              />
-            </View>
-            <Text style={styles.brandTitle}>GULF CARGO</Text>
-            <View style={styles.titleUnderline} />
+            <Image 
+              source={require('../../assets/Logo.png')} 
+              style={styles.logo} 
+              resizeMode="contain" 
+            />
           </View>
 
-          {/* Minimal Form Container */}
-          <View style={styles.formContainer}>
-            <View style={styles.textHeader}>
-              <Text style={styles.welcomeText}>Sign In</Text>
-              <Text style={styles.instructionText}>Enter your credentials to continue</Text>
-            </View>
+          {/* Titles */}
+          <View style={styles.textHeader}>
+            <Text style={styles.welcomeText}>Sign In</Text>
+            <Text style={styles.instructionText}>Sign in to your account</Text>
+          </View>
 
+          {/* Form Section */}
+          <View style={styles.formContainer}>
+            {/* Email Input */}
             <View style={styles.inputGroup}>
-              <Text style={styles.fieldLabel}>EMAIL</Text>
               <View style={[
                 styles.inputField, 
                 isFocused === 'email' && styles.inputFieldActive
               ]}>
                 <TextInput
-                  placeholder="admin@gulfcargo.com"
-                  placeholderTextColor="#94A3B8"
+                  placeholder="Email"
+                  placeholderTextColor="#6B7280"
                   value={email}
                   onChangeText={setEmail}
                   onFocus={() => setIsFocused('email')}
@@ -134,20 +126,15 @@ export default function LoginScreen({ navigation }) {
               </View>
             </View>
 
+            {/* Password Input */}
             <View style={styles.inputGroup}>
-              <View style={styles.labelRow}>
-                <Text style={styles.fieldLabel}>PASSWORD</Text>
-                <TouchableOpacity onPress={() => Alert.alert("Reset", "Contact Admin")}>
-                  <Text style={styles.forgotLink}>Forgot?</Text>
-                </TouchableOpacity>
-              </View>
               <View style={[
                 styles.inputField, 
                 isFocused === 'password' && styles.inputFieldActive
               ]}>
                 <TextInput
-                  placeholder="••••••••"
-                  placeholderTextColor="#94A3B8"
+                  placeholder="Password"
+                  placeholderTextColor="#6B7280"
                   value={password}
                   onChangeText={setPassword}
                   onFocus={() => setIsFocused('password')}
@@ -155,31 +142,45 @@ export default function LoginScreen({ navigation }) {
                   style={styles.textInput}
                   secureTextEntry={!showPassword}
                 />
-                <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                <TouchableOpacity 
+                  onPress={() => setShowPassword(!showPassword)}
+                  style={styles.eyeIconContainer}
+                >
                   <MaterialCommunityIcons 
-                    name={showPassword ? "eye" : "eye-off"} 
-                    size={20} 
-                    color="#64748B" 
+                    name={showPassword ? "eye" : "eye-outline"} 
+                    size={22} 
+                    color="#433CA7" 
                   />
                 </TouchableOpacity>
               </View>
             </View>
 
+            {/* Forgot Password Link */}
             <TouchableOpacity 
-              style={[styles.actionButton, loading && styles.actionButtonDisabled]} 
+              style={styles.forgotPasswordContainer}
+              onPress={() => Alert.alert("Reset", "Contact Admin")}
+            >
+              <Text style={styles.forgotLink}>Forgot Password?</Text>
+            </TouchableOpacity>
+
+            {/* Login Button */}
+            <TouchableOpacity 
               onPress={handleLogin} 
               disabled={loading}
-              activeOpacity={0.7}
+              activeOpacity={0.8}
+              style={[styles.actionButtonTouchable, loading && styles.actionButtonDisabledTouchable]}
             >
-              <Text style={styles.actionButtonText}>
-                {loading ? "AUTHENTICATING..." : "LOGIN"}
-              </Text>
+              <LinearGradient colors={['#262262', '#4E45C8']} style={styles.actionButtonGradient} start={{x: 0, y: 0}} end={{x: 1, y: 1}}>
+                <Text style={styles.actionButtonText}>
+                  {loading ? "Authenticating..." : "Sign In"}
+                </Text>
+              </LinearGradient>
             </TouchableOpacity>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Repositioned Footer Information */}
+      {/* Footer */}
       <View style={styles.footerInfo}>
         <Text style={styles.versionLabel}>BUILD v{APP_VERSION}</Text>
         <View style={styles.dotSeparator} />
@@ -194,129 +195,93 @@ const styles = StyleSheet.create({
     flex: 1, 
     backgroundColor: '#FFFFFF' 
   },
-  patternOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#F8FAFC',
-    zIndex: -1,
-  },
-  dotGrid: {
-    width: width,
-    height: height,
-    opacity: 0.15,
-    borderStyle: 'dotted',
-    borderWidth: 1,
-    borderColor: '#64748B',
-    borderRadius: 1,
-  },
   scrollContent: { 
     flexGrow: 1, 
-    paddingHorizontal: 32, 
+    paddingHorizontal: 24, 
     justifyContent: 'center',
-    paddingVertical: 40 
+    paddingTop: 60,
+    paddingBottom: 100 // Extra padding for footer
   },
   headerSection: { 
     alignItems: 'center', 
-    marginBottom: 48 
+    marginBottom: 40 
   },
-  logoContainer: {
-    width: 64,
-    height: 64,
-    marginBottom: 16,
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  logo: { width: '100%', height: '100%' },
-  brandTitle: { 
-    fontSize: 20, 
-    fontWeight: '900', 
-    color: '#0F172A', 
-    letterSpacing: 4 
-  },
-  titleUnderline: {
-    width: 24,
-    height: 3,
-    backgroundColor: colors.primary,
-    marginTop: 8
-  },
-  formContainer: {
-    width: '100%'
+  logo: { 
+    width: 180, 
+    height: 80 
   },
   textHeader: {
-    marginBottom: 32
+    alignItems: 'center',
+    marginBottom: 40
   },
   welcomeText: { 
     fontSize: 28, 
-    fontWeight: '800', 
-    color: '#0F172A', 
-    letterSpacing: -1
+    fontWeight: '600', 
+    color: '#111827', 
+    marginBottom: 8
   },
   instructionText: { 
     fontSize: 15, 
-    color: '#64748B', 
-    marginTop: 4 
+    color: '#6B7280', 
+  },
+  formContainer: {
+    width: '100%',
   },
   inputGroup: { 
-    marginBottom: 24 
-  },
-  labelRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center'
-  },
-  fieldLabel: { 
-    fontSize: 11, 
-    fontWeight: '800', 
-    color: '#94A3B8', 
-    marginBottom: 8, 
-    letterSpacing: 1.5
+    marginBottom: 16 
   },
   inputField: { 
     flexDirection: 'row', 
     alignItems: 'center', 
-    backgroundColor: '#F1F5F9', 
-    borderRadius: 4, 
+    backgroundColor: '#FFFFFF', 
+    borderRadius: 8, 
     paddingHorizontal: 16, 
-    height: 56,
+    height: 54,
     borderWidth: 1,
-    borderColor: '#E2E8F0'
+    borderColor: '#E5E7EB'
   },
   inputFieldActive: {
-    borderColor: '#0F172A',
-    backgroundColor: '#FFFFFF',
+    borderColor: '#433CA7', // Dark purple highlight on focus
   },
   textInput: { 
     flex: 1, 
     fontSize: 15, 
-    color: '#0F172A', 
-    fontWeight: '500'
+    color: '#111827', 
+    height: '100%'
+  },
+  eyeIconContainer: {
+    paddingLeft: 10,
+  },
+  forgotPasswordContainer: {
+    alignItems: 'flex-end',
+    marginBottom: 24,
   },
   forgotLink: { 
-    color: colors.primary, 
-    fontWeight: '800', 
-    fontSize: 11,
-    letterSpacing: 0.5,
-    marginBottom: 8
+    color: '#E83D48', // Red color matching the design
+    fontSize: 13,
+    fontWeight: '400'
   },
-  actionButton: { 
-    backgroundColor: '#0F172A', 
-    height: 56, 
-    borderRadius: 4, 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    marginTop: 16,
+  actionButtonTouchable: { 
+    height: 54, 
+    borderRadius: 8, 
   },
-  actionButtonDisabled: {
-    backgroundColor: '#94A3B8',
+  actionButtonDisabledTouchable: {
+    opacity: 0.5,
+  },
+  actionButtonGradient: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 8,
   },
   actionButtonText: { 
     color: '#FFFFFF', 
-    fontSize: 13, 
-    fontWeight: '900', 
-    letterSpacing: 2
+    fontSize: 16, 
+    fontWeight: '500', 
   },
   footerInfo: {
-    position: 'absolute', // Fixed at bottom
-    bottom: 50,           // 50px from bottom
+    position: 'absolute', 
+    bottom: 40,           
     left: 0,
     right: 0,
     flexDirection: 'row',
@@ -324,16 +289,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   versionLabel: { 
-    color: '#94A3B8', 
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 1
+    color: '#6B7280', 
+    fontSize: 11,
   },
   dotSeparator: {
     width: 3,
     height: 3,
     borderRadius: 1.5,
-    backgroundColor: '#CBD5E1',
+    backgroundColor: '#6B7280',
     marginHorizontal: 10
   }
 });
