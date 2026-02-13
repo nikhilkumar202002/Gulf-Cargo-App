@@ -276,7 +276,7 @@ const styles = StyleSheet.create({
   },
   actionButtonText: { 
     color: '#FFFFFF', 
-    fontSize: 16, 
+    fontSize: 18, 
     fontWeight: '500', 
   },
   footerInfo: {

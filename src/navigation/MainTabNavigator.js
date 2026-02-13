@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Platform, View, StyleSheet } from 'react-native';
+import { Platform, View, StyleSheet, Animated } from 'react-native';
 import colors from '../styles/colors'; // Brand colors: primary (#ed2624) and secondary (#283891)
 import Header from '../components/Header'; 
 
@@ -14,6 +14,50 @@ import PartiesScreen from '../screens/PartiesScreen';
 
 const Tab = createBottomTabNavigator();
 
+const TabIcon = ({ focused, route }) => {
+  const scaleAnim = useRef(new Animated.Value(focused ? 1 : 0.8)).current;
+
+  useEffect(() => {
+    Animated.spring(scaleAnim, {
+      toValue: focused ? 1 : 0.8,
+      useNativeDriver: true,
+      tension: 100,
+      friction: 8,
+    }).start();
+  }, [focused, scaleAnim]);
+
+  let iconName;
+  
+  // Using outline variants for all to match the design aesthetics
+  if (route.name === 'Home') {
+    iconName = 'home-outline';
+  } else if (route.name === 'Customers') {
+    iconName = 'account-group-outline';
+  } else if (route.name === 'Cargo') {
+    iconName = 'truck-outline'; // Changed to match the box truck outline in the image
+  } else if (route.name === 'History') {
+    iconName = 'history';
+  } else if (route.name === 'Setting') {
+    iconName = 'cog-outline';
+  }
+  
+  // Render the active state with the red circle background
+  if (focused) {
+    return (
+      <Animated.View style={[styles.activeIconContainer, { transform: [{ scale: scaleAnim }] }]}>
+        <MaterialCommunityIcons name={iconName} size={24} color="#FFFFFF" />
+      </Animated.View>
+    );
+  }
+
+  // Render the inactive state (just the icon)
+  return (
+    <Animated.View style={[styles.iconContainer, { transform: [{ scale: scaleAnim }] }]}>
+      <MaterialCommunityIcons name={iconName} size={24} color="#1F2937" />
+    </Animated.View>
+  );
+};
+
 export default function MainTabNavigator() {
   return (
     <Tab.Navigator
@@ -21,33 +65,11 @@ export default function MainTabNavigator() {
         headerShown: true, 
         header: () => <Header />, 
         
-        tabBarActiveTintColor: colors.primary, // Using brand primary color for active state
-        tabBarInactiveTintColor: '#9ca3af',
+        tabBarActiveTintColor: colors.primary, 
+        tabBarInactiveTintColor: '#1F2937', // Darker gray/black for inactive text to match design
         tabBarStyle: styles.tabBar,
         tabBarLabelStyle: styles.tabBarLabel,
-        tabBarIcon: ({ focused, color }) => {
-          let iconName;
-          
-          if (route.name === 'Home') {
-            iconName = focused ? 'home' : 'home-outline';
-          } else if (route.name === 'Customers') {
-            iconName = focused ? 'account-group' : 'account-group-outline';
-          } else if (route.name === 'Cargo') {
-            iconName = focused ? 'truck-delivery' : 'truck-delivery-outline';
-          } else if (route.name === 'History') {
-            iconName = focused ? 'history' : 'history';
-          } else if (route.name === 'Setting') {
-            iconName = focused ? 'cog' : 'cog-outline';
-          }
-          
-          return (
-            <View style={styles.iconContainer}>
-              {/* Top indicator line shown only when focused, matching reference image */}
-              {focused && <View style={styles.topIndicator} />}
-              <MaterialCommunityIcons name={iconName} size={24} color={color} />
-            </View>
-          );
-        },
+        tabBarIcon: ({ focused }) => <TabIcon focused={focused} route={route} />,
       })}
     >
       <Tab.Screen name="Home" component={DashboardScreen} />
@@ -66,7 +88,11 @@ export default function MainTabNavigator() {
           options={{ title: 'History' }}
       />
       
-      <Tab.Screen name="Setting" component={SettingScreen} />
+      <Tab.Screen 
+        name="Setting" 
+        component={SettingScreen} 
+        options={{ title: 'Settings' }} // Updated to plural "Settings" to match image text
+      />
     </Tab.Navigator>
   );
 }
@@ -74,38 +100,38 @@ export default function MainTabNavigator() {
 const styles = StyleSheet.create({
   tabBar: {
     backgroundColor: '#fff',
-    borderTopWidth: 0, // Removing standard border for a cleaner look
-    height: Platform.OS === 'ios' ? 110 : 90,
-    paddingBottom: Platform.OS === 'ios' ? 40 : 20,
-    paddingTop: 10, // Set to 0 because indicator handles top spacing
-    elevation: 10,
+    borderTopWidth: 0, 
+    height: Platform.OS === 'ios' ? 110 : 100,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 10,
+    paddingTop: 10, 
+    elevation: 20,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.05,
     shadowRadius: 10,
-    position: 'absolute', // Allows content to flow behind if desired
+    position: 'absolute', 
     bottom: 0,
     left: 0,
     right: 0,
   },
   tabBarLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    marginTop: -5, // Closer to icon
+    fontSize: 12,
+    fontWeight: '500',
+    marginTop: 16,
+    textAlign: 'center' 
   },
   iconContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    width: '100%',
-    height: '100%',
+    marginTop: 6,
   },
-  topIndicator: {
-    position: 'absolute',
-    top: -10,
-    width: 40, // Length of the indicator line
-    height: 3,
-    backgroundColor: colors.primary, // Using brand primary color
-    borderBottomLeftRadius: 5,
-    borderBottomRightRadius: 5,
+  activeIconContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary, // Fills the background with red
+    width: 48,
+    height: 48,
+    borderRadius: 24, // Makes it a perfect circle
+    marginTop: 2,
   }
 });
