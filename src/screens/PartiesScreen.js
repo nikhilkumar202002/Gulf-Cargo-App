@@ -10,8 +10,10 @@ import { useNavigation, useIsFocused } from '@react-navigation/native';
 
 export default function PartiesScreen() {
   const [activeTab, setActiveTab] = useState('sender'); 
-  const [loading, setLoading] = useState(false);
-  const [data, setData] = useState([]);
+  const [loadingSender, setLoadingSender] = useState(false);
+  const [loadingReceiver, setLoadingReceiver] = useState(false);
+  const [senderData, setSenderData] = useState([]);
+  const [receiverData, setReceiverData] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredData, setFilteredData] = useState([]);
   const [selectedParty, setSelectedParty] = useState(null);
@@ -20,25 +22,62 @@ export default function PartiesScreen() {
   const navigation = useNavigation();
   const isFocused = useIsFocused();
 
-  const fetchData = async () => {
-    setLoading(true);
+  const fetchSenderParties = async () => {
+    setLoadingSender(true);
     try {
-      const response = activeTab === 'sender' 
-        ? await getSenderParties() 
-        : await getReceiverParties();
-      
-      const list = response.data.data || response.data || [];
-      setData(list);
-      setFilteredData(list);
+      const response = await getSenderParties();
+      const list = response?.data?.data || response?.data || [];
+      setSenderData(list);
+      if (activeTab === 'sender') {
+        setFilteredData(list);
+      }
     } catch (error) {
-      console.error("Error fetching parties:", error);
+      console.error("Error fetching sender parties:", error);
+      setSenderData([]);
     } finally {
-      setLoading(false);
+      setLoadingSender(false);
     }
   };
 
-  useEffect(() => { fetchData(); }, [activeTab]);
-  useEffect(() => { if(isFocused) fetchData(); }, [activeTab, isFocused]);
+  const fetchReceiverParties = async () => {
+    setLoadingReceiver(true);
+    try {
+      const response = await getReceiverParties();
+      const list = response?.data?.data || response?.data || [];
+      setReceiverData(list);
+      if (activeTab === 'receiver') {
+        setFilteredData(list);
+      }
+    } catch (error) {
+      console.error("Error fetching receiver parties:", error);
+      setReceiverData([]);
+    } finally {
+      setLoadingReceiver(false);
+    }
+  };
+
+  const getCurrentData = () => activeTab === 'sender' ? senderData : receiverData;
+  const isCurrentLoading = () => activeTab === 'sender' ? loadingSender : loadingReceiver;
+
+  useEffect(() => {
+    if (activeTab === 'sender') {
+      setFilteredData(senderData);
+    } else {
+      setFilteredData(receiverData);
+    }
+  }, [activeTab, senderData, receiverData]);
+
+  useEffect(() => {
+    fetchSenderParties();
+    fetchReceiverParties();
+  }, []);
+
+  useEffect(() => {
+    if (isFocused) {
+      fetchSenderParties();
+      fetchReceiverParties();
+    }
+  }, [isFocused]);
 
   const handleSearch = (text) => {
     setSearchQuery(text);
@@ -77,14 +116,21 @@ export default function PartiesScreen() {
               style: "destructive", 
               onPress: async () => {
                   try {
-                      setLoading(true);
+                      const isLoading = activeTab === 'sender' ? setLoadingSender : setLoadingReceiver;
+                      isLoading(true);
                       await deleteParty(selectedParty.id);
-                      setData(prev => prev.filter(p => p.id !== selectedParty.id));
+                      
+                      // Remove from both data sources
+                      setSenderData(prev => prev.filter(p => p.id !== selectedParty.id));
+                      setReceiverData(prev => prev.filter(p => p.id !== selectedParty.id));
+                      
+                      // Update filtered data
                       setFilteredData(prev => prev.filter(p => p.id !== selectedParty.id));
                   } catch(e) {
                       Alert.alert("Error", "Failed to delete party");
                   } finally {
-                      setLoading(false);
+                      const isLoading = activeTab === 'sender' ? setLoadingSender : setLoadingReceiver;
+                      isLoading(false);
                   }
               } 
             }
@@ -95,31 +141,36 @@ export default function PartiesScreen() {
   };
 
   const renderItem = ({ item }) => {
-    const contact = item.phone || item.mobile || item.contact_number;
-    const location = item.address || item.city || item.location;
+    const phone = item.phone || item.mobile || item.contact_number || '';
+    const whatsapp = item.whatsapp || item.whatsapp_number || item.mobile || '';
+    const location = item.address || item.city || item.location || '';
 
     return (
       <View style={styles.partyItem}>
-        {/* Visual indicator bar */}
-        <View style={[styles.roleIndicator, { backgroundColor: activeTab === 'sender' ? colors.primary : '#10B981' }]} />
+        <View style={styles.cardLeftBorder} />
         
         <View style={styles.itemMainContent}>
             <View style={styles.itemTopRow}>
                 <Text style={styles.partyName} numberOfLines={1}>{item.name}</Text>
                 <TouchableOpacity onPress={() => { setSelectedParty(item); setMenuVisible(true); }}>
-                    <MaterialCommunityIcons name="dots-horizontal" size={24} color="#94A3B8" />
+                    <MaterialCommunityIcons name="dots-vertical" size={24} color="#64748B" />
                 </TouchableOpacity>
             </View>
 
             <View style={styles.itemMetadataRow}>
-                <View style={styles.metaPill}>
-                    <MaterialCommunityIcons name="phone-outline" size={14} color="#64748B" />
-                    <Text style={styles.metaText}>{contact || 'No Contact'}</Text>
+                <View style={styles.metaPillLine}>
+                    <MaterialCommunityIcons name="phone" size={16} color="#64748B" />
+                    <Text style={styles.metaTextNumber}>{phone || 'N/A'}</Text>
                 </View>
-                <View style={[styles.metaPill, { flex: 1 }]}>
-                    <MaterialCommunityIcons name="map-marker-outline" size={14} color="#64748B" />
-                    <Text style={styles.metaText} numberOfLines={1}>{location || 'Global Address'}</Text>
+                <View style={styles.metaPillLine}>
+                    <MaterialCommunityIcons name="message" size={16} color="#E53935" />
+                    <Text style={styles.metaTextNumber}>{whatsapp || 'N/A'}</Text>
                 </View>
+            </View>
+
+            <View style={styles.locationRow}>
+                <MaterialCommunityIcons name="map-marker" size={16} color="#64748B" />
+                <Text style={styles.locationText} numberOfLines={1}>{location || 'N/A'}</Text>
             </View>
         </View>
       </View>
@@ -143,22 +194,22 @@ export default function PartiesScreen() {
 
         <View style={styles.tabBar}>
             <TouchableOpacity 
-            style={[styles.tabButton, activeTab === 'sender' && styles.tabButtonActive]} 
+            style={[styles.tabButton, activeTab === 'sender' && styles.tabButtonSenderActive]} 
             onPress={() => setActiveTab('sender')}
             >
-            <Text style={[styles.tabLabel, activeTab === 'sender' && styles.tabLabelActive]}>SENDERS</Text>
+            <Text style={[styles.tabLabel, activeTab === 'sender' && styles.tabLabelSenderActive]}>Senders</Text>
             </TouchableOpacity>
             <TouchableOpacity 
-            style={[styles.tabButton, activeTab === 'receiver' && styles.tabButtonActive]} 
+            style={[styles.tabButton, activeTab === 'receiver' && styles.tabButtonReceiverActive]} 
             onPress={() => setActiveTab('receiver')}
             >
-            <Text style={[styles.tabLabel, activeTab === 'receiver' && styles.tabLabelActive]}>RECEIVERS</Text>
+            <Text style={[styles.tabLabel, activeTab === 'receiver' && styles.tabLabelReceiverActive]}>Receivers</Text>
             </TouchableOpacity>
         </View>
       </View>
 
       {/* 2. List Body */}
-      {loading && !searchQuery ? (
+      {isCurrentLoading() && !searchQuery ? (
         <View style={styles.centerLoading}>
             <ActivityIndicator size="small" color={colors.primary} />
         </View>
@@ -169,7 +220,7 @@ export default function PartiesScreen() {
           renderItem={renderItem}
           contentContainerStyle={styles.listInside}
           showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={loading} onRefresh={fetchData} tintColor={colors.primary} />}
+          refreshControl={<RefreshControl refreshing={isCurrentLoading()} onRefresh={() => { fetchSenderParties(); fetchReceiverParties(); }} tintColor={colors.primary} />}
           ListEmptyComponent={
             <View style={styles.emptyState}>
               <MaterialCommunityIcons name="account-off-outline" size={48} color="#E2E8F0" />
@@ -177,6 +228,7 @@ export default function PartiesScreen() {
               <Text style={styles.emptySubtitle}>Try adjusting your search or category</Text>
             </View>
           }
+          scrollIndicatorInsets={{ right: 1 }}
         />
       )}
 
@@ -214,13 +266,13 @@ export default function PartiesScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F9F9F9', paddingHorizontal: 20 },
+  container: { flex: 1, backgroundColor: '#F9F9F9', paddingHorizontal: 0 },
   
   // Header Section
   topSection: { 
     paddingHorizontal: 20, 
-    paddingTop: 10, 
-    paddingBottom: 15, 
+    paddingTop: 15, 
+    paddingBottom: 20, 
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#F1F5F9'
@@ -241,41 +293,48 @@ const styles = StyleSheet.create({
   tabBar: { 
     flexDirection: 'row', 
     marginTop: 15, 
-    backgroundColor: '#F1F5F9', 
-    borderRadius: 10, 
-    padding: 4 
+    gap: 10
   },
-  tabButton: { flex: 1, paddingVertical: 8, alignItems: 'center', borderRadius: 8 },
-  tabButtonActive: { 
-    backgroundColor: '#FFFFFF', 
-    shadowColor: '#000', 
-    shadowOpacity: 0.05, 
-    shadowRadius: 5, 
-    elevation: 2 
+  tabButton: { 
+    flex: 1, 
+    paddingVertical: 12, 
+    alignItems: 'center', 
+    borderRadius: 10,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E2E8F0'
   },
-  tabLabel: { fontSize: 11, fontWeight: '800', color: '#94A3B8', letterSpacing: 1, fontFamily: 'InstrumentSans-Regular' },
-  tabLabelActive: { color: colors.primary, fontFamily: 'InstrumentSans-Regular' },
+  tabButtonSenderActive: { 
+    backgroundColor: '#C7245C',
+    borderColor: '#C7245C'
+  },
+  tabButtonReceiverActive: { 
+    backgroundColor: '#5B6EF5',
+    borderColor: '#5B6EF5'
+  },
+  tabLabel: { fontSize: 14, fontWeight: '700', color: '#64748B', fontFamily: 'InstrumentSans-Regular' },
+  tabLabelSenderActive: { color: '#FFFFFF', fontFamily: 'InstrumentSans-Regular' },
+  tabLabelReceiverActive: { color: '#FFFFFF', fontFamily: 'InstrumentSans-Regular' },
 
   // List Items
-  listInside: { padding: 20 },
+  listInside: { padding: 20, paddingTop: 15 },
   partyItem: { 
     flexDirection: 'row', 
     backgroundColor: '#FFFFFF', 
-    marginBottom: 16, 
-    borderRadius: 12, 
-    borderWidth: 1, 
-    borderColor: '#F1F5F9',
-    overflow: 'hidden',
-    height: 85
+    marginBottom: 12, 
+    borderRadius: 10,
+    overflow: 'hidden'
   },
-  roleIndicator: { width: 5, height: '100%' },
-  itemMainContent: { flex: 1, padding: 14, justifyContent: 'center' },
-  itemTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  partyName: { fontSize: 16, fontWeight: '700', color: '#0F172A', flex: 1, marginRight: 10, fontFamily: 'InstrumentSans-Regular' },
+  cardLeftBorder: { width: 4, backgroundColor: '#E53935' },
+  itemMainContent: { flex: 1, padding: 16, justifyContent: 'center' },
+  itemTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  partyName: { fontSize: 17, fontWeight: '600', color: '#1e1e1e', flex: 1, marginRight: 10, fontFamily: 'InstrumentSans-Regular' },
   
-  itemMetadataRow: { flexDirection: 'row', marginTop: 10, alignItems: 'center' },
-  metaPill: { flexDirection: 'row', alignItems: 'center', marginRight: 15 },
-  metaText: { fontSize: 12, color: '#64748B', fontWeight: '600', marginLeft: 4, fontFamily: 'InstrumentSans-Regular' },
+  itemMetadataRow: { flexDirection: 'row', gap: 12, marginBottom: 8, alignItems: 'center' },
+  metaPillLine: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  metaTextNumber: { fontSize: 13, color: '#64748B', fontWeight: '500', fontFamily: 'InstrumentSans-Regular' },
+  locationRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  locationText: { fontSize: 13, color: '#64748B', fontWeight: '500', fontFamily: 'InstrumentSans-Regular', flex: 1 },
 
   centerLoading: { marginTop: 40, alignItems: 'center' },
   emptyState: { alignItems: 'center', marginTop: 100 },
