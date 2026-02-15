@@ -67,9 +67,11 @@ export default function Step4Items({ data, update }) {
                     <MaterialCommunityIcons name="package-variant" size={24} color={colors.secondary} />
                     <Text style={styles.boxTitle}> Box #{boxIndex + 1}</Text>
                 </View>
-                <TouchableOpacity onPress={() => removeBox(boxIndex)}>
-                    <MaterialCommunityIcons name="trash-can-outline" size={22} color="red" />
-                </TouchableOpacity>
+                {data.boxes.length > 1 && (
+                    <TouchableOpacity onPress={() => removeBox(boxIndex)}>
+                        <MaterialCommunityIcons name="trash-can-outline" size={22} color="red" />
+                    </TouchableOpacity>
+                )}
             </View>
 
             {/* Box Weight Input */}

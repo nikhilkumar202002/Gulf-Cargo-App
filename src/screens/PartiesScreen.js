@@ -87,11 +87,6 @@ export default function PartiesScreen() {
   }, [activeTab, senderData, receiverData]);
 
   useEffect(() => {
-    fetchSenderParties();
-    fetchReceiverParties();
-  }, []);
-
-  useEffect(() => {
     if (isFocused) {
       fetchSenderParties();
       fetchReceiverParties();

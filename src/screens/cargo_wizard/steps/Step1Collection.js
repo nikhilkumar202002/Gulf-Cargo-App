@@ -12,7 +12,16 @@ export default function Step1Collection({ data, update }) {
   useEffect(() => { if (data.branch_id) loadRoles(); }, [data.branch_id]);
 
   const loadRoles = async () => {
-    // ... Keep existing load logic ...
+    setLoading(true);
+    try {
+      const response = await getActiveCollectedBy();
+      const list = response?.data?.data || response?.data || [];
+      setRolesList(list);
+    } catch (error) {
+      console.error("Error fetching collectors:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

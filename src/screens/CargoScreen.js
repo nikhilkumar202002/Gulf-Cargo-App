@@ -49,7 +49,7 @@ export default function CargoScreen() {
     quantity_discount: 0, unit_rate_discount: 0, amount_discount: 0,
     quantity_other_charges: 0, unit_rate_other_charges: 0, amount_other_charges: 0,
     
-    boxes: [], no_of_pieces: 0, sender: null, receiver: null, collected_by: null 
+    boxes: [{ weight: '', items: [{ name: '', qty: '1', weight: '' }] }], no_of_pieces: 0, sender: null, receiver: null, collected_by: null 
   });
 
   const [formData, setFormData] = useState(getInitialState());
@@ -116,15 +116,20 @@ export default function CargoScreen() {
         
         {/* Styled Footer matching UI exactly */}
         <View style={styles.footer}>
-          <TouchableOpacity 
-            style={[styles.btn, styles.backBtn, currentStep === 1 && { opacity: 0 }]} 
-            onPress={() => currentStep > 1 && setCurrentStep(currentStep - 1)}
-            disabled={currentStep === 1}
-          >
-            <Text style={styles.backBtnText}>Back</Text>
-          </TouchableOpacity>
+          {currentStep > 1 && (
+            <TouchableOpacity 
+              style={[styles.btn, styles.backBtn]} 
+              onPress={() => setCurrentStep(currentStep - 1)}
+            >
+              <Text style={styles.backBtnText}>Back</Text>
+            </TouchableOpacity>
+          )}
           
-          <TouchableOpacity style={[styles.btn, styles.nextBtn]} onPress={handleNext} disabled={loading}>
+          <TouchableOpacity 
+            style={[styles.btn, styles.nextBtn, currentStep === 1 && { flex: 1 }]} 
+            onPress={handleNext} 
+            disabled={loading}
+          >
             {loading ? <ActivityIndicator color="#fff"/> : <Text style={styles.nextBtnText}>{currentStep === totalSteps ? 'Submit' : 'Next Step'}</Text>}
           </TouchableOpacity>
         </View>
@@ -148,10 +153,10 @@ const styles = StyleSheet.create({
   progressBarFill: { height: '100%', backgroundColor: '#ed2624' },
   
   contentContainer: { flex: 1, paddingHorizontal: 20 },
-  footer: { flexDirection: 'row', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 24, backgroundColor: '#F9FAFB', justifyContent: 'space-between' },
+  footer: { flexDirection: 'row', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 130, backgroundColor: '#F9FAFB' },
   btn: { height: 50, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
-  backBtn: { flex: 0.35, backgroundColor: '#fff', borderWidth: 1, borderColor: '#D1D5DB' },
+  backBtn: { flex: 0.3, backgroundColor: '#fff', borderWidth: 1, borderColor: '#D1D5DB', marginRight: 10 },
   backBtnText: { color: '#374151', fontSize: 16, fontWeight: '500', fontFamily: 'InstrumentSans-Regular' },
-  nextBtn: { flex: 0.6, marginLeft: 12, backgroundColor: '#34339A' }, // Deep Indigo from UI
+  nextBtn: { flex: 0.7, backgroundColor: '#34339A' }, // Deep Indigo from UI
   nextBtnText: { color: '#fff', fontSize: 16, fontWeight: '500', fontFamily: 'InstrumentSans-Regular' }
 });
