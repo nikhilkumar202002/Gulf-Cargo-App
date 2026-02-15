@@ -75,8 +75,8 @@ export default function Step1Collection({ data, update }) {
 
 const styles = StyleSheet.create({
     container: { flex: 1, paddingTop: 8 },
-    sectionHeader: { fontSize: 16, color: '#111827', marginBottom: 16, fontWeight: '500', fontFamily: 'InstrumentSans-Regular' },
-    questionTitle: { fontSize: 16, color: '#283891', marginBottom: 16, marginTop: 8, fontWeight: '500', fontFamily: 'InstrumentSans-Regular' },
+    sectionHeader: { fontSize: 18, color: '#111827', marginBottom: 16, fontWeight: 'bold', fontFamily: 'InstrumentSans-Bold' },
+    questionTitle: { fontSize: 16, color: '#283891', marginBottom: 16, marginTop: 8, fontWeight: 'bold', fontFamily: 'InstrumentSans-Bold' },
     infoCard: { backgroundColor: '#fff', borderRadius: 16, paddingVertical: 16, paddingHorizontal: 20, marginBottom: 24, elevation: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4 },
     infoRow: { flexDirection: 'row', alignItems: 'center' },
     iconBox: { width: 44, height: 44, borderRadius: 10, justifyContent: 'center', alignItems: 'center', marginRight: 16 },

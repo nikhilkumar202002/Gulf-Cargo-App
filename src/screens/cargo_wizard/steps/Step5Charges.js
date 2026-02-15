@@ -1,41 +1,29 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, ScrollView } from 'react-native';
-import colors from '../../../styles/colors'; // Ensure this path is correct
+import { View, Text, StyleSheet, TextInput, ScrollView, Platform } from 'react-native';
+import colors from '../../../styles/colors';
 
 export default function Step5Charges({ data, update }) {
 
   // Configuration of all Charge Rows
   const chargeRows = [
-    // Total Weight is Read-Only (calculated from boxes)
     { label: 'Total Weight', key: 'total_weight', readOnlyQty: true }, 
-    
-    // Other charges are editable
     { label: 'Duty', key: 'duty' },
-    { label: 'Packing charge', key: 'packing_charge' },
-    { label: 'Additional Packing charge', key: 'additional_packing_charge' },
+    { label: 'Packing Charge', key: 'packing_charge' },
+    { label: 'Additional Packing Charges', key: 'additional_packing_charge' },
     { label: 'Insurance', key: 'insurance' },
     { label: 'AWB Fee', key: 'awb_fee' },
     { label: 'VAT Amount', key: 'vat' },
-    { label: 'Volume weight', key: 'volume_weight' },
-    { label: 'Other charges', key: 'other_charges' },
-    
-    // Discount is a deduction
+    { label: 'Volume Weight', key: 'volume_weight' },
+    { label: 'Other Charges', key: 'other_charges' },
     { label: 'Discount', key: 'discount', isDeduction: true },
   ];
 
   // --- 1. AUTO-CALCULATE WEIGHT & BOX COUNT ---
-  // This runs immediately when the screen loads or when 'data.boxes' changes
   useEffect(() => {
     const boxes = data.boxes || []; 
-    
-    // A. Calculate Box Count
     const boxCount = boxes.length;
-
-    // B. Calculate Total Weight (Sum of all box weights)
-    // Assumes your box object has a 'weight' property. Change 'box.weight' if needed.
     const totalWeight = boxes.reduce((sum, box) => sum + (parseFloat(box.weight) || 0), 0);
 
-    // C. Update State (Only if values differ to prevent infinite loops)
     if (String(data.no_of_boxes) !== String(boxCount)) {
         update('no_of_boxes', String(boxCount));
     }
@@ -43,14 +31,12 @@ export default function Step5Charges({ data, update }) {
     if (parseFloat(data.quantity_total_weight || 0) !== totalWeight) {
         update('quantity_total_weight', String(totalWeight));
     }
-    
   }, [data.boxes]); 
 
-  // --- 2. CALCULATION ENGINE (AMOUNTS & TOTALS) ---
+  // --- 2. CALCULATION ENGINE ---
   useEffect(() => {
     calculateAll();
   }, [
-    // Recalculate if any Quantity or Rate changes
     ...chargeRows.map(r => data[`quantity_${r.key}`]),
     ...chargeRows.map(r => data[`rate_${r.key}`]),
   ]);
@@ -59,44 +45,34 @@ export default function Step5Charges({ data, update }) {
     let grandTotal = 0;
 
     chargeRows.forEach(row => {
-      // Get values (default to 0 if empty)
       const qty = parseFloat(data[`quantity_${row.key}`]) || 0;
       const rate = parseFloat(data[`rate_${row.key}`]) || 0;
-      
-      // Calculate Row Amount
       const amount = qty * rate;
 
-      // Update Row Amount in State if different
       const currentAmount = parseFloat(data[`amount_${row.key}`]) || 0;
       if (currentAmount !== amount) {
          update(`amount_${row.key}`, amount.toFixed(2));
       }
 
-      // Add or Deduct from Grand Total
-      if (row.isDeduction) {
-        grandTotal -= amount;
-      } else {
-        grandTotal += amount;
-      }
+      if (row.isDeduction) grandTotal -= amount;
+      else grandTotal += amount;
     });
 
-    // Update Net Total
     const currentTotal = parseFloat(data.net_total) || 0;
-    // We compare fixed strings to avoid floating point precision issues causing loops
     if (currentTotal.toFixed(2) !== grandTotal.toFixed(2)) {
       update('net_total', grandTotal.toFixed(2));
       update('total_amount', grandTotal.toFixed(2));
     }
   };
 
-  // --- RENDER COMPONENTS ---
+  // --- RENDER HELPERS ---
 
   const renderHeader = () => (
     <View style={styles.headerRow}>
-      <Text style={[styles.headerText, { flex: 2 }]}>Charges</Text>
-      <Text style={[styles.headerText, styles.centerText]}>Quantity</Text>
-      <Text style={[styles.headerText, styles.centerText]}>Unit Rate</Text>
-      <Text style={[styles.headerText, styles.rightText]}>Amount</Text>
+      <Text style={[styles.headerText, styles.colCharges]}>Charges</Text>
+      <Text style={[styles.headerText, styles.colQty, {textAlign: 'center'}]}>Qty</Text>
+      <Text style={[styles.headerText, styles.colRate, {textAlign: 'center'}]}>Unit Rate</Text>
+      <Text style={[styles.headerText, styles.colAmount, {textAlign: 'right'}]}>Amount</Text>
     </View>
   );
 
@@ -106,33 +82,37 @@ export default function Step5Charges({ data, update }) {
     const amountKey = `amount_${item.key}`;
 
     return (
-      <View key={item.key} style={styles.dataRow}>
-        <Text style={styles.rowLabel}>{item.label}</Text>
+      <View key={item.key} style={styles.rowContainer}>
+        {/* Label */}
+        <Text style={styles.rowLabel} numberOfLines={2}>{item.label}</Text>
 
         {/* Quantity Input */}
-        {/* If readOnlyQty is true (Total Weight), input is disabled and greyed out */}
-        <TextInput 
-            style={[styles.input, item.readOnlyQty && styles.readOnlyInput]}
-            placeholder="0"
-            keyboardType="numeric"
-            value={String(data[qtyKey] || '')}
-            onChangeText={(t) => update(qtyKey, t)}
-            editable={!item.readOnlyQty} 
-        />
+        <View style={styles.colQty}>
+            <TextInput 
+                style={[styles.input, item.readOnlyQty && styles.readOnlyInput]}
+                placeholder=""
+                keyboardType="numeric"
+                value={String(data[qtyKey] || '')}
+                onChangeText={(t) => update(qtyKey, t)}
+                editable={!item.readOnlyQty} 
+            />
+        </View>
 
         {/* Unit Rate Input */}
-        <TextInput 
-            style={styles.input}
-            placeholder="0.00"
-            keyboardType="numeric"
-            value={String(data[rateKey] || '')}
-            onChangeText={(t) => update(rateKey, t)}
-        />
+        <View style={styles.colRate}>
+             <TextInput 
+                style={styles.input}
+                placeholder=""
+                keyboardType="numeric"
+                value={String(data[rateKey] || '')}
+                onChangeText={(t) => update(rateKey, t)}
+            />
+        </View>
 
-        {/* Calculated Amount (Always Read-Only) */}
-        <View style={styles.amountBox}>
+        {/* Calculated Amount */}
+        <View style={styles.colAmount}>
              <Text style={styles.amountText}>
-                {data[amountKey] || '0.00'}
+                {data[amountKey] ? parseFloat(data[amountKey]).toFixed(2) : '0.00'}
              </Text>
         </View>
       </View>
@@ -140,36 +120,37 @@ export default function Step5Charges({ data, update }) {
   };
 
   return (
-    <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
-      <Text style={styles.title}>Charges & Fees</Text>
+    <ScrollView style={styles.container} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+      <Text style={styles.pageTitle}>Charges & Fees</Text>
 
-      <View style={styles.tableCard}>
+      {/* Main Table Card */}
+      <View style={styles.card}>
         {renderHeader()}
-        {chargeRows.map(row => renderRow(row))}
+        <View style={styles.divider} />
+        <View style={{paddingVertical: 10}}>
+             {chargeRows.map(row => renderRow(row))}
+        </View>
       </View>
 
-      {/* Footer Section */}
-      <View style={styles.footerSection}>
+      {/* Footer Summary Card */}
+      <View style={styles.footerCard}>
         
-        {/* No. of Boxes (Read Only - Calculated from Step 4) */}
+        {/* No of Boxes Row */}
         <View style={styles.footerRow}>
-             <Text style={styles.footerLabel}>No. of Boxes</Text>
-             <TextInput 
-                style={[styles.input, { width: 100 }, styles.readOnlyInput]}
-                placeholder="0"
-                value={String(data.no_of_boxes || '0')}
-                editable={false} 
-             />
-        </View>
-
-        {/* Grand Total */}
-        <View style={[styles.footerRow, { marginTop: 15 }]}>
-             <Text style={styles.totalLabel}>Total Amount</Text>
-             <View style={styles.totalBox}>
-                <Text style={styles.totalValue}>{data.net_total || '0.00'} SAR</Text>
+             <Text style={styles.footerLabel}>No. Of Boxes</Text>
+             <View style={styles.boxCountContainer}>
+                 <Text style={styles.boxCountText}>{data.no_of_boxes || '0'}</Text>
              </View>
         </View>
 
+        {/* Total Amount Row */}
+        <View style={[styles.footerRow, {marginTop: 15}]}>
+             <Text style={styles.totalLabel}>Total Amount</Text>
+             <View style={{flexDirection: 'row', alignItems: 'baseline'}}>
+                <Text style={styles.totalValue}>{data.net_total || '0.00'}</Text>
+                <Text style={styles.currency}> SAR</Text>
+             </View>
+        </View>
       </View>
       
       <View style={{height: 40}} />
@@ -178,39 +159,125 @@ export default function Step5Charges({ data, update }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, paddingHorizontal: 4 },
-  title: { fontSize: 18, fontWeight: 'bold', color: colors.secondary, marginBottom: 15, marginTop: 10 },
+  container: { flex: 1 },
+  pageTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 12,
+    marginTop: 8,
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+  },
   
-  // Table Styling
-  tableCard: { backgroundColor: '#fff', borderRadius: 8, borderWidth: 1, borderColor: '#e5e7eb', paddingVertical: 10, overflow: 'hidden' },
-  headerRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#eee', paddingHorizontal: 10, paddingBottom: 10, marginBottom: 5 },
-  headerText: { flex: 1, fontSize: 12, color: '#666', fontWeight: '600' },
-  centerText: { textAlign: 'center' },
-  rightText: { textAlign: 'right' },
+  // Card
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 6,
+    marginBottom: 16,
+
+  },
   
-  // Row Styling
-  dataRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, marginBottom: 12 },
-  rowLabel: { flex: 2, fontSize: 13, color: '#374151', fontWeight: '500' },
+  // Header
+  headerRow: { flexDirection: 'row', marginBottom: 12, alignItems: 'center' },
+  headerText: { fontSize: 13, fontWeight: '600', color: '#111827' },
+  divider: { height: 1, backgroundColor: '#F3F4F6', marginHorizontal: -16 },
+
+  // Columns Widths (Flex based)
+  colCharges: { flex: 2.5, paddingRight: 8 }, // Label takes most space
+  colQty: { width: 50, alignItems: 'center' },
+  colRate: { width: 70, alignItems: 'center', marginLeft: 8 },
+  colAmount: { width: 60, alignItems: 'flex-end', marginLeft: 4 },
+
+  // Rows
+  rowContainer: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    marginBottom: 14,
+    height: 38 
+  },
+  rowLabel: { 
+    flex: 2.5, 
+    fontSize: 13, 
+    color: '#111827', 
+    paddingRight: 8 
+  },
   
-  // Input Styling
-  input: { 
-    flex: 1, borderWidth: 1, borderColor: '#d1d5db', borderRadius: 6, 
-    paddingVertical: 6, paddingHorizontal: 8, fontSize: 13, textAlign: 'center', 
-    marginHorizontal: 4, backgroundColor: '#fff', height: 38, color: '#000'
+  // Inputs
+  input: {
+    width: '100%',
+    height: 38,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 6,
+    textAlign: 'center',
+    fontSize: 13,
+    color: '#111827',
+    backgroundColor: '#fff',
+    padding: 0
   },
   readOnlyInput: {
-    backgroundColor: '#f3f4f6', // Light Grey background for read-only
-    color: '#6b7280', 
-    borderColor: '#e5e7eb'
+    backgroundColor: '#E5E7EB', // Matches the gray background in UI for Total Weight
+    color: '#111827',
+    borderColor: '#E5E7EB'
   },
 
-  // Amount & Footer
-  amountBox: { flex: 1, alignItems: 'flex-end', justifyContent: 'center', paddingRight: 4 },
-  amountText: { fontSize: 13, fontWeight: '600', color: '#111827' },
-  footerSection: { marginTop: 20, backgroundColor: '#f3f4f6', borderRadius: 8, padding: 15 },
-  footerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  footerLabel: { fontSize: 14, fontWeight: '600', color: '#4b5563' },
-  totalLabel: { fontSize: 16, fontWeight: 'bold', color: '#111827' },
-  totalBox: { backgroundColor: '#fff', paddingHorizontal: 15, paddingVertical: 8, borderRadius: 6, borderWidth: 1, borderColor: '#d1d5db', minWidth: 120, alignItems: 'flex-end' },
-  totalValue: { fontSize: 16, fontWeight: 'bold', color: colors.primary }
+  // Amount Text
+  amountText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#EF4444', // Red color matching UI
+  },
+
+  // Footer Card
+  footerCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 20,
+    
+  },
+  footerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center'
+  },
+  footerLabel: {
+    fontSize: 14,
+    color: '#111827',
+    fontWeight: '500'
+  },
+  
+  // Box Count Box
+  boxCountContainer: {
+    backgroundColor: '#E5E7EB',
+    borderRadius: 6,
+    width: 60,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  boxCountText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#111827'
+  },
+
+  // Total Amount
+  totalLabel: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#111827'
+  },
+  totalValue: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#EF4444' // Red
+  },
+  currency: {
+    fontSize: 13,
+    color: '#9CA3AF', // Gray
+    fontWeight: '500'
+  }
 });

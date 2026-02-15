@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Alert 
+  View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Platform 
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 // Ensure these service paths are correct for your project
@@ -64,97 +64,102 @@ export default function Step3Shipment({ data, update }) {
 
     } catch (e) {
       console.error("Error loading shipment data:", e);
-      // Optional: Alert user if network fails
-      // Alert.alert("Error", "Could not load shipment options.");
     }
   };
 
-  /**
-   * Helper to find an item in a list loosely (ignores case/spacing)
-   * and update the parent state.
-   */
   const findAndSelect = (list, targetName, idKey, nameKey) => {
     if (!list || list.length === 0) return;
-
-    // Normalize strings for comparison (remove spaces, uppercase)
-    // "IND SEA" becomes "INDSEA"
     const normalize = (str) => str ? str.toString().replace(/\s+/g, '').toUpperCase() : '';
     const target = normalize(targetName);
-
     const foundItem = list.find(item => normalize(item.name) === target);
 
     if (foundItem) {
-      // We use a small timeout to ensure React processes updates sequentially
       setTimeout(() => {
         update(idKey, foundItem.id);
         update(nameKey, foundItem.name);
       }, 50); 
-    } else {
-      console.log(`[Warning] Default '${targetName}' not found in API list.`);
     }
   };
 
   // --- RENDER HELPERS ---
-  const renderLabel = (text) => (
-    <Text style={styles.label}>{text}</Text>
-  );
 
-  const renderSelectBox = (value, onPress) => (
-    <TouchableOpacity style={styles.selectBox} onPress={onPress}>
-      <Text style={[styles.selectText, !value && styles.placeholderText]}>
-        {value || 'Select Option'}
-      </Text>
-      <MaterialCommunityIcons name="chevron-down" size={24} color="#666" />
+  // Reusable Card Component for Dropdowns to match the UI
+  const SelectionCard = ({ label, value, placeholder, icon, onPress }) => (
+    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.7}>
+      <View style={styles.iconContainer}>
+        <MaterialCommunityIcons name={icon} size={24} color="#5B5FC7" />
+      </View>
+      <View style={styles.textContainer}>
+        <Text style={styles.cardLabel}>{label}</Text>
+        <Text style={[styles.cardValue, !value && styles.placeholderText]}>
+          {value || placeholder}
+        </Text>
+      </View>
+      <MaterialCommunityIcons name="chevron-down" size={24} color="#9CA3AF" />
     </TouchableOpacity>
   );
 
   return (
-    <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
-      <Text style={styles.headerTitle}>Shipment Details</Text>
+    <ScrollView style={styles.container} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+      
+      <Text style={styles.sectionHeader}>Shipment Details</Text>
 
       {/* 1. SHIPMENT METHOD */}
-      <View style={styles.inputGroup}>
-        {renderLabel("SHIPMENT METHOD")}
-        {renderSelectBox(data.shipping_method_name, () => setShowShipMethod(true))}
-      </View>
+      <SelectionCard 
+        label="Shipment Method"
+        value={data.shipping_method_name}
+        placeholder="Choose the Shipment Method"
+        icon="package-variant-closed"
+        onPress={() => setShowShipMethod(true)}
+      />
 
       {/* 2. DELIVERY TYPE */}
-      <View style={styles.inputGroup}>
-        {renderLabel("DELIVERY TYPE")}
-        {renderSelectBox(data.delivery_type_name, () => setShowDelType(true))}
-      </View>
+      <SelectionCard 
+        label="Delivery Type"
+        value={data.delivery_type_name}
+        placeholder="Choose the Delivery Type"
+        icon="truck-delivery-outline"
+        onPress={() => setShowDelType(true)}
+      />
 
       {/* 3. PAYMENT METHOD */}
-      <View style={styles.inputGroup}>
-        {renderLabel("PAYMENT METHOD")}
-        {renderSelectBox(data.payment_method_name, () => setShowPayMethod(true))}
-      </View>
+      <SelectionCard 
+        label="Payment Method"
+        value={data.payment_method_name}
+        placeholder="Choose the Payment Method"
+        icon="wallet-outline"
+        onPress={() => setShowPayMethod(true)}
+      />
+
+      <View style={styles.spacer} />
+
+      <Text style={styles.sectionHeader}>LRL Tracking Code & Special Marks (Optional)</Text>
 
       {/* 4. TRACKING CODE */}
-      <View style={styles.inputGroup}>
-        {renderLabel("LRL TRACKING CODE (OPTIONAL)")}
+      <View style={styles.inputCard}>
         <TextInput 
           style={styles.textInput} 
           placeholder="Enter Tracking Code"
-          placeholderTextColor="#999"
+          placeholderTextColor="#9CA3AF"
           value={data.lrl_tracking_code}
           onChangeText={(t) => update('lrl_tracking_code', t)}
         />
       </View>
 
       {/* 5. SPECIAL REMARKS */}
-      <View style={styles.inputGroup}>
-        {renderLabel("SPECIAL REMARKS")}
+      <View style={[styles.inputCard, styles.textAreaCard]}>
         <TextInput 
           style={[styles.textInput, styles.textArea]} 
-          placeholder="Any special instructions..."
-          placeholderTextColor="#999"
+          placeholder="Any Special Instruction"
+          placeholderTextColor="#9CA3AF"
           multiline
           textAlignVertical="top"
           value={data.special_remarks}
           onChangeText={(t) => update('special_remarks', t)}
         />
       </View>
+
+      <View style={{height: 40}} />
 
       {/* --- BOTTOM SHEETS --- */}
       <BottomSheetSelect 
@@ -194,60 +199,90 @@ export default function Step3Shipment({ data, update }) {
   );
 }
 
-// --- STYLES TO MATCH SCREENSHOT ---
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: 10,
-    backgroundColor: '#fff', // Or your background color
+    // Typically the parent wizard has padding, but if not:
+    // paddingHorizontal: 20, 
   },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1e3a8a', // Dark Blue like screenshot
-    marginBottom: 20,
+  sectionHeader: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 12,
+    marginTop: 8,
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
   },
-  inputGroup: {
-    marginBottom: 16,
+  spacer: {
+    height: 16,
   },
-  label: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#6b7280', // Cool Gray
-    marginBottom: 8,
-    textTransform: 'uppercase', // Matches screenshot labels
-    letterSpacing: 0.5,
-  },
-  selectBox: {
+  // Card Styles
+  card: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+    // Minimal shadow/border to match image
     borderWidth: 1,
-    borderColor: '#e5e7eb', // Light border
-    borderRadius: 8,
-    backgroundColor: '#fff',
-    paddingHorizontal: 12,
-    height: 50, // Fixed height for consistency
+    borderColor: '#F3F4F6',
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
   },
-  selectText: {
+  iconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 10,
+    backgroundColor: '#EEF2FF', // Light Indigo background
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  textContainer: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  cardLabel: {
     fontSize: 14,
-    color: '#111827', // Dark text
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 2,
+  },
+  cardValue: {
+    fontSize: 12,
+    color: '#6B7280', // Gray-500
   },
   placeholderText: {
-    color: '#9ca3af',
+    color: '#9CA3AF', // Gray-400
+  },
+  
+  // Input Styles
+  inputCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: '#F3F4F6', // Very subtle border
+    marginBottom: 12,
+    justifyContent: 'center',
+    height: 56,
   },
   textInput: {
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    borderRadius: 8,
-    backgroundColor: '#fff',
-    paddingHorizontal: 12,
     fontSize: 14,
     color: '#111827',
-    height: 50,
+    height: '100%',
+  },
+  textAreaCard: {
+    height: 140,
+    paddingVertical: 16,
+    justifyContent: 'flex-start',
   },
   textArea: {
-    height: 100,
-    paddingTop: 12, // For multiline top alignment
+    height: '100%',
+    textAlignVertical: 'top',
   },
 });

@@ -53,10 +53,10 @@ export default function Step4Items({ data, update }) {
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
         <Text style={styles.title}>Boxes & Items</Text>
-        <Text style={styles.summaryText}>{data.boxes.length} Boxes • {getTotalItems()} Items</Text>
+        <Text style={styles.summaryText}>{data.boxes.length} Boxes | {getTotalItems()} Items</Text>
       </View>
 
       {data.boxes.map((box, boxIndex) => (
@@ -64,22 +64,26 @@ export default function Step4Items({ data, update }) {
             {/* Box Header */}
             <View style={styles.boxHeader}>
                 <View style={{flexDirection:'row', alignItems:'center'}}>
-                    <MaterialCommunityIcons name="package-variant" size={24} color={colors.secondary} />
-                    <Text style={styles.boxTitle}> Box #{boxIndex + 1}</Text>
+                    <View style={styles.boxIconContainer}>
+                         <MaterialCommunityIcons name="cube-outline" size={20} color="#283891" />
+                    </View>
+                    <Text style={styles.boxTitle}>Box {boxIndex + 1}</Text>
                 </View>
-                {data.boxes.length > 1 && (
-                    <TouchableOpacity onPress={() => removeBox(boxIndex)}>
-                        <MaterialCommunityIcons name="trash-can-outline" size={22} color="red" />
+                {data.boxes.length > 0 && (
+                    <TouchableOpacity onPress={() => removeBox(boxIndex)} style={styles.deleteBoxBtn}>
+                        <MaterialCommunityIcons name="trash-can-outline" size={18} color="#EF4444" />
                     </TouchableOpacity>
                 )}
             </View>
 
+             <View style={styles.divider} />
+
             {/* Box Weight Input */}
-            <View style={styles.rowInput}>
-                <Text style={styles.label}>Total Box Weight (kg):</Text>
+            <View style={styles.weightRow}>
+                <Text style={styles.label}>Total Box Weight (KG)</Text>
                 <TextInput 
-                    style={styles.smallInput} 
-                    placeholder="0.0" 
+                    style={styles.weightInput} 
+                    placeholder="0.00" 
                     keyboardType="numeric"
                     value={String(box.weight)}
                     onChangeText={(t) => updateBoxField(boxIndex, 'weight', t)}
@@ -91,58 +95,59 @@ export default function Step4Items({ data, update }) {
                 {box.items.map((item, itemIndex) => (
                     <View key={itemIndex} style={styles.itemRow}>
                         {/* ITEM NAME */}
-                        <View style={{flex: 1}}>
+                        <View style={{flex: 3, marginRight: 8}}>
                             <Text style={styles.itemLabel}>Item Name</Text>
                             <TextInput 
                                 style={styles.itemInput} 
-                                placeholder="e.g. Clothes" 
+                                placeholder="Dates" 
                                 value={item.name}
                                 onChangeText={(t) => updateItem(boxIndex, itemIndex, 'name', t)}
                             />
                         </View>
 
                         {/* QTY */}
-                        <View style={{width: 60, marginLeft: 10}}>
+                        <View style={{flex: 1, marginRight: 8}}>
                             <Text style={styles.itemLabel}>Qty</Text>
                             <TextInput 
-                                style={styles.itemInput} 
-                                placeholder="1" 
+                                style={[styles.itemInput, {textAlign: 'center'}]} 
+                                placeholder="0" 
                                 keyboardType="numeric" 
                                 value={String(item.qty)}
                                 onChangeText={(t) => updateItem(boxIndex, itemIndex, 'qty', t)}
                             />
                         </View>
 
-                        {/* CHANGED: PRICE -> WEIGHT */}
-                        <View style={{width: 80, marginLeft: 10}}>
-                            <Text style={styles.itemLabel}>Weight</Text>
+                        {/* WEIGHT (KG) */}
+                        <View style={{flex: 1.2}}>
+                            <Text style={styles.itemLabel}>KG</Text>
                             <TextInput 
-                                style={styles.itemInput} 
-                                placeholder="0.0" 
+                                style={[styles.itemInput, {textAlign: 'center'}]} 
+                                placeholder="0" 
                                 keyboardType="numeric" 
                                 value={String(item.weight)}
                                 onChangeText={(t) => updateItem(boxIndex, itemIndex, 'weight', t)}
                             />
                         </View>
 
-                        {/* Remove Item Button */}
-                        {box.items.length > 1 && (
-                            <TouchableOpacity onPress={() => removeItem(boxIndex, itemIndex)} style={{marginTop: 18, marginLeft: 8}}>
-                                <MaterialCommunityIcons name="close-circle" size={20} color="#999" />
+                        {/* Remove Item Button (Small X) */}
+                         {box.items.length > 1 && (
+                            <TouchableOpacity onPress={() => removeItem(boxIndex, itemIndex)} style={styles.deleteItemBtn}>
+                                <MaterialCommunityIcons name="close" size={16} color="#999" />
                             </TouchableOpacity>
                         )}
                     </View>
                 ))}
                 
                 <TouchableOpacity style={styles.addItemBtn} onPress={() => addItem(boxIndex)}>
-                    <Text style={styles.addItemText}>+ Add Another Item</Text>
+                    <MaterialCommunityIcons name="plus" size={20} color="#34339A" />
+                    <Text style={styles.addItemText}>Add Item</Text>
                 </TouchableOpacity>
             </View>
         </View>
       ))}
 
       <TouchableOpacity style={styles.addBoxBtn} onPress={addBox}>
-        <MaterialCommunityIcons name="plus-box" size={24} color="#fff" />
+        <MaterialCommunityIcons name="plus" size={24} color="#fff" />
         <Text style={styles.addBoxText}>Add New Box</Text>
       </TouchableOpacity>
 
@@ -153,26 +158,57 @@ export default function Step4Items({ data, update }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
-  title: { fontSize: 20, fontWeight: 'bold', color: colors.secondary },
-  summaryText: { color: '#666', fontWeight: '600' },
+  header: { 
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', 
+    marginBottom: 15, marginTop: 10
+  },
+  title: { fontSize: 16, fontWeight: '600', color: '#111827' },
+  summaryText: { fontSize: 13, color: '#9CA3AF' },
   
-  boxCard: { backgroundColor: '#fff', borderRadius: 12, padding: 15, marginBottom: 20, borderWidth: 1, borderColor: '#ddd', elevation: 2 },
-  boxHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 15, borderBottomWidth: 1, borderBottomColor: '#f0f0f0', paddingBottom: 10 },
-  boxTitle: { fontSize: 16, fontWeight: 'bold', color: '#333' },
+  boxCard: { 
+    backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 16, 
+   
+  },
   
-  rowInput: { flexDirection: 'row', alignItems: 'center', marginBottom: 15 },
-  label: { fontSize: 14, color: '#333', marginRight: 10 },
-  smallInput: { borderWidth: 1, borderColor: '#ccc', borderRadius: 6, padding: 8, width: 100, textAlign: 'center', fontWeight: 'bold' },
+  // Header
+  boxHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  boxIconContainer: { marginRight: 10 },
+  boxTitle: { fontSize: 15, fontWeight: '600', color: '#111827' },
+  deleteBoxBtn: { 
+    width: 32, height: 32, borderRadius: 16, backgroundColor: '#FEE2E2', 
+    justifyContent: 'center', alignItems: 'center' 
+  },
+  divider: { height: 1, backgroundColor: '#F3F4F6', marginBottom: 16 },
 
-  itemsContainer: { backgroundColor: '#f9f9f9', padding: 10, borderRadius: 8 },
-  itemRow: { flexDirection: 'row', marginBottom: 10 },
-  itemLabel: { fontSize: 10, color: '#888', marginBottom: 4, textTransform: 'uppercase' },
-  itemInput: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#e0e0e0', borderRadius: 6, padding: 8, fontSize: 14 },
-  
-  addItemBtn: { alignSelf: 'center', marginTop: 5, padding: 10 },
-  addItemText: { color: colors.primary, fontWeight: '600' },
+  // Weight Row
+  weightRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  label: { fontSize: 14, fontWeight: '600', color: '#111827' },
+  weightInput: { 
+    backgroundColor: '#F3F4F6', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, 
+    width: 100, textAlign: 'right', fontSize: 15, color: '#111827' 
+  },
 
-  addBoxBtn: { backgroundColor: colors.secondary, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', padding: 15, borderRadius: 10 },
-  addBoxText: { color: '#fff', fontWeight: 'bold', marginLeft: 8, fontSize: 16 }
+  // Items List
+  itemsContainer: { },
+  itemRow: { flexDirection: 'row', alignItems: 'flex-end', marginBottom: 12 },
+  itemLabel: { fontSize: 11, color: '#6B7280', marginBottom: 6 },
+  itemInput: { 
+    backgroundColor: '#F9FAFB', borderRadius: 8, paddingHorizontal: 12, height: 44, 
+    fontSize: 14, color: '#111827', borderWidth: 1, borderColor: '#F3F4F6'
+  },
+  deleteItemBtn: { marginLeft: 8, marginBottom: 12, padding: 4 },
+
+  // Add Item Button
+  addItemBtn: { 
+    backgroundColor: '#E0E7FF', borderRadius: 8, height: 48, 
+    flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 8 
+  },
+  addItemText: { color: '#34339A', fontWeight: '600', fontSize: 15, marginLeft: 6 },
+
+  // Add Box Button (Global)
+  addBoxBtn: { 
+    backgroundColor: '#ed2624', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', 
+    height: 54, borderRadius: 12, marginTop: 8 
+  },
+  addBoxText: { color: '#fff', fontWeight: '600', marginLeft: 8, fontSize: 16 }
 });

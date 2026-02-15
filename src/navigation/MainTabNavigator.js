@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Platform, View, StyleSheet, Animated } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import colors from '../styles/colors'; // Brand colors: primary (#ed2624) and secondary (#283891)
 import Header from '../components/Header'; 
 
@@ -15,7 +15,7 @@ import PartiesScreen from '../screens/PartiesScreen';
 const Tab = createBottomTabNavigator();
 
 // Custom component to handle the smooth spring animation
-const AnimatedTabIcon = ({ iconName, focused }) => {
+const AnimatedTabIcon = ({ iconName, focused, IconComponent = Ionicons }) => {
   const scaleValue = useRef(new Animated.Value(focused ? 1 : 0)).current;
 
   useEffect(() => {
@@ -38,8 +38,8 @@ const AnimatedTabIcon = ({ iconName, focused }) => {
           },
         ]}
       />
-      {/* Render the Ionicons */}
-      <Ionicons 
+      {/* Render the Icon */}
+      <IconComponent 
         name={iconName} 
         size={24} 
         color={focused ? "#FFFFFF" : "#1F2937"} 
@@ -62,21 +62,23 @@ export default function MainTabNavigator() {
         tabBarLabelStyle: styles.tabBarLabel,
         tabBarIcon: ({ focused }) => {
           let iconName;
+          let IconComponent = Ionicons;
           
           // Map routes to their respective Ionicons
           if (route.name === 'Home') {
             iconName = 'home-outline';
           } else if (route.name === 'Customers') {
             iconName = 'people-outline';
-          } else if (route.name === 'Cargo') {
-            iconName = 'car-outline'; 
+          } else if (route.name === 'Create Cargo') {
+            iconName = 'truck-delivery-outline'; 
+            IconComponent = MaterialCommunityIcons;
           } else if (route.name === 'History') {
             iconName = 'time-outline';
           } else if (route.name === 'Setting') {
             iconName = 'settings-outline';
           }
           
-          return <AnimatedTabIcon iconName={iconName} focused={focused} />;
+          return <AnimatedTabIcon iconName={iconName} focused={focused} IconComponent={IconComponent} />;
         },
       })}
     >
@@ -88,7 +90,7 @@ export default function MainTabNavigator() {
         options={{ title: 'Customers' }}
       />
 
-      <Tab.Screen name="Cargo" component={CargoScreen} />
+      <Tab.Screen name="Create Cargo" component={CargoScreen} />
       
       <Tab.Screen 
           name="History" 

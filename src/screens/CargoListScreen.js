@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { 
   View, Text, FlatList, StyleSheet, ActivityIndicator, 
-  TouchableOpacity, RefreshControl, TextInput, Alert, Platform, StatusBar,
+  TouchableOpacity, RefreshControl, TextInput, Platform, StatusBar,
   Modal, TouchableWithoutFeedback 
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -10,9 +10,6 @@ import { getCargoList, searchCargoByBookingNo } from '../services/cargoService';
 import { generateInvoicePDF } from '../services/pdfGenerator';
 import { useUser } from '../context/UserContext';
 import colors from '../styles/colors';
-
-// FIX: Do NOT import CargoDetailsScreen or define Stack here. 
-// Navigation happens by route name registered in your main App navigator.
 
 export default function CargoListScreen() {
   const navigation = useNavigation();
@@ -83,19 +80,6 @@ export default function CargoListScreen() {
     else { setPage(1); fetchCargos(1); }
   };
 
-  const handleViewBill = async (item) => {
-    try {
-      await generateInvoicePDF(item, userData);
-    } catch (error) {
-      Alert.alert("Error", "Could not generate invoice PDF.");
-    }
-  };
-
-  // CORRECTED NAVIGATION CALL
-  const handleViewSingle = (item) => {
-    navigation.navigate('CargoDetails', { id: item.id }); 
-  };
-
   const handleMenuAction = (action) => {
     setMenuVisible(false);
     if (!selectedCargo) return;
@@ -103,82 +87,87 @@ export default function CargoListScreen() {
     if (action === 'view') {
       navigation.navigate('CargoDetails', { id: selectedCargo.id });
     } else if (action === 'edit') {
-      navigation.navigate('Cargo', { editId: selectedCargo.id }); // Use existing Cargo tab for edit
+      navigation.navigate('Cargo', { editId: selectedCargo.id }); 
+    } else if (action === 'bill') {
+        generateInvoicePDF(selectedCargo, userData);
     }
   };
 
-  const renderCard = ({ item }) => (
-    <View style={styles.card}>
-      <View style={styles.cardTop}>
-        <View style={styles.statusRow}>
-          <Text style={styles.bookingNo}>{item.booking_no || `#${item.id}`}</Text>
-          <View style={styles.statusPill}>
-            <Text style={styles.statusText}>Active</Text>
-          </View>
-        </View>
-        <TouchableOpacity 
-          onPress={() => { setSelectedCargo(item); setMenuVisible(true); }}
-          style={{ padding: 4 }}
-        >
-          <MaterialCommunityIcons name="dots-vertical" size={24} color="#94A3B8" />
-        </TouchableOpacity>
-      </View>
+  const renderCard = ({ item }) => {
+    const bookingNo = item.booking_no || `#${item.id}`;
+    // Format date as YYYY-MM-DD | HH:mm (mocking time if needed or parsing actual)
+    const dateObj = new Date(item.created_at || item.date);
+    const dateStr = dateObj.toISOString().split('T')[0];
+    const timeStr = dateObj.toTimeString().split(' ')[0].substring(0, 5); // HH:mm
+    
+    // Safety check for boxes/weight
+    const boxCount = item.no_of_boxes || (Array.isArray(item.boxes) ? item.boxes.length : 0);
+    const weight = parseFloat(item.total_weight || 0).toFixed(3);
 
-      <View style={styles.partyContainer}>
-        <View style={styles.partyItem}>
-          <Text style={styles.partyLabel}>FROM</Text>
-          <Text style={styles.partyName} numberOfLines={1}>{item.sender?.name || item.sender_name || 'N/A'}</Text>
+    return (
+      <TouchableOpacity 
+        style={styles.card} 
+        activeOpacity={0.9}
+        onPress={() => { setSelectedCargo(item); setMenuVisible(true); }}
+      >
+        {/* Top Row: Invoice Label & Badge */}
+        <View style={styles.cardHeader}>
+            <View>
+                <Text style={styles.invoiceLabel}>Invoice Number</Text>
+                <Text style={styles.branchLabel}>Gulf Cargo KSA Riyadh</Text>
+            </View>
+            <View style={styles.invoiceBadge}>
+                <Text style={styles.invoiceBadgeText}>{bookingNo}</Text>
+            </View>
         </View>
-        <MaterialCommunityIcons name="arrow-right-thin" size={24} color="#CBD5E1" style={{ marginHorizontal: 12, marginTop: 10 }} />
-        <View style={styles.partyItem}>
-          <Text style={styles.partyLabel}>TO</Text>
-          <Text style={styles.partyName} numberOfLines={1}>{item.receiver?.name || item.receiver_name || 'N/A'}</Text>
-        </View>
-      </View>
 
-      <View style={styles.cardMiddle}>
-        <View style={styles.metric}>
-          <MaterialCommunityIcons name="weight" size={14} color="#64748B" />
-          <Text style={styles.metricText}>{item.total_weight || 0}kg</Text>
+        {/* Middle Row: Date | Boxes | Weight */}
+        <View style={styles.metaRow}>
+            <Text style={styles.metaText}>{dateStr} | {timeStr}</Text>
+            <Text style={styles.metaText}>{boxCount} Boxes | {weight} kg</Text>
         </View>
-        <View style={styles.priceContainer}>
-          <Text style={styles.currencyText}>SAR</Text>
-          <Text style={styles.priceText}>{item.net_total || item.total_amount || '0.00'}</Text>
+
+        {/* Bottom Row: Parties */}
+        <View style={styles.partiesRow}>
+            {/* Shipper */}
+            <View style={styles.partyColumn}>
+                <Text style={styles.partyLabel}>Shipper</Text>
+                <Text style={styles.partyName} numberOfLines={1}>
+                    {item.sender?.name || item.sender_name || 'N/A'}
+                </Text>
+            </View>
+
+            {/* Arrow */}
+            <View style={styles.arrowContainer}>
+                <View style={styles.arrowLine} />
+                <MaterialCommunityIcons name="chevron-right" size={16} color="#ccc" style={{marginLeft: -5}}/>
+            </View>
+
+            {/* Consignee */}
+            <View style={[styles.partyColumn, {alignItems: 'flex-start', paddingLeft: 10}]}>
+                <Text style={styles.partyLabel}>Consignee</Text>
+                <Text style={styles.partyName} numberOfLines={1}>
+                    {item.receiver?.name || item.receiver_name || 'N/A'}
+                </Text>
+            </View>
         </View>
-      </View>
-
-      <View style={styles.cardActions}>
-        <TouchableOpacity 
-            style={[styles.actionBtn, styles.btnSingle]} 
-            onPress={() => handleViewSingle(item)}
-        >
-            <MaterialCommunityIcons name="information-outline" size={18} color="#0F172A" />
-            <Text style={styles.btnTextSingle}>Details</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-            style={[styles.actionBtn, styles.btnBill]} 
-            onPress={() => handleViewBill(item)}
-        >
-            <MaterialCommunityIcons name="file-document-outline" size={18} color="#FFF" />
-            <Text style={styles.btnTextBill}>Bill</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
       
-      <View style={styles.header}>
-        <Text style={styles.title}>Cargo List</Text>
-        <View style={styles.searchBox}>
-          <MaterialCommunityIcons name="magnify" size={20} color="#94A3B8" />
+      {/* Search Header */}
+      <View style={styles.headerContainer}>
+        <Text style={styles.pageTitle}>All Cargo List</Text>
+        <View style={styles.searchContainer}>
+          <MaterialCommunityIcons name="magnify" size={20} color="#9CA3AF" style={{marginRight: 8}} />
           <TextInput 
             style={styles.searchInput}
-            placeholder="Search booking number"
-            placeholderTextColor="#94A3B8"
+            placeholder="Search Senders or Receivers....."
+            placeholderTextColor="#9CA3AF"
             value={searchQuery}
             onChangeText={handleSearch}
             autoCapitalize="none"
@@ -205,13 +194,13 @@ export default function CargoListScreen() {
           ListEmptyComponent={
             <View style={styles.emptyState}>
               <MaterialCommunityIcons name="package-variant" size={48} color="#E2E8F0" />
-              <Text style={styles.emptyTitle}>No results</Text>
-              <Text style={styles.emptySub}>Try searching for another booking number</Text>
+              <Text style={styles.emptyTitle}>No shipments found</Text>
             </View>
           }
         />
       )}
 
+      {/* Context Menu Modal */}
       <Modal visible={menuVisible} transparent animationType="fade">
         <TouchableWithoutFeedback onPress={() => setMenuVisible(false)}>
           <View style={styles.modalOverlay}>
@@ -227,6 +216,11 @@ export default function CargoListScreen() {
                 <MaterialCommunityIcons name="pencil-outline" size={22} color="#0F172A" />
                 <Text style={styles.optionLabel}>Edit Cargo</Text>
               </TouchableOpacity>
+              
+              <TouchableOpacity style={styles.menuOption} onPress={() => handleMenuAction('bill')}>
+                <MaterialCommunityIcons name="file-document-outline" size={22} color="#0F172A" />
+                <Text style={styles.optionLabel}>Generate Bill</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </TouchableWithoutFeedback>
@@ -236,86 +230,142 @@ export default function CargoListScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'ios' ? 20 : 10,
-    paddingBottom: 15,
-    backgroundColor: '#FFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+  container: { flex: 1, backgroundColor: '#F9FAFB' }, // Light gray background
+  
+  // Header
+  headerContainer: {
+    backgroundColor: '#fff',
+    paddingHorizontal: 16,
+    paddingTop: Platform.OS === 'ios' ? 60 : 40,
+    paddingBottom: 16,
   },
-  title: { fontSize: 20, fontWeight: '700', color: '#0F172A', marginBottom: 15, letterSpacing: -0.5, fontFamily: 'InstrumentSans-Regular' },
-  searchBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F1F5F9',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    height: 44,
-  },
-  searchInput: { flex: 1, marginLeft: 8, fontSize: 16, color: '#1E293B', fontFamily: 'InstrumentSans-Regular' },
-  listContent: { 
-    paddingHorizontal: 20, 
-    paddingTop: 20, 
-    paddingBottom: Platform.OS === 'ios' ? 120 : 100 
-  },
-  card: {
-    backgroundColor: '#FFF',
-    borderRadius: 20,
-    padding: 16,
+  pageTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
     marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#F1F5F9',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
   },
-  cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  statusRow: { flexDirection: 'row', alignItems: 'center' },
-  bookingNo: { fontSize: 16, fontWeight: '700', color: '#0F172A', fontFamily: 'InstrumentSans-Regular' },
-  statusPill: { backgroundColor: '#F0FDF4', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, marginLeft: 10 },
-  statusText: { fontSize: 11, fontWeight: '700', color: '#16A34A', textTransform: 'uppercase', fontFamily: 'InstrumentSans-Regular' },
-  partyContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8FAFC', padding: 12, borderRadius: 12, marginBottom: 12 },
-  partyItem: { flex: 1 },
-  partyLabel: { fontSize: 10, fontWeight: '800', color: '#94A3B8', letterSpacing: 0.5, marginBottom: 4, fontFamily: 'InstrumentSans-Regular' },
-  partyName: { fontSize: 14, fontWeight: '700', color: '#334155', fontFamily: 'InstrumentSans-Regular' },
-  cardMiddle: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, paddingHorizontal: 4 },
-  metric: { flexDirection: 'row', alignItems: 'center' },
-  metricText: { fontSize: 14, fontWeight: '600', color: '#64748B', marginLeft: 4, fontFamily: 'InstrumentSans-Regular' },
-  priceContainer: { flexDirection: 'row', alignItems: 'center' },
-  currencyText: { fontSize: 12, fontWeight: '700', color: '#94A3B8', marginRight: 4, marginTop: 2, fontFamily: 'InstrumentSans-Regular' },
-  priceText: { fontSize: 20, fontWeight: '800', color: '#0F172A', fontFamily: 'InstrumentSans-Regular' },
-  cardActions: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    borderTopWidth: 1, 
-    borderTopColor: '#F1F5F9', 
-    paddingTop: 12,
-    gap: 10
-  },
-  actionBtn: {
-    flex: 1,
+  searchContainer: {
     flexDirection: 'row',
-    height: 42,
-    borderRadius: 10,
-    justifyContent: 'center',
     alignItems: 'center',
-    gap: 6
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    height: 48,
   },
-  btnSingle: { backgroundColor: '#F1F5F9', borderWidth: 1, borderColor: '#E2E8F0' },
-  btnBill: { backgroundColor: colors.secondary },
-  btnTextSingle: { fontSize: 13, fontWeight: '700', color: '#0F172A', fontFamily: 'InstrumentSans-Regular' },
-  btnTextBill: { fontSize: 13, fontWeight: '700', color: '#FFF', fontFamily: 'InstrumentSans-Regular' },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.4)', justifyContent: 'center', alignItems: 'center' },
-  contextMenu: { backgroundColor: '#FFF', width: '80%', borderRadius: 20, padding: 20, elevation: 10 },
-  menuTitle: { fontSize: 12, fontWeight: '800', color: '#94A3B8', textTransform: 'uppercase', marginBottom: 15, fontFamily: 'InstrumentSans-Regular' },
-  menuOption: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12 },
-  optionLabel: { fontSize: 16, color: '#0F172A', fontWeight: '600', marginLeft: 12, fontFamily: 'InstrumentSans-Regular' },
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    color: '#111827',
+    height: '100%',
+  },
+
+  // List
+  listContent: { 
+    padding: 16,
+    paddingBottom: 100 
+  },
+  
+  // Card
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    // Soft shadow
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  
+  // Card Header (Invoice info)
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  invoiceLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 2,
+  },
+  branchLabel: {
+    fontSize: 11,
+    color: '#9CA3AF',
+  },
+  invoiceBadge: {
+    backgroundColor: '#34339A', // Deep purple from screenshot
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  invoiceBadgeText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 13,
+  },
+
+  // Meta Row (Date | Boxes)
+  metaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  metaText: {
+    fontSize: 12,
+    color: '#9CA3AF',
+  },
+
+  // Parties Row
+  partiesRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  partyColumn: {
+    flex: 1,
+  },
+  partyLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#EF4444', // Red
+    marginBottom: 2,
+  },
+  partyName: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  
+  // Arrow Divider
+  arrowContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 60,
+  },
+  arrowLine: {
+    height: 1,
+    backgroundColor: '#E5E7EB',
+    flex: 1,
+  },
+
+  // Misc
   centerLoader: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   emptyState: { alignItems: 'center', marginTop: 100 },
-  emptyTitle: { fontSize: 18, fontWeight: '700', color: '#334155', marginTop: 16, fontFamily: 'InstrumentSans-Regular' },
-  emptySub: { fontSize: 14, color: '#94A3B8', marginTop: 4, textAlign: 'center', fontFamily: 'InstrumentSans-Regular' },
+  emptyTitle: { fontSize: 16, fontWeight: '600', color: '#6B7280', marginTop: 16 },
+
+  // Modal
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' },
+  contextMenu: { backgroundColor: '#FFF', width: '80%', borderRadius: 16, padding: 20 },
+  menuTitle: { fontSize: 13, fontWeight: '700', color: '#6B7280', marginBottom: 15, textTransform: 'uppercase' },
+  menuOption: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12 },
+  optionLabel: { fontSize: 15, color: '#111827', marginLeft: 12 },
 });

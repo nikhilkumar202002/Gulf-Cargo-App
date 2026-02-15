@@ -240,7 +240,7 @@ const styles = StyleSheet.create({
     fontFamily: 'InstrumentSans-Regular',
   },
   scrollContent: { paddingHorizontal: 20, paddingTop: 10, paddingBottom: Platform.OS === 'ios' ? 120 : 100 },
-  pageHeader: { fontSize: 22, fontWeight: '600', color: '#1e1e1e', marginBottom: 6, letterSpacing: -0.5, fontFamily: 'InstrumentSans-Regular' },
+  pageHeader: { fontSize: 22, fontWeight: '600', color: '#1e1e1e', marginBottom: 6, letterSpacing: -0.5, fontFamily: 'InstrumentSans-Semibold' },
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
   statCard: {
     width: '48%',
@@ -252,7 +252,7 @@ const styles = StyleSheet.create({
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   iconWrapper: { width: 36, height: 36, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
   statValue: { fontSize: 25, fontWeight: '700', color: '#1e1e1e', fontFamily: 'InstrumentSans-Regular' },
-  statLabel: { fontSize: 14, fontWeight: '700', color: '#1e1e1e', letterSpacing: 1, textTransform: 'capitalize', fontFamily: 'InstrumentSans-Regular' },
+  statLabel: { fontSize: 14, color: '#1e1e1e', textTransform: 'capitalize', fontFamily: 'InstrumentSans-Semibold' },
   section: { marginTop: 20, marginBottom: 24 },
   sectionTitle: { fontSize: 20, fontWeight: '700', color: '#1e1e1e', marginBottom: 10, textTransform: 'capitalize', fontFamily: 'InstrumentSans-Regular !important' },
   actionRow: { flexDirection: 'row', justifyContent: 'space-between' },
