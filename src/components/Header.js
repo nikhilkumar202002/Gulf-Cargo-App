@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 24, // Slightly increased for a cleaner look
-    paddingTop:35, // Adjusted for typical mobile status bar
+    paddingTop:65, // Adjusted for typical mobile status bar
     paddingBottom: 15,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
