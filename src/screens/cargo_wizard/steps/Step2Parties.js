@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  View, Text, StyleSheet, TouchableOpacity, ActivityIndicator 
+  View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Modal 
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { getSenderParties, getReceiverParties } from '../../../services/partiesServices'; 
@@ -148,28 +148,6 @@ export default function Step2Parties({ data, update }) {
     );
   };
 
-  // --- MODE 1: CREATE FORM ---
-  if (viewMode === 'create_sender' || viewMode === 'create_receiver') {
-      const isSender = viewMode === 'create_sender';
-      return (
-          <CreatePartyForm 
-              type={isSender ? 'sender' : 'receiver'}
-              branchId={userData?.user?.branch_id || userData?.branch_id}
-              onCancel={() => setViewMode('list')}
-              onSuccess={(newParty) => {
-                  if (isSender) {
-                      setSendersList(prev => [newParty, ...prev]);
-                      update('sender', newParty);
-                  } else {
-                      setReceiversList(prev => [newParty, ...prev]);
-                      update('receiver', newParty);
-                  }
-                  setViewMode('list');
-              }}
-          />
-      );
-  }
-
   // --- MODE 2: LIST VIEW ---
   return (
     <View style={styles.container}>
@@ -207,6 +185,32 @@ export default function Step2Parties({ data, update }) {
         onClose={() => setShowReceiverSelect(false)} 
         onSelect={(i) => update('receiver', i)} 
       />
+
+      {/* CREATE PARTY MODAL */}
+      <Modal
+        visible={viewMode === 'create_sender' || viewMode === 'create_receiver'}
+        animationType="slide"
+        presentationStyle="fullScreen"
+        onRequestClose={() => setViewMode('list')}
+      >
+        <View style={{ flex: 1 }}>
+          <CreatePartyForm 
+            type={viewMode === 'create_sender' ? 'sender' : 'receiver'}
+            branchId={userData?.user?.branch_id || userData?.branch_id}
+            onCancel={() => setViewMode('list')}
+            onSuccess={(newParty) => {
+              if (viewMode === 'create_sender') {
+                setSendersList(prev => [newParty, ...prev]);
+                update('sender', newParty);
+              } else {
+                setReceiversList(prev => [newParty, ...prev]);
+                update('receiver', newParty);
+              }
+              setViewMode('list');
+            }}
+          />
+        </View>
+      </Modal>
     </View>
   );
 }

@@ -301,12 +301,9 @@ export default function CreatePartyForm({ type, branchId, onCancel, onSuccess })
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
+        <Text style={styles.headerTitle}>New {type}</Text>
         <TouchableOpacity onPress={onCancel} style={styles.closeButton}>
             <MaterialCommunityIcons name="close" size={24} color="#1A202C" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>New {type}</Text>
-        <TouchableOpacity onPress={handleSubmit} disabled={creating}>
-            <Text style={[styles.headerAction, creating && {opacity: 0.5}]}>Save</Text>
         </TouchableOpacity>
       </View>
 
@@ -375,6 +372,21 @@ export default function CreatePartyForm({ type, branchId, onCancel, onSuccess })
           <View style={{height: 40}} /> 
       </ScrollView>
 
+      {/* Bottom Save Button */}
+      <View style={styles.bottomContainer}>
+        <TouchableOpacity 
+          style={[styles.saveButton, creating && styles.disabledButton]} 
+          onPress={handleSubmit} 
+          disabled={creating}
+        >
+          {creating ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <Text style={styles.saveButtonText}>Save Party</Text>
+          )}
+        </TouchableOpacity>
+      </View>
+
       {/* MODALS */}
       <BottomSheetSelect visible={modalType === 'country'} title="Select Country" data={countries} onClose={() => setModalType(null)} onSelect={handleCountrySelect} />
       <BottomSheetSelect visible={modalType === 'state'} title="Select State" data={states} onClose={() => setModalType(null)} onSelect={handleStateSelect} />
@@ -394,10 +406,9 @@ export default function CreatePartyForm({ type, branchId, onCancel, onSuccess })
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F3F4F6', marginHorizontal: -16, marginTop: -8, marginBottom: -20 },
+  container: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14, backgroundColor: '#fff', borderBottomWidth: 1, borderColor: '#EDF2F7', elevation: 2 },
   headerTitle: { fontSize: 18, fontWeight: '700', color: '#1A202C' },
-  headerAction: { fontSize: 16, fontWeight: '600', color: colors.primary },
   closeButton: { padding: 4 },
   scrollContent: { padding: 16 },
   section: { backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 16, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 5, shadowOffset: {width:0, height:2}, elevation: 2 },
@@ -419,5 +430,9 @@ const styles = StyleSheet.create({
   checkboxText: { marginLeft: 8, fontSize: 14, color: '#4A5568' },
   uploadZone: { borderWidth: 2, borderColor: '#CBD5E0', borderStyle: 'dashed', borderRadius: 12, height: 80, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F7FAFC', width: '100%' },
   uploadText: { marginTop: 6, fontSize: 13, color: '#718096', textAlign: 'center', paddingHorizontal: 10 },
+  bottomContainer: { padding: 16, backgroundColor: '#fff', borderTopWidth: 1, borderColor: '#EDF2F7' },
+  saveButton: { backgroundColor: colors.primary, borderRadius: 12, height: 54, alignItems: 'center', justifyContent: 'center' },
+  disabledButton: { backgroundColor: '#A0AEC0' },
+  saveButtonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   loaderOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', zIndex: 999 }
 });
