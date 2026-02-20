@@ -121,6 +121,9 @@ export default function CargoListScreen() {
             </View>
         </View>
 
+        {/* --- DIVIDER LINE ADDED HERE --- */}
+        <View style={styles.cardDivider} />
+
         {/* Middle Row: Date | Boxes | Weight */}
         <View style={styles.metaRow}>
             <Text style={styles.metaText}>{dateStr} | {timeStr}</Text>
@@ -140,11 +143,11 @@ export default function CargoListScreen() {
             {/* Arrow */}
             <View style={styles.arrowContainer}>
                 <View style={styles.arrowLine} />
-                <MaterialCommunityIcons name="chevron-right" size={16} color="#ccc" style={{marginLeft: -5}}/>
+                <MaterialCommunityIcons name="arrow-right-thin" size={20} color="#ccc" />
             </View>
 
             {/* Consignee */}
-            <View style={[styles.partyColumn, {alignItems: 'flex-start', paddingLeft: 10}]}>
+            <View style={[styles.partyColumn, {alignItems: 'flex-end'}]}>
                 <Text style={styles.partyLabel}>Consignee</Text>
                 <Text style={styles.partyName} numberOfLines={1}>
                     {item.receiver?.name || item.receiver_name || 'N/A'}
@@ -161,6 +164,8 @@ export default function CargoListScreen() {
       
       {/* Search Header */}
       <View style={styles.headerContainer}>
+        {/* Removed "All Cargo List" text if you want it cleaner like the search-only header in some UI, 
+            but keeping per previous request. */}
         <Text style={styles.pageTitle}>All Cargo List</Text>
         <View style={styles.searchContainer}>
           <MaterialCommunityIcons name="magnify" size={20} color="#9CA3AF" style={{marginRight: 8}} />
@@ -236,7 +241,7 @@ const styles = StyleSheet.create({
   headerContainer: {
     backgroundColor: '#fff',
     paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'ios' ? 60 : 40,
+    paddingTop: Platform.OS === 'ios' ? 20 : 20,
     paddingBottom: 16,
   },
   pageTitle: {
@@ -288,7 +293,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 12,
+    marginBottom: 8, // Reduced slightly to hug the divider
   },
   invoiceLabel: {
     fontSize: 14,
@@ -312,11 +317,18 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
 
+  // NEW DIVIDER STYLE
+  cardDivider: {
+    height: 1,
+    backgroundColor: '#F3F4F6', // Very light gray divider
+    marginVertical: 10,
+  },
+
   // Meta Row (Date | Boxes)
   metaRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    marginBottom: 16,
   },
   metaText: {
     fontSize: 12,
