@@ -77,6 +77,7 @@ export default function App() {
           component={CargoDetailsScreen} 
           options={{ title: 'Cargo Details' }} 
         />
+
         </Stack.Navigator>
       </NavigationContainer>
     </UserProvider>

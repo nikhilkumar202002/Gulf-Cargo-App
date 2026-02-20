@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { 
   View, Text, StyleSheet, ScrollView, TouchableOpacity, 
-  RefreshControl, StatusBar, ActivityIndicator, Alert, Platform 
+  RefreshControl, StatusBar, ActivityIndicator, Alert, Platform, useWindowDimensions
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -20,9 +21,12 @@ import colors from '../styles/colors';
 
 export default function DashboardScreen({ navigation }) {
   const { userData, setUserData } = useUser();
+  const { width } = useWindowDimensions();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [recentCargos, setRecentCargos] = useState([]);
+
+  const numColumns = width > 600 ? 3 : 2;
 
   const [stats, setStats] = useState({
     shipments: 0, consignees: 0, receivers: 0, staff: 17,
@@ -135,7 +139,7 @@ export default function DashboardScreen({ navigation }) {
     : allWidgets.filter(widget => ['consignees', 'receivers', 'cargos'].includes(widget.id));
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
       <StatusBar barStyle="dark-content" backgroundColor="#F9F9F9" />
       
       <ScrollView 
@@ -148,7 +152,7 @@ export default function DashboardScreen({ navigation }) {
         {/* Stats Grid */}
         <View style={styles.statsGrid}>
             {displayedWidgets.map((widget) => (
-                <View key={widget.id} style={styles.statCard}>
+                <View key={widget.id} style={[styles.statCard, { width: `${100 / numColumns - 2}%` }]}>
                     <View style={styles.cardTop}>
                         <View style={[styles.iconWrapper, { backgroundColor: widget.color + '10' }]}>
                             <MaterialCommunityIcons name={widget.icon} size={20} color={widget.color} />
@@ -166,7 +170,7 @@ export default function DashboardScreen({ navigation }) {
             <View style={styles.actionRow}>
                 <TouchableOpacity 
                     style={[styles.actionBtn]} 
-                    onPress={() => navigation.navigate('Cargo')}
+                    onPress={() => navigation.navigate('Create Cargo')}
                 >
                     <LinearGradient
                         colors={['#262262', '#443DAF']}
@@ -218,19 +222,13 @@ export default function DashboardScreen({ navigation }) {
         </View>
         
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F9F9F9' },
-  // Loader Styles
-  loaderContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-  },
+
   loadingText: {
     marginTop: 15,
     fontSize: 14,
@@ -240,14 +238,14 @@ const styles = StyleSheet.create({
     fontFamily: 'InstrumentSans-Regular',
   },
   scrollContent: { paddingHorizontal: 20, paddingTop: 10, paddingBottom: Platform.OS === 'ios' ? 120 : 100 },
-  pageHeader: { fontSize: 22, fontWeight: '600', color: '#1e1e1e', marginBottom: 6, letterSpacing: -0.5, fontFamily: 'InstrumentSans-Semibold' },
+  pageHeader: { fontSize: 20, fontWeight: '600', color: '#1e1e1e', marginBottom: 6, letterSpacing: -0.5, fontFamily: 'InstrumentSans-Semibold' },
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
   statCard: {
-    width: '48%',
     backgroundColor: '#FFFFFF',
     padding: 15,
     borderRadius: 10,
     marginBottom: 10,
+    marginHorizontal: 1,
   },
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   iconWrapper: { width: 36, height: 36, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
@@ -264,7 +262,7 @@ const styles = StyleSheet.create({
     flex: 1, height: 54, borderRadius: 12, flexDirection: 'row', 
     alignItems: 'center', justifyContent: 'center'
   },
-  actionBtnText: { color: '#FFF', fontWeight: '800', fontSize: 16, marginLeft: 8, letterSpacing: 0.5, fontFamily: 'InstrumentSans-Regular !important' },
+  actionBtnText: { color: '#FFF', fontWeight: '600', fontSize: 16, marginLeft: 8, letterSpacing: 0.5, fontFamily: 'InstrumentSans-Regular !important' },
   activityHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   seeAllText: { fontSize: 12, fontWeight: '800', color: '#4F46E5', fontFamily: 'InstrumentSans-Regular' },
   recentTitle: { 

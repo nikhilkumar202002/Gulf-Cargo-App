@@ -69,25 +69,80 @@ export default function CargoScreen() {
   const updateFormData = (key, value) => setFormData(prev => ({ ...prev, [key]: value }));
 
   const handleSubmitInvoice = async () => {
+    // Format data for API
+    const submitData = {
+      ...formData,
+      date: formData.date.toISOString().split('T')[0], // YYYY-MM-DD
+      sender_id: formData.sender?.id || formData.sender_id,
+      receiver_id: formData.receiver?.id || formData.receiver_id,
+      collected_by_id: formData.collected_by?.id || formData.collected_by_id,
+      // Ensure branch_id is set
+      branch_id: formData.branch_id || userData?.branch_id || userData?.user?.branch?.id,
+      // Format items from boxes
+      items: formData.boxes.flatMap((box, boxIndex) => 
+        box.items.map((item, itemIndex) => ({
+          slno: itemIndex + 1,
+          box_number: boxIndex + 1,
+          name: item.name || '',
+          piece_no: item.qty || 1,
+          weight: item.weight || 0,
+          unit_price: item.unit_price || 0,
+          total_price: item.total_price || 0,
+          box_weight: box.weight || 0
+        }))
+      ),
+    };
+    
+    // Pre-submit validation
+    const requiredFields = [
+      'branch_id', 'sender_id', 'receiver_id', 'collected_by_id', 
+      'shipping_method_id', 'payment_method_id'
+    ];
+    
+    const missingFields = requiredFields.filter(field => !submitData[field]);
+    
+    if (missingFields.length > 0) {
+      Alert.alert("Validation Error", `Please fill in: ${missingFields.join(', ')}`);
+      return;
+    }
+    
     setLoading(true);
-    // ... (Keep your exact existing submit logic here) ...
-    setLoading(false);
+    console.log('Submitting formData:', formData); // Debug log
+    console.log('Formatted submitData:', submitData);
+    
+    try {
+      const response = await createCargo(submitData);
+      console.log('Create cargo response:', response);
+      console.log('Cargo ID from response:', response.data?.id);
+      if (response.status === 200 || response.status === 201) {
+        Alert.alert("Success", "Cargo created successfully!");
+        navigation.navigate('History');
+      } else {
+        Alert.alert("Error", "Failed to create cargo");
+      }
+    } catch (error) {
+      console.error("Submit Error:", error);
+      const errorMessage = error.response?.data?.message || error.response?.data?.error || error.message || "Failed to create cargo";
+      Alert.alert("Error", errorMessage);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleNext = () => {
-    if (currentStep === 1 && !formData.collected_by && !formData.collected_by_id) return Alert.alert("Required", "Select Collector");
     if (currentStep === 2 && (!formData.sender || !formData.receiver)) return Alert.alert("Required", "Select Sender and Receiver");
+    if (currentStep === 5 && !formData.collected_by && !formData.collected_by_id) return Alert.alert("Required", "Select Collector");
     if (currentStep < totalSteps) setCurrentStep(currentStep + 1);
     else handleSubmitInvoice();
   };
 
   const renderStep = () => {
     switch(currentStep) {
-      case 1: return <Step1Collection data={formData} update={updateFormData} />;
+      case 1: return <Step4Items data={formData} update={updateFormData} />;
       case 2: return <Step2Parties data={formData} update={updateFormData} />;
       case 3: return <Step3Shipment data={formData} update={updateFormData} />;
-      case 4: return <Step4Items data={formData} update={updateFormData} />;
-      case 5: return <Step5Charges data={formData} update={updateFormData} />;
+      case 4: return <Step5Charges data={formData} update={updateFormData} />;
+      case 5: return <Step1Collection data={formData} update={updateFormData} />;
       case 6: return <Step6Review data={formData} />;
       default: return null;
     }

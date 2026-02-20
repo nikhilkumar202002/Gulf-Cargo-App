@@ -25,6 +25,7 @@ const formatPhone = (phone) => {
 // --- 1. DATA FETCHING ---
 const fetchInvoiceData = async (input) => {
   console.log("--- START INVOICE DATA FETCH ---");
+  console.log("Input to fetchInvoiceData:", input);
 
   let branchData = {};
   let cargoData = {};
@@ -50,6 +51,8 @@ const fetchInvoiceData = async (input) => {
     if (!cargoData || !cargoData.id) {
         throw new Error("Cargo not found in API response.");
     }
+
+    console.log("Fetched cargoData:", cargoData);
 
     // ------------------------------------------
     // STEP 2: FETCH BRANCH
@@ -118,17 +121,40 @@ const fetchInvoiceData = async (input) => {
     let boxes = [];
     const rawBoxes = cargoData.boxes;
 
-    if (Array.isArray(rawBoxes)) {
+    if (Array.isArray(rawBoxes) && rawBoxes.length > 0) {
         boxes = rawBoxes;
-    } else if (typeof rawBoxes === 'string') {
+    } else {
+        // Reconstruct boxes from items if boxes not available
+        const rawItems = Array.isArray(cargoData.items) ? cargoData.items : [];
+        const boxMap = {};
+        
+        rawItems.forEach(item => {
+            const boxNum = item.box_number || item.box_no || 1;
+            if (!boxMap[boxNum]) {
+                boxMap[boxNum] = { weight: 0, items: [] };
+            }
+            boxMap[boxNum].items.push({
+                name: item.name || '',
+                qty: item.piece_no || item.qty || 1,
+                weight: parseFloat(item.weight || 0),
+                piece_no: item.piece_no || item.qty || 1
+            });
+            boxMap[boxNum].weight += parseFloat(item.weight || 0);
+        });
+        
+        boxes = Object.values(boxMap);
+    }
+
+    // Fallback parsing for old formats
+    if (typeof rawBoxes === 'string') {
         try {
             const parsed = JSON.parse(rawBoxes);
             if (Array.isArray(parsed)) boxes = parsed;
             else if (typeof parsed === 'object' && parsed !== null) boxes = Object.values(parsed);
         } catch (e) {
-            boxes = [];
+            // Keep reconstructed boxes
         }
-    } else if (typeof rawBoxes === 'object' && rawBoxes !== null) {
+    } else if (typeof rawBoxes === 'object' && rawBoxes !== null && !Array.isArray(rawBoxes)) {
         boxes = Object.values(rawBoxes);
     }
 
@@ -136,7 +162,8 @@ const fetchInvoiceData = async (input) => {
         ...box,
         items: Array.isArray(box.items) ? box.items : (
             typeof box.items === 'object' && box.items !== null ? Object.values(box.items) : []
-        )
+        ),
+        weight: box.weight || (Array.isArray(box.items) ? box.items.reduce((sum, item) => sum + parseFloat(item.weight || 0), 0) : 0)
     }));
 
     const finalData = {
@@ -149,7 +176,9 @@ const fetchInvoiceData = async (input) => {
       branch_contact: branchData.branch_contact_number || branchData.branch_alternative_number || '',
       branch_alt_contact: branchData.branch_alternative_number || '',
       branch_logo: branchData.logo_url || null,
-      boxes: boxes 
+      boxes: boxes,
+      total_boxes: boxes.length,
+      total_weight: boxes.reduce((sum, box) => sum + parseFloat(box.weight || 0), 0)
     };
 
     console.log(`--- INVOICE DATA READY [Boxes: ${boxes.length}] ---`);
@@ -170,13 +199,7 @@ const createInvoiceHTML = (data) => {
     weight: parseFloat(box.weight || 0).toFixed(3)
   }));
 
-  const totalWeight = data.total_weight && parseFloat(data.total_weight) > 0
-    ? parseFloat(data.total_weight) 
-    : safeBoxes.reduce((sum, box) => {
-        const boxItems = Array.isArray(box.items) ? box.items : [];
-        const boxWeight = boxItems.reduce((itemSum, item) => itemSum + (parseFloat(item.weight) || 0), 0);
-        return sum + boxWeight;
-      }, 0);
+  const totalWeight = parseFloat(data.total_weight || 0);
 
   const structuredItems = [];
   safeBoxes.forEach((box, index) => {
@@ -380,7 +403,7 @@ const createInvoiceHTML = (data) => {
                 <div class="party-row"><div class="p-label">Name</div><div class="p-val">: ${data.sender?.name || '-'}</div></div>
                 <div class="party-row"><div class="p-label">ID No</div><div class="p-val">: ${data.sender?.document_id || '-'}</div></div>
                 <div class="party-row"><div class="p-label">Tel</div><div class="p-val">: ${formatPhone(data.sender?.phone) || '-'}</div></div>
-                <div class="party-row"><div class="p-label">No. Pcs</div><div class="p-val">: ${data.no_of_pieces || safeBoxes.length}</div></div>
+                <div class="party-row"><div class="p-label">No. Pcs</div><div class="p-val">: ${data.total_boxes || data.no_of_pieces || safeBoxes.length}</div></div>
                 <div class="party-row"><div class="p-label">Weight</div><div class="p-val">: ${parseFloat(totalWeight).toFixed(3)} kg</div></div>
                 <div class="party-row"><div class="p-label">Date</div><div class="p-val">: ${formatDate(data.date)}</div></div>
                 <div class="party-row"><div class="p-label">Payment</div><div class="p-val">: ${data.payment_method_name || 'Cash'}</div></div>
@@ -438,7 +461,7 @@ const createInvoiceHTML = (data) => {
                  <table class="box-table">
                    <thead><tr><th>Box</th><th>INV</th><th>Wgt</th></tr></thead>
                    <tbody>
-                     ${boxRows.map(row => `<tr><td>${row.boxNo}</td><td>${data.id}</td><td>${row.weight}</td></tr>`).join('')}
+                     ${boxRows.map(row => `<tr><td>${row.boxNo}</td><td>${bookingNo}</td><td>${row.weight}</td></tr>`).join('')}
                    </tbody>
                  </table>
                </div>
@@ -514,6 +537,7 @@ export const printInvoice = async (idOrData) => {
   }
 
   isSharing = true;
+  console.log("Starting printInvoice with:", idOrData);
   try {
     const data = await fetchInvoiceData(idOrData);
     const html = createInvoiceHTML(data);
