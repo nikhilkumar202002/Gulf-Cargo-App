@@ -319,7 +319,7 @@ const styles = StyleSheet.create({
   progressBarFill: { height: '100%', backgroundColor: '#ed2624' },
   
   contentContainer: { flex: 1, paddingHorizontal: 20 },
-  footer: { flexDirection: 'row', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 92, backgroundColor: '#F9FAFB' },
+  footer: { flexDirection: 'row', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 130, backgroundColor: '#F9FAFB' },
   btn: { height: 50, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
   backBtn: { flex: 0.3, backgroundColor: '#fff', borderWidth: 1, borderColor: '#D1D5DB', marginRight: 10 },
   backBtnText: { color: '#374151', fontSize: 16, fontWeight: '500', fontFamily: 'InstrumentSans-Regular' },

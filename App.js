@@ -1,16 +1,16 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
+import { CardStyleInterpolators } from '@react-navigation/stack';
 import { useFonts } from 'expo-font';
-import { UserProvider } from './src/context/UserContext'; // <--- Import this
+import { UserProvider } from './src/context/UserContext';
 import SplashScreen from './src/screens/SplashScreen';
 import LoginScreen from './src/screens/LoginScreen';
-import MainTabNavigator from './src/navigation/MainTabNavigator';
+import MainLayout from './src/navigation/MainLayout';
 import PartiesScreen from './src/screens/PartiesScreen';
 import PartyDetailsScreen from './src/screens/PartyDetailsScreen';
 import EditPartyScreen from './src/screens/EditPartyScreen';
-
-import CargoDetailsScreen from './src/screens/CargoDetailsScreen'; // Ensure this file exists
+import CargoDetailsScreen from './src/screens/CargoDetailsScreen';
 import EditProfileScreen from './src/screens/EditProfileScreen';
 import ChangePasswordScreen from './src/screens/ChangePasswordScreen';
 
@@ -33,51 +33,68 @@ export default function App() {
       <NavigationContainer>
         <Stack.Navigator 
           initialRouteName="Splash"
-          screenOptions={{ headerShown: false }}
+          screenOptions={{
+            headerShown: false,
+            cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
+            gestureEnabled: true,
+            gestureDirection: 'horizontal',
+          }}
         >
-          <Stack.Screen name="Splash" component={SplashScreen} />
+          {/* Auth Screens */}
+          <Stack.Screen 
+            name="Splash" 
+            component={SplashScreen}
+            options={{ animationEnabled: false }}
+          />
           <Stack.Screen 
             name="Login" 
             component={LoginScreen} 
-            options={{ headerShown: false }} 
+            options={{ animationEnabled: false }}
           />
+
+          {/* Main Dashboard with Common Layout */}
           <Stack.Screen 
             name="Dashboard" 
-            component={MainTabNavigator} 
-            options={{ headerShown: false }} 
+            component={MainLayout}
+            options={{
+              headerShown: false,
+              animationEnabled: true,
+            }}
           />
-          <Stack.Screen name="MainTabs" component={MainTabNavigator} options={{ headerShown: false }} />
 
-{/* Add these new screens */}
-<Stack.Screen 
-  name="PartyDetails" 
-  component={PartyDetailsScreen} 
-  options={{ title: 'Party Details' }} 
-/>
-<Stack.Screen 
-  name="EditParty" 
-  component={EditPartyScreen} 
-  options={{ title: 'Edit Party' }} 
-/>
-
-<Stack.Screen 
-  name="EditProfile" 
-  component={EditProfileScreen} 
-  options={{ title: 'Edit Profile' }} 
-/>
-
-<Stack.Screen 
-  name="ChangePassword" 
-  component={ChangePasswordScreen} 
-  options={{ title: 'Change Password' }} 
-/>
-
-<Stack.Screen 
-          name="CargoDetails" 
-          component={CargoDetailsScreen} 
-          options={{ title: 'Cargo Details' }} 
-        />
-
+          {/* Detail/Modal Screens (Overlays on main layout) */}
+          <Stack.Group
+            screenOptions={{
+              presentation: 'modal',
+              cardStyleInterpolator: CardStyleInterpolators.forBottomSheetAndroid,
+            }}
+          >
+            <Stack.Screen 
+              name="PartyDetails" 
+              component={PartyDetailsScreen} 
+              options={{ title: 'Party Details' }} 
+            />
+            <Stack.Screen 
+              name="EditParty" 
+              component={EditPartyScreen} 
+              options={{ title: 'Edit Party' }} 
+            />
+            <Stack.Screen 
+              name="CargoDetails" 
+              component={CargoDetailsScreen} 
+              options={{ title: 'Cargo Details' }} 
+            />
+            <Stack.Screen 
+              name="EditProfile" 
+              component={EditProfileScreen} 
+              options={{ title: 'Edit Profile' }} 
+            />
+            <Stack.Screen 
+              name="ChangePassword" 
+              component={ChangePasswordScreen} 
+              options={{ title: 'Change Password' }} 
+            />
+          </Stack.Group>
         </Stack.Navigator>
       </NavigationContainer>
     </UserProvider>

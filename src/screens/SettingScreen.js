@@ -50,7 +50,7 @@ export default function SettingScreen() {
   );
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
       {/* 1. PROFILE HEADER */}
       <View style={styles.profileHeader}>
         <View style={styles.avatarContainer}>
@@ -89,18 +89,7 @@ export default function SettingScreen() {
           />
         </View>
 
-        {/* 3. SECURITY & SESSION SECTION */}
-        <Text style={styles.sectionTitle}>Security</Text>
-        <View style={styles.sectionCard}>
-          <SettingItem 
-            icon="history" 
-            label="Session Info" 
-            value="Active (Expires monthly)" 
-            showChevron={false}
-          />
-        </View>
-
-        {/* 4. APP INFO */}
+        {/* 3. APP INFO */}
         <Text style={styles.sectionTitle}>Application</Text>
         <View style={styles.sectionCard}>
           <SettingItem 
@@ -118,23 +107,24 @@ export default function SettingScreen() {
         </TouchableOpacity>
 
         <Text style={styles.footerNote}>Gulf Cargo International © 2026</Text>
-        <View style={{ height: 40 }} />
+        <View style={{ height: 140 }} />
       </View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F9F9F9', paddingHorizontal: 20 },
+  container: { flex: 1, backgroundColor: '#F9F9F9' },
+  scrollContent: { paddingHorizontal: 16, paddingBottom: 20 },
   profileHeader: {
     backgroundColor: '#fff',
     alignItems: 'center',
-    paddingVertical: 30,
+    paddingVertical: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: '#f0f0f0',
   },
-  avatarContainer: { position: 'relative', marginBottom: 15 },
-  avatar: { width: 90, height: 90, borderRadius: 45, borderWidth: 2, borderColor: colors.secondary },
+  avatarContainer: { position: 'relative', marginBottom: 12 },
+  avatar: { width: 80, height: 80, borderRadius: 40, borderWidth: 2, borderColor: '#f0f0f0' },
   editAvatarBtn: {
     position: 'absolute',
     right: 0,
@@ -145,44 +135,46 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#fff',
   },
-  userName: { fontSize: 20, fontWeight: 'bold', color: '#333', fontFamily: 'InstrumentSans-Regular' },
-  userEmail: { fontSize: 14, color: '#666', marginTop: 4, fontFamily: 'InstrumentSans-Regular' },
+  userName: { fontSize: 18, fontWeight: '700', color: '#000', fontFamily: 'InstrumentSans-Bold' },
+  userEmail: { fontSize: 13, color: '#9CA3AF', marginTop: 3, fontFamily: 'InstrumentSans-Regular' },
   roleBadge: {
     backgroundColor: '#eef2ff',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginTop: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 8,
+    marginTop: 8,
   },
-  roleText: { color: colors.secondary, fontSize: 12, fontWeight: 'bold', fontFamily: 'InstrumentSans-Regular' },
+  roleText: { color: colors.secondary, fontSize: 11, fontWeight: '600', fontFamily: 'InstrumentSans-Regular' },
   
-  content: { padding: 16 },
+  content: { padding: 12 },
   sectionTitle: {
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: '700',
-    color: '#888',
+    color: '#BCCCDC',
     textTransform: 'uppercase',
     marginBottom: 8,
-    marginLeft: 4,
+    marginLeft: 2,
+    marginTop: 6,
     letterSpacing: 0.5,
-    fontFamily: 'InstrumentSans-Regular'
+    fontFamily: 'InstrumentSans-Medium'
   },
   sectionCard: {
     backgroundColor: '#fff',
     borderRadius: 12,
-    marginBottom: 20,
+    marginBottom: 14,
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
     overflow: 'hidden',
   },
   settingItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 15,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
   },
   itemLeft: { flexDirection: 'row', alignItems: 'center' },
   iconContainer: {
@@ -193,21 +185,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 15,
   },
-  itemLabel: { fontSize: 15, fontWeight: '600', color: '#333', fontFamily: 'InstrumentSans-Regular' },
-  itemValue: { fontSize: 12, color: '#888', marginTop: 2, fontFamily: 'InstrumentSans-Regular' },
-  divider: { height: 1, backgroundColor: '#f0f0f0', marginHorizontal: 15 },
+  itemLabel: { fontSize: 14, fontWeight: '500', color: '#1F2937', fontFamily: 'InstrumentSans-Regular' },
+  itemValue: { fontSize: 12, color: '#9CA3AF', marginTop: 2, fontFamily: 'InstrumentSans-Regular' },
+  divider: { height: 1, backgroundColor: '#f3f4f6', marginHorizontal: 14 },
   
   logoutBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#fff',
-    padding: 15,
+    padding: 13,
     borderRadius: 12,
-    marginTop: 10,
+    marginTop: 8,
     borderWidth: 1,
     borderColor: '#ffebee',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
   },
-  logoutText: { color: colors.primary, fontWeight: 'bold', fontSize: 16, marginLeft: 10, fontFamily: 'InstrumentSans-Regular' },
-  footerNote: { textAlign: 'center', color: '#ccc', fontSize: 12, marginTop: 20, fontFamily: 'InstrumentSans-Regular' },
+  logoutText: { color: colors.primary, fontWeight: '600', fontSize: 14, marginLeft: 8, fontFamily: 'InstrumentSans-Regular' },
+  footerNote: { textAlign: 'center', color: '#D1D5DB', fontSize: 11, marginTop: 12, fontFamily: 'InstrumentSans-Regular' },
 });

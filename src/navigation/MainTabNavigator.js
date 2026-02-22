@@ -3,7 +3,6 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Platform, View, StyleSheet, Animated } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import colors from '../styles/colors'; // Brand colors: primary (#ed2624) and secondary (#283891)
-import Header from '../components/Header'; 
 
 // Screens
 import DashboardScreen from '../screens/DashboardScreen';
@@ -53,9 +52,7 @@ export default function MainTabNavigator() {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
-        headerShown: true, 
-        header: () => <Header />, 
-        
+        headerShown: false,
         tabBarActiveTintColor: colors.primary, 
         tabBarInactiveTintColor: '#1F2937', 
         tabBarStyle: styles.tabBar,
