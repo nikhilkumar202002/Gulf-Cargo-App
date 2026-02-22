@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, 
-  ActivityIndicator, Alert, Platform, KeyboardAvoidingView 
+  ActivityIndicator, Alert, Platform, KeyboardAvoidingView, Dimensions 
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
@@ -19,12 +19,23 @@ export default function EditPartyScreen() {
   const route = useRoute();
   const { id } = route.params;
 
+  const [windowDimensions, setWindowDimensions] = useState(Dimensions.get('window'));
+  const isLandscape = windowDimensions.width > windowDimensions.height;
+
+  useEffect(() => {
+    const subscription = Dimensions.addEventListener('change', ({ window }) => {
+      setWindowDimensions(window);
+    });
+    return () => subscription?.remove();
+  }, []);
+
   // --- MASTER DATA ---
   const [phoneCodes, setPhoneCodes] = useState([]);
   const [countries, setCountries] = useState([]);
   const [states, setStates] = useState([]);
   const [districts, setDistricts] = useState([]);
   const [docTypes, setDocTypes] = useState([]);
+  const [partyType, setPartyType] = useState(null); // 'sender' or 'receiver'
 
   // --- LOADING STATES ---
   const [fetching, setFetching] = useState(true);
@@ -47,8 +58,9 @@ export default function EditPartyScreen() {
   }, []);
 
   const safeExtract = (res) => {
-    if(res?.data?.data) return res.data.data;
-    if(res?.data) return res.data;
+    if(res?.data?.data && Array.isArray(res.data.data)) return res.data.data;
+    if(res?.data && Array.isArray(res.data)) return res.data;
+    if(Array.isArray(res)) return res;
     return [];
   };
 
@@ -106,6 +118,9 @@ export default function EditPartyScreen() {
         document_id: party.document_id || '',
         document_file: null // Files usually need re-uploading
       });
+
+      // Determine party type based on customer_type_id (1=Sender, 2=Receiver)
+      setPartyType(party.customer_type_id === 1 ? 'sender' : 'receiver');
 
     } catch(e) {
       console.error(e);
@@ -195,24 +210,124 @@ export default function EditPartyScreen() {
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{flex:1, backgroundColor:'#fff'}}>
-        <ScrollView contentContainerStyle={{padding: 20}}>
-            <Text style={{fontSize: 20, fontWeight:'bold', marginBottom: 20}}>Edit Party</Text>
-            
-            {renderInput("Name", form.name, t => setForm({...form, name: t}))}
-            {renderInput("WhatsApp", form.whatsapp_number, t => setForm({...form, whatsapp_number: t}))}
-            
-            {renderDropdown("Country", form.country_name, 'country')}
-            {renderDropdown("State", form.state_name, 'state')}
-            
-            {manualDistrict 
-               ? renderInput("District", form.district_name, t => setForm({...form, district_name: t}))
-               : renderDropdown("District", form.district_name, 'district')
-            }
-            
-            {renderInput("Address", form.address, t => setForm({...form, address: t}))}
+        {/* HEADER */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <MaterialCommunityIcons name="arrow-left" size={24} color="#000" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>
+            Edit {partyType === 'sender' ? 'Sender' : 'Receiver'}
+          </Text>
+          <View style={{width: 24}} />
+        </View>
+
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scrollContent, isLandscape && styles.scrollContentLandscape]}>
+            {/* FORM CONTENT */}
+            {partyType !== 'sender' ? (
+              // RECEIVER FORM
+              <>
+                {/* BASIC INFO */}
+                <View style={isLandscape ? styles.twoColumnLayout : {}}>
+                  <View style={isLandscape ? {flex: 1, marginRight: 8} : {}}>
+                    {renderInput("Name", form.name, t => setForm({...form, name: t}))}
+                  </View>
+                  <View style={isLandscape ? {flex: 1, marginLeft: 8} : {}}>
+                    {renderInput("Email", form.email, t => setForm({...form, email: t}))}
+                  </View>
+                </View>
+                
+                {/* CONTACT */}
+                <View style={{marginBottom: 15}}>
+                    <Text style={{fontSize: 12, color:'#666', marginBottom: 5}}>Contact Number</Text>
+                    <View style={isLandscape ? styles.twoColumnLayout : {flexDirection: 'row', gap: 8}}>
+                        <TextInput value={form.contact_code} onChangeText={t => setForm({...form, contact_code: t})} style={[styles.input, isLandscape ? {flex: 0.4} : {flex: 0.3}]} placeholder="+966"/>
+                        <TextInput value={form.contact_number} onChangeText={t => setForm({...form, contact_number: t})} style={[styles.input, isLandscape ? {flex: 0.6} : {flex: 0.7}]} placeholder="Number"/>
+                    </View>
+                </View>
+
+                {/* LOCATION */}
+                <View style={isLandscape ? styles.twoColumnLayout : {}}>
+                  <View style={isLandscape ? {flex: 1, marginRight: 8} : {}}>
+                    {renderDropdown("Country", form.country_name, 'country')}
+                  </View>
+                  <View style={isLandscape ? {flex: 1, marginLeft: 8} : {}}>
+                    {renderDropdown("State", form.state_name, 'state')}
+                  </View>
+                </View>
+                
+                {manualDistrict 
+                   ? renderInput("District", form.district_name, t => setForm({...form, district_name: t}))
+                   : renderDropdown("District", form.district_name, 'district')
+                }
+                
+                <View style={isLandscape ? styles.twoColumnLayout : {}}>
+                  <View style={isLandscape ? {flex: 1, marginRight: 8} : {}}>
+                    {renderInput("City", form.city, t => setForm({...form, city: t}))}
+                  </View>
+                  <View style={isLandscape ? {flex: 1, marginLeft: 8} : {}}>
+                    {renderInput("Post", form.post, t => setForm({...form, post: t}))}
+                  </View>
+                </View>
+
+                <View style={isLandscape ? styles.twoColumnLayout : {}}>
+                  <View style={isLandscape ? {flex: 1, marginRight: 8} : {}}>
+                    {renderInput("Postal Code", form.postal_code, t => setForm({...form, postal_code: t}))}
+                  </View>
+                  <View style={isLandscape ? {flex: 1, marginLeft: 8} : {}}>
+                    {renderInput("Address", form.address, t => setForm({...form, address: t}))}
+                  </View>
+                </View>
+              </>
+            ) : (
+              // SENDER FORM
+              <>
+                {/* BASIC INFO */}
+                <View style={isLandscape ? styles.twoColumnLayout : {}}>
+                  <View style={isLandscape ? {flex: 1, marginRight: 8} : {}}>
+                    {renderInput("Name", form.name, t => setForm({...form, name: t}))}
+                  </View>
+                  <View style={isLandscape ? {flex: 1, marginLeft: 8} : {}}>
+                    {renderInput("Email", form.email, t => setForm({...form, email: t}))}
+                  </View>
+                </View>
+                
+                {/* CONTACT */}
+                <View style={{marginBottom: 15}}>
+                    <Text style={{fontSize: 12, color:'#666', marginBottom: 5}}>WhatsApp Number</Text>
+                    <View style={isLandscape ? styles.twoColumnLayout : {flexDirection: 'row', gap: 8}}>
+                        <TextInput value={form.whatsapp_code} onChangeText={t => setForm({...form, whatsapp_code: t})} style={[styles.input, isLandscape ? {flex: 0.4} : {flex: 0.3}]} placeholder="+966"/>
+                        <TextInput value={form.whatsapp_number} onChangeText={t => setForm({...form, whatsapp_number: t})} style={[styles.input, isLandscape ? {flex: 0.6} : {flex: 0.7}]} placeholder="Number"/>
+                    </View>
+                </View>
+
+                {/* LOCATION */}
+                <View style={isLandscape ? styles.twoColumnLayout : {}}>
+                  <View style={isLandscape ? {flex: 1, marginRight: 8} : {}}>
+                    {renderDropdown("Country", form.country_name, 'country')}
+                  </View>
+                  <View style={isLandscape ? {flex: 1, marginLeft: 8} : {}}>
+                    {renderDropdown("State", form.state_name, 'state')}
+                  </View>
+                </View>
+                
+                {manualDistrict 
+                   ? renderInput("District", form.district_name, t => setForm({...form, district_name: t}))
+                   : renderDropdown("District", form.district_name, 'district')
+                }
+                
+                <View style={isLandscape ? styles.twoColumnLayout : {}}>
+                  <View style={isLandscape ? {flex: 1, marginRight: 8} : {}}>
+                    {renderInput("City", form.city, t => setForm({...form, city: t}))}
+                  </View>
+                  <View style={isLandscape ? {flex: 1, marginLeft: 8} : {}}></View>
+                </View>
+
+                {renderInput("Address", form.address, t => setForm({...form, address: t}))}
+              </>
+            )}
             
             <TouchableOpacity style={styles.saveBtn} onPress={handleSubmit} disabled={saving}>
-                {saving ? <ActivityIndicator color="#fff"/> : <Text style={{color:'#fff', fontWeight:'bold'}}>Update Party</Text>}
+                {saving ? <ActivityIndicator color="#fff"/> : <Text style={{color:'#fff', fontWeight:'bold'}}>Update {partyType === 'sender' ? 'Sender' : 'Receiver'}</Text>}
             </TouchableOpacity>
         </ScrollView>
 
@@ -226,7 +341,37 @@ export default function EditPartyScreen() {
 
 const styles = StyleSheet.create({
     center: {flex:1, justifyContent:'center', alignItems:'center'},
-    input: { borderWidth:1, borderColor:'#ddd', borderRadius:8, padding:12, backgroundColor:'#f9f9f9'},
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      marginTop: 12,
+      backgroundColor: '#fff',
+      borderBottomWidth: 1,
+      borderBottomColor: '#e0e0e0',
+    },
+    headerTitle: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      color: '#000',
+    },
+    scrollContent: {
+      padding: 16,
+      paddingTop: 20,
+      paddingBottom: 30,
+    },
+    scrollContentLandscape: {
+      paddingTop: 12,
+      paddingBottom: 12,
+    },
+    twoColumnLayout: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginBottom: 15,
+    },
+    input: { borderWidth:1, borderColor:'#ddd', borderRadius:8, padding:12, backgroundColor:'#f9f9f9', marginBottom: 15},
     dropdown: { borderWidth:1, borderColor:'#ddd', borderRadius:8, padding:12, backgroundColor:'#f9f9f9', flexDirection:'row', justifyContent:'space-between'},
-    saveBtn: { backgroundColor: colors.primary, padding: 15, borderRadius: 10, alignItems:'center', marginTop: 20}
+    saveBtn: { backgroundColor: colors.primary, padding: 15, borderRadius: 10, alignItems:'center', marginTop: 20, marginBottom: 20, height: 48, justifyContent: 'center'}
 });

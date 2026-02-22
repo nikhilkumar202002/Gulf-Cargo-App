@@ -53,6 +53,7 @@ export default function MainTabNavigator() {
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
+        keyboardHidesTabBar: true,
         tabBarActiveTintColor: colors.primary, 
         tabBarInactiveTintColor: '#1F2937', 
         tabBarStyle: styles.tabBar,

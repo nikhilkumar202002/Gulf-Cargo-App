@@ -102,7 +102,9 @@ export default function CargoDetailsScreen() {
           <MaterialCommunityIcons name="arrow-left" size={28} color="#333" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Booking {cargo?.booking_no}</Text>
-        <View style={{ width: 28 }} />
+        <TouchableOpacity onPress={() => navigation.navigate('CargoEdit', { id })}>
+          <MaterialCommunityIcons name="pencil" size={24} color={colors.primary} />
+        </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>

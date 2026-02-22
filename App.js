@@ -11,6 +11,7 @@ import PartiesScreen from './src/screens/PartiesScreen';
 import PartyDetailsScreen from './src/screens/PartyDetailsScreen';
 import EditPartyScreen from './src/screens/EditPartyScreen';
 import CargoDetailsScreen from './src/screens/CargoDetailsScreen';
+import CargoEditScreen from './src/screens/CargoEditScreen';
 import EditProfileScreen from './src/screens/EditProfileScreen';
 import ChangePasswordScreen from './src/screens/ChangePasswordScreen';
 
@@ -83,6 +84,11 @@ export default function App() {
               name="CargoDetails" 
               component={CargoDetailsScreen} 
               options={{ title: 'Cargo Details' }} 
+            />
+            <Stack.Screen 
+              name="CargoEdit" 
+              component={CargoEditScreen} 
+              options={{ title: 'Edit Cargo' }} 
             />
             <Stack.Screen 
               name="EditProfile" 

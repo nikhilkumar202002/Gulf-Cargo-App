@@ -117,7 +117,7 @@ export default function CargoListScreen() {
     if (action === 'view') {
       navigation.navigate('CargoDetails', { id: selectedCargo.id });
     } else if (action === 'edit') {
-      navigation.navigate('Cargo', { editId: selectedCargo.id }); 
+      navigation.navigate('CargoEdit', { id: selectedCargo.id }); 
     } else if (action === 'bill') {
         generateInvoicePDF(selectedCargo, userData);
     }
