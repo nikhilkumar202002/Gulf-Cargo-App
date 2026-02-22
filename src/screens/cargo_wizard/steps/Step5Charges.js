@@ -38,7 +38,7 @@ export default function Step5Charges({ data, update }) {
     calculateAll();
   }, [
     ...chargeRows.map(r => data[`quantity_${r.key}`]),
-    ...chargeRows.map(r => data[`rate_${r.key}`]),
+    ...chargeRows.map(r => data[`unit_rate_${r.key}`]),
   ]);
 
   const calculateAll = () => {
@@ -46,7 +46,7 @@ export default function Step5Charges({ data, update }) {
 
     chargeRows.forEach(row => {
       const qty = parseFloat(data[`quantity_${row.key}`]) || 0;
-      const rate = parseFloat(data[`rate_${row.key}`]) || 0;
+      const rate = parseFloat(data[`unit_rate_${row.key}`]) || 0;
       const amount = qty * rate;
 
       const currentAmount = parseFloat(data[`amount_${row.key}`]) || 0;
@@ -78,7 +78,7 @@ export default function Step5Charges({ data, update }) {
 
   const renderRow = (item) => {
     const qtyKey = `quantity_${item.key}`;
-    const rateKey = `rate_${item.key}`;
+    const rateKey = `unit_rate_${item.key}`;
     const amountKey = `amount_${item.key}`;
 
     return (
@@ -90,11 +90,12 @@ export default function Step5Charges({ data, update }) {
         <View style={styles.colQty}>
             <TextInput 
                 style={[styles.input, item.readOnlyQty && styles.readOnlyInput]}
-                placeholder=""
+                placeholder="0"
                 keyboardType="numeric"
                 value={String(data[qtyKey] || '')}
                 onChangeText={(t) => update(qtyKey, t)}
-                editable={!item.readOnlyQty} 
+                editable={!item.readOnlyQty}
+                placeholderTextColor="#D1D5DB"
             />
         </View>
 
@@ -102,10 +103,11 @@ export default function Step5Charges({ data, update }) {
         <View style={styles.colRate}>
              <TextInput 
                 style={styles.input}
-                placeholder=""
-                keyboardType="numeric"
+                placeholder="0.00"
+                keyboardType="decimal-pad"
                 value={String(data[rateKey] || '')}
                 onChangeText={(t) => update(rateKey, t)}
+                placeholderTextColor="#D1D5DB"
             />
         </View>
 
@@ -216,7 +218,8 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#111827',
     backgroundColor: '#fff',
-    padding: 0
+    paddingHorizontal: 8,
+    paddingVertical: 6
   },
   readOnlyInput: {
     backgroundColor: '#E5E7EB', // Matches the gray background in UI for Total Weight

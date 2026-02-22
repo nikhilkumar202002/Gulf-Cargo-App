@@ -4,6 +4,7 @@ import {
   TouchableOpacity, RefreshControl, TextInput, Platform, StatusBar,
   Modal, TouchableWithoutFeedback 
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { getCargoList, searchCargoByBookingNo } from '../services/cargoService';
@@ -23,25 +24,51 @@ export default function CargoListScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
+  const [error, setError] = useState(null);
 
   const [menuVisible, setMenuVisible] = useState(false);
   const [selectedCargo, setSelectedCargo] = useState(null);
 
-  useEffect(() => { fetchCargos(1); }, []);
+  useEffect(() => { 
+    console.log('CargoListScreen mounted');
+    fetchCargos(1); 
+  }, []);
 
   const fetchCargos = async (pageNum) => {
     try {
       if (pageNum === 1) setLoading(true);
+      setError(null);
+      console.log('Fetching cargos for page:', pageNum);
       const response = await getCargoList(pageNum);
-      const list = response.data.data || response.data || [];
-      const meta = response.data.meta || {}; 
+      console.log('Full response object:', response);
+      console.log('Response status:', response.status);
+      console.log('Response data:', response.data);
+      
+      // Handle different response formats
+      let list = [];
+      if (response.data && response.data.data && Array.isArray(response.data.data)) {
+        list = response.data.data;
+      } else if (Array.isArray(response.data)) {
+        list = response.data;
+      } else if (response.data) {
+        list = [response.data];
+      }
+      
+      const meta = response.data?.meta || {}; 
+      console.log('Parsed list:', list);
+      console.log('List length:', list.length);
 
       if (pageNum === 1) setCargos(list);
       else setCargos(prev => [...prev, ...list]);
 
       setLastPage(meta.last_page || (list.length < 10 ? pageNum : pageNum + 1));
     } catch (e) { 
-      console.error(e); 
+      console.error('Error fetching cargos:', e);
+      console.error('Error details - status:', e.response?.status);
+      console.error('Error details - data:', e.response?.data);
+      console.error('Error details - message:', e.message);
+      setError(e.response?.data?.message || e.message || 'Failed to load cargo list');
+      setCargos([]);
     } finally { 
       setLoading(false); 
       setLoadingMore(false); 
@@ -55,10 +82,13 @@ export default function CargoListScreen() {
     if (text.length < 3) return;
     try {
       setLoading(true); setIsSearching(true);
+      setError(null);
       const response = await searchCargoByBookingNo(text);
       const results = response.data.data || response.data || [];
       setCargos(Array.isArray(results) ? results : [results]);
     } catch (e) { 
+      console.error('Search error:', e);
+      setError(e.message || 'Search failed');
       setCargos([]); 
     } finally { 
       setLoading(false); 
@@ -102,7 +132,11 @@ export default function CargoListScreen() {
     
     // Safety check for boxes/weight
     const boxCount = item.no_of_boxes || (Array.isArray(item.boxes) ? item.boxes.length : 0);
-    const weight = parseFloat(item.total_weight || 0).toFixed(3);
+    const totalWeight = item.total_weight || (Array.isArray(item.boxes) ? item.boxes.reduce((sum, box) => sum + parseFloat(box.weight || 0), 0) : 0);
+    const weight = parseFloat(totalWeight).toFixed(3);
+
+    console.log("Item boxes:", item.boxes);
+    console.log("Calculated total weight:", totalWeight);
 
     return (
       <TouchableOpacity 
@@ -159,7 +193,7 @@ export default function CargoListScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
       <StatusBar barStyle="dark-content" />
       
       {/* Search Header */}
@@ -180,7 +214,19 @@ export default function CargoListScreen() {
         </View>
       </View>
 
-      {loading ? (
+      {error ? (
+        <View style={styles.errorContainer}>
+          <MaterialCommunityIcons name="alert-circle-outline" size={48} color="#EF4444" />
+          <Text style={styles.errorTitle}>Error Loading Cargo</Text>
+          <Text style={styles.errorMessage}>{error}</Text>
+          <TouchableOpacity 
+            style={styles.retryButton}
+            onPress={() => { setError(null); fetchCargos(1); }}
+          >
+            <Text style={styles.retryButtonText}>Try Again</Text>
+          </TouchableOpacity>
+        </View>
+      ) : loading ? (
         <View style={styles.centerLoader}>
           <ActivityIndicator size="small" color={colors.primary} />
         </View>
@@ -230,7 +276,7 @@ export default function CargoListScreen() {
           </View>
         </TouchableWithoutFeedback>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -373,6 +419,11 @@ const styles = StyleSheet.create({
   centerLoader: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   emptyState: { alignItems: 'center', marginTop: 100 },
   emptyTitle: { fontSize: 16, fontWeight: '600', color: '#6B7280', marginTop: 16 },
+  errorContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 },
+  errorTitle: { fontSize: 18, fontWeight: '700', color: '#111827', marginTop: 16 },
+  errorMessage: { fontSize: 14, color: '#6B7280', marginTop: 8, textAlign: 'center' },
+  retryButton: { backgroundColor: colors.primary, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8, marginTop: 20 },
+  retryButtonText: { color: '#fff', fontWeight: '600', fontSize: 14 },
 
   // Modal
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' },

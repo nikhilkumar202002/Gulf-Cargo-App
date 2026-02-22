@@ -4,6 +4,7 @@ import {
   ActivityIndicator, KeyboardAvoidingView, Platform, StatusBar 
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { useUser } from '../context/UserContext';
 import { createCargo } from '../services/cargoService';
 import { generateInvoicePDF } from '../services/pdfGenerator';
@@ -66,9 +67,98 @@ export default function CargoScreen() {
     }
   }, [userData]);
 
+  useFocusEffect(
+    React.useCallback(() => {
+      // Reset form and step when screen comes into focus
+      setCurrentStep(1);
+      setFormData(prev => {
+        const userObj = userData?.user || userData;
+        const bId = userData?.branch_id || userObj?.branch?.id || userObj?.branch_id;
+        const bName = userData?.branchName || userObj?.branch?.name || userObj?.branch_name;
+        
+        return {
+          ...getInitialState(),
+          branch_id: bId || '',
+          branch_name: bName || '',
+          name_id: userObj?.id || userData?.id || ''
+        };
+      });
+    }, [userData])
+  );
+
   const updateFormData = (key, value) => setFormData(prev => ({ ...prev, [key]: value }));
 
+  const calculateFinancials = () => {
+    const amount_total_weight = (formData.quantity_total_weight || 0) * (formData.unit_rate_total_weight || 0);
+    const amount_duty = (formData.quantity_duty || 0) * (formData.unit_rate_duty || 0);
+    const amount_packing_charge = (formData.quantity_packing_charge || 0) * (formData.unit_rate_packing_charge || 0);
+    const amount_additional_packing_charge = (formData.quantity_additional_packing_charge || 0) * (formData.unit_rate_additional_packing_charge || 0);
+    const amount_insurance = (formData.quantity_insurance || 0) * (formData.unit_rate_insurance || 0);
+    const amount_awb_fee = (formData.quantity_awb_fee || 0) * (formData.unit_rate_awb_fee || 0);
+    const amount_vat_amount = (formData.quantity_vat_amount || 0) * (formData.unit_rate_vat_amount || 0);
+    const amount_volume_weight = (formData.quantity_volume_weight || 0) * (formData.unit_rate_volume_weight || 0);
+    const amount_discount = (formData.quantity_discount || 0) * (formData.unit_rate_discount || 0);
+    const amount_other_charges = (formData.quantity_other_charges || 0) * (formData.unit_rate_other_charges || 0);
+
+    const totalWeight = formData.boxes.reduce((sum, box) => sum + parseFloat(box.weight || 0), 0);
+    const total_cost = amount_total_weight;
+    const bill_charges = amount_duty + amount_packing_charge + amount_additional_packing_charge + amount_insurance + amount_awb_fee + amount_volume_weight + amount_other_charges;
+    const net_total = total_cost + bill_charges + amount_vat_amount;
+    const vat_cost = amount_vat_amount;
+
+    setFormData(prev => ({
+      ...prev,
+      total_weight: totalWeight,
+      total_cost,
+      bill_charges,
+      net_total,
+      vat_cost,
+      amount_total_weight,
+      amount_duty,
+      amount_packing_charge,
+      amount_additional_packing_charge,
+      amount_insurance,
+      amount_awb_fee,
+      amount_vat_amount,
+      amount_volume_weight,
+      amount_discount,
+      amount_other_charges,
+    }));
+  };
+
+  useEffect(() => {
+    if (currentStep === 6) {
+      calculateFinancials();
+    }
+  }, [currentStep]);
+
   const handleSubmitInvoice = async () => {
+    // Calculate amounts
+    const amount_total_weight = (formData.quantity_total_weight || 0) * (formData.unit_rate_total_weight || 0);
+    const amount_duty = (formData.quantity_duty || 0) * (formData.unit_rate_duty || 0);
+    const amount_packing_charge = (formData.quantity_packing_charge || 0) * (formData.unit_rate_packing_charge || 0);
+    const amount_additional_packing_charge = (formData.quantity_additional_packing_charge || 0) * (formData.unit_rate_additional_packing_charge || 0);
+    const amount_insurance = (formData.quantity_insurance || 0) * (formData.unit_rate_insurance || 0);
+    const amount_awb_fee = (formData.quantity_awb_fee || 0) * (formData.unit_rate_awb_fee || 0);
+    const amount_vat_amount = (formData.quantity_vat_amount || 0) * (formData.unit_rate_vat_amount || 0);
+    const amount_volume_weight = (formData.quantity_volume_weight || 0) * (formData.unit_rate_volume_weight || 0);
+    const amount_discount = (formData.quantity_discount || 0) * (formData.unit_rate_discount || 0);
+    const amount_other_charges = (formData.quantity_other_charges || 0) * (formData.unit_rate_other_charges || 0);
+
+    // Calculate totals
+    const totalWeight = formData.boxes.reduce((sum, box) => sum + parseFloat(box.weight || 0), 0);
+    const boxWeightArr = formData.boxes.map(box => parseFloat(box.weight || 0).toString());
+    const totalPieces = formData.boxes.length;
+
+    // total_cost is the box weight total cost
+    const total_cost = amount_total_weight;
+    // bill_charges is the sum of other charges
+    const bill_charges = amount_duty + amount_packing_charge + amount_additional_packing_charge + amount_insurance + amount_awb_fee + amount_volume_weight + amount_other_charges;
+    // net_total is total_cost + bill_charges
+    const net_total = total_cost + bill_charges;
+    // vat_cost
+    const vat_cost = amount_vat_amount;
+
     // Format data for API
     const submitData = {
       ...formData,
@@ -78,6 +168,26 @@ export default function CargoScreen() {
       collected_by_id: formData.collected_by?.id || formData.collected_by_id,
       // Ensure branch_id is set
       branch_id: formData.branch_id || userData?.branch_id || userData?.user?.branch?.id,
+      // Add calculated fields
+      total_weight: parseFloat(totalWeight).toFixed(2),
+      box_weight: boxWeightArr,
+      no_of_pieces: totalPieces,
+      total_cost: parseFloat(total_cost).toFixed(2),
+      bill_charges: parseFloat(bill_charges).toFixed(2),
+      vat_percentage: parseFloat(formData.vat_percentage || 0).toFixed(2),
+      vat_cost: parseFloat(vat_cost).toFixed(2),
+      net_total: parseFloat(net_total).toFixed(2),
+      // Update amounts
+      amount_total_weight: parseFloat(amount_total_weight).toFixed(2),
+      amount_duty: parseFloat(amount_duty).toFixed(2),
+      amount_packing_charge: parseFloat(amount_packing_charge).toFixed(2),
+      amount_additional_packing_charge: parseFloat(amount_additional_packing_charge).toFixed(2),
+      amount_insurance: parseFloat(amount_insurance).toFixed(2),
+      amount_awb_fee: parseFloat(amount_awb_fee).toFixed(2),
+      amount_vat_amount: parseFloat(amount_vat_amount).toFixed(2),
+      amount_volume_weight: parseFloat(amount_volume_weight).toFixed(2),
+      amount_discount: parseFloat(amount_discount).toFixed(2),
+      amount_other_charges: parseFloat(amount_other_charges).toFixed(2),
       // Format items from boxes
       items: formData.boxes.flatMap((box, boxIndex) => 
         box.items.map((item, itemIndex) => ({
@@ -85,10 +195,10 @@ export default function CargoScreen() {
           box_number: boxIndex + 1,
           name: item.name || '',
           piece_no: item.qty || 1,
-          weight: item.weight || 0,
-          unit_price: item.unit_price || 0,
-          total_price: item.total_price || 0,
-          box_weight: box.weight || 0
+          weight: parseFloat(item.weight || 0).toFixed(2),
+          unit_price: parseFloat(item.unit_price || 0).toFixed(2),
+          total_price: parseFloat(item.total_price || 0).toFixed(2),
+          box_weight: parseFloat(box.weight || 0).toFixed(2)
         }))
       ),
     };
@@ -116,6 +226,7 @@ export default function CargoScreen() {
       console.log('Cargo ID from response:', response.data?.id);
       if (response.status === 200 || response.status === 201) {
         Alert.alert("Success", "Cargo created successfully!");
+        setFormData(getInitialState()); // Reset form to fresh state
         navigation.navigate('History');
       } else {
         Alert.alert("Error", "Failed to create cargo");
@@ -208,7 +319,7 @@ const styles = StyleSheet.create({
   progressBarFill: { height: '100%', backgroundColor: '#ed2624' },
   
   contentContainer: { flex: 1, paddingHorizontal: 20 },
-  footer: { flexDirection: 'row', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 130, backgroundColor: '#F9FAFB' },
+  footer: { flexDirection: 'row', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 92, backgroundColor: '#F9FAFB' },
   btn: { height: 50, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
   backBtn: { flex: 0.3, backgroundColor: '#fff', borderWidth: 1, borderColor: '#D1D5DB', marginRight: 10 },
   backBtnText: { color: '#374151', fontSize: 16, fontWeight: '500', fontFamily: 'InstrumentSans-Regular' },

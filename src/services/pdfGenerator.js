@@ -118,6 +118,10 @@ const fetchInvoiceData = async (input) => {
     // ------------------------------------------
     // STEP 4: ASSEMBLE DATA
     // ------------------------------------------
+    console.log("Cargo data boxes:", cargoData.boxes);
+    console.log("Cargo data items:", cargoData.items);
+    console.log("Cargo data total_weight:", cargoData.total_weight);
+    
     let boxes = [];
     const rawBoxes = cargoData.boxes;
 
@@ -166,6 +170,9 @@ const fetchInvoiceData = async (input) => {
         weight: box.weight || (Array.isArray(box.items) ? box.items.reduce((sum, item) => sum + parseFloat(item.weight || 0), 0) : 0)
     }));
 
+    console.log("Processed boxes:", boxes);
+    console.log("Calculated total weight from boxes:", boxes.reduce((sum, box) => sum + parseFloat(box.weight || 0), 0));
+
     const finalData = {
       ...cargoData,
       sender: senderData,
@@ -178,8 +185,10 @@ const fetchInvoiceData = async (input) => {
       branch_logo: branchData.logo_url || null,
       boxes: boxes,
       total_boxes: boxes.length,
-      total_weight: boxes.reduce((sum, box) => sum + parseFloat(box.weight || 0), 0)
+      total_weight: cargoData.total_weight ? parseFloat(cargoData.total_weight) : boxes.reduce((sum, box) => sum + parseFloat(box.weight || 0), 0)
     };
+
+    console.log("Final total_weight:", finalData.total_weight);
 
     console.log(`--- INVOICE DATA READY [Boxes: ${boxes.length}] ---`);
     return finalData;

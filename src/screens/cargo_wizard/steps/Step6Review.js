@@ -19,6 +19,13 @@ export default function Step6Review({ data }) {
   const otherChargeKeys = ['duty', 'packing_charge', 'additional_packing_charge', 'insurance', 'awb_fee', 'other_charges'];
   const billChargesValue = otherChargeKeys.reduce((sum, key) => sum + (parseFloat(data[`amount_${key}`]) || 0), 0);
   
+  // Additional calculations for API fields
+  const totalCost = subtotalValue;
+  const billCharges = billChargesValue;
+  const vatPercentage = parseFloat(data.vat_percentage) || 0;
+  const vatCost = parseFloat(data.amount_vat_amount) || 0;
+  const netTotal = totalCost + billCharges + vatCost;
+  
   // Flatten Items for display
   const allItems = data.boxes ? data.boxes.flatMap((box, boxIndex) => 
     box.items.map((item, itemIndex) => ({
@@ -149,13 +156,13 @@ export default function Step6Review({ data }) {
         {/* --- FINANCIAL SUMMARY --- */}
         <SectionHeader title="Financial Summary" />
         <View style={styles.sectionContent}>
-            <InfoRow label="Subtotal (Weight)" value={formatCurrency(subtotalValue)} suffix="SAR" isBold />
-            <InfoRow label="Bill Charges" value={formatCurrency(billChargesValue)} suffix="SAR" isBold />
-            <InfoRow label="VAT" value={data.quantity_vat_amount ? `${parseInt(data.quantity_vat_amount)}%` : '0%'} isBold />
+            <InfoRow label="Subtotal (Weight)" value={formatCurrency(totalCost)} suffix="SAR" isBold />
+            <InfoRow label="Bill Charges" value={formatCurrency(billCharges)} suffix="SAR" isBold />
+            <InfoRow label="VAT" value={`${vatPercentage}%`} isBold />
             
             <View style={styles.netTotalRow}>
                 <Text style={styles.netTotalLabel}>NET Total</Text>
-                <Text style={styles.netTotalValue}>{data.net_total} <Text style={styles.currency}>SAR</Text></Text>
+                <Text style={styles.netTotalValue}>{formatCurrency(netTotal)} <Text style={styles.currency}>SAR</Text></Text>
             </View>
         </View>
 
