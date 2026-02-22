@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Modal 
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { getSenderParties, getReceiverParties } from '../../../services/partiesServices'; 
 import BottomSheetSelect from '../components/BottomSheetSelect'; 
@@ -150,68 +151,72 @@ export default function Step2Parties({ data, update }) {
 
   // --- MODE 2: LIST VIEW ---
   return (
-    <View style={styles.container}>
-      <View style={{height: 10}} />
+    <SafeAreaView style={styles.container}>
+      <View style={{ flex: 1 }}>
+        <View style={{height: 10}} />
 
-      {renderCard(
-          'sender', 
-          data.sender, 
-          () => setShowSenderSelect(true), 
-          () => setViewMode('create_sender')
-      )}
+        {renderCard(
+            'sender', 
+            data.sender, 
+            () => setShowSenderSelect(true), 
+            () => setViewMode('create_sender')
+        )}
 
-      {renderCard(
-          'receiver', 
-          data.receiver, 
-          () => setShowReceiverSelect(true), 
-          () => setViewMode('create_receiver')
-      )}
+        {renderCard(
+            'receiver', 
+            data.receiver, 
+            () => setShowReceiverSelect(true), 
+            () => setViewMode('create_receiver')
+        )}
 
-      {loading && <ActivityIndicator style={{marginTop: 10}} color={colors.primary} />}
+        {loading && <ActivityIndicator style={{marginTop: 10}} color={colors.primary} />}
 
-      {/* SELECTION MODALS */}
-      <BottomSheetSelect 
-        visible={showSenderSelect} 
-        title="Select Sender" 
-        data={sendersList} 
-        onClose={() => setShowSenderSelect(false)} 
-        onSelect={(i) => update('sender', i)} 
-      />
-      
-      <BottomSheetSelect 
-        visible={showReceiverSelect} 
-        title="Select Receiver" 
-        data={receiversList} 
-        onClose={() => setShowReceiverSelect(false)} 
-        onSelect={(i) => update('receiver', i)} 
-      />
+        {/* SELECTION MODALS */}
+        <BottomSheetSelect 
+          visible={showSenderSelect} 
+          title="Select Sender" 
+          data={sendersList} 
+          onClose={() => setShowSenderSelect(false)} 
+          onSelect={(i) => update('sender', i)} 
+        />
+        
+        <BottomSheetSelect 
+          visible={showReceiverSelect} 
+          title="Select Receiver" 
+          data={receiversList} 
+          onClose={() => setShowReceiverSelect(false)} 
+          onSelect={(i) => update('receiver', i)} 
+        />
 
-      {/* CREATE PARTY MODAL */}
-      <Modal
-        visible={viewMode === 'create_sender' || viewMode === 'create_receiver'}
-        animationType="slide"
-        presentationStyle="fullScreen"
-        onRequestClose={() => setViewMode('list')}
-      >
-        <View style={{ flex: 1 }}>
-          <CreatePartyForm 
-            type={viewMode === 'create_sender' ? 'sender' : 'receiver'}
-            branchId={userData?.user?.branch_id || userData?.branch_id}
-            onCancel={() => setViewMode('list')}
-            onSuccess={(newParty) => {
-              if (viewMode === 'create_sender') {
-                setSendersList(prev => [newParty, ...prev]);
-                update('sender', newParty);
-              } else {
-                setReceiversList(prev => [newParty, ...prev]);
-                update('receiver', newParty);
-              }
-              setViewMode('list');
-            }}
-          />
-        </View>
-      </Modal>
-    </View>
+        {/* CREATE PARTY MODAL */}
+        <Modal
+          visible={viewMode === 'create_sender' || viewMode === 'create_receiver'}
+          animationType="slide"
+          presentationStyle="fullScreen"
+          onRequestClose={() => setViewMode('list')}
+        >
+          <SafeAreaView style={{ flex: 1 }}>
+            <View style={{ flex: 1 }}>
+              <CreatePartyForm 
+                type={viewMode === 'create_sender' ? 'sender' : 'receiver'}
+                branchId={userData?.user?.branch_id || userData?.branch_id}
+                onCancel={() => setViewMode('list')}
+                onSuccess={(newParty) => {
+                  if (viewMode === 'create_sender') {
+                    setSendersList(prev => [newParty, ...prev]);
+                    update('sender', newParty);
+                  } else {
+                    setReceiversList(prev => [newParty, ...prev]);
+                    update('receiver', newParty);
+                  }
+                  setViewMode('list');
+                }}
+              />
+            </View>
+          </SafeAreaView>
+        </Modal>
+      </View>
+    </SafeAreaView>
   );
 }
 
@@ -222,7 +227,7 @@ const styles = StyleSheet.create({
   
   headerRow: { 
       flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', 
-      marginBottom: 8, paddingHorizontal: 4 
+      marginBottom: 8, paddingHorizontal: 4
   },
   headerLabel: { 
       fontSize: 12, fontWeight: '700', color: '#888', textTransform: 'uppercase', letterSpacing: 0.5 
