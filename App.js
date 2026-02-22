@@ -9,7 +9,8 @@ import LoginScreen from './src/screens/LoginScreen';
 import MainLayout from './src/navigation/MainLayout';
 import PartiesScreen from './src/screens/PartiesScreen';
 import PartyDetailsScreen from './src/screens/PartyDetailsScreen';
-import EditPartyScreen from './src/screens/EditPartyScreen';
+import EditSenderScreen from './src/screens/EditSenderScreen';
+import EditReceiverScreen from './src/screens/EditReceiverScreen';
 import CargoDetailsScreen from './src/screens/CargoDetailsScreen';
 import CargoEditScreen from './src/screens/CargoEditScreen';
 import EditProfileScreen from './src/screens/EditProfileScreen';
@@ -76,9 +77,14 @@ export default function App() {
               options={{ title: 'Party Details' }} 
             />
             <Stack.Screen 
-              name="EditParty" 
-              component={EditPartyScreen} 
-              options={{ title: 'Edit Party' }} 
+              name="EditSender" 
+              component={EditSenderScreen} 
+              options={{ title: 'Edit Sender' }} 
+            />
+            <Stack.Screen 
+              name="EditReceiver" 
+              component={EditReceiverScreen} 
+              options={{ title: 'Edit Receiver' }} 
             />
             <Stack.Screen 
               name="CargoDetails" 

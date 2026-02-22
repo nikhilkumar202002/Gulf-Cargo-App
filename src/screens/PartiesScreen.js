@@ -119,7 +119,9 @@ export default function PartiesScreen() {
         navigation.navigate('PartyDetails', { id: selectedParty.id });
         break;
       case 'edit':
-        navigation.navigate('EditParty', { id: selectedParty.id });
+        // Route to the appropriate edit screen based on party's customer_type_id
+        const editScreen = selectedParty.customer_type_id === 1 ? 'EditSender' : 'EditReceiver';
+        navigation.navigate(editScreen, { id: selectedParty.id });
         break;
       case 'delete':
         Alert.alert(

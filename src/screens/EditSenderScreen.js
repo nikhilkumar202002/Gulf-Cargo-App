@@ -8,7 +8,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { getPartyDetails, updateParty } from '../services/partiesServices';
 import { 
   getAllCountries, getStatesByCountry, getDistrictsByState, 
-  getAllDocumentTypes 
+  getAllDocumentTypes, getAllPhoneCodes 
 } from '../services/coreServices'; 
 import BottomSheetSelect from './cargo_wizard/components/BottomSheetSelect';
 import colors from '../styles/colors'; 
@@ -22,7 +22,8 @@ export default function EditSenderScreen() {
   const [countries, setCountries] = useState([]);
   const [states, setStates] = useState([]);
   const [districts, setDistricts] = useState([]);
-
+  const [phoneCodes, setPhoneCodes] = useState([]);
+  const [docTypes, setDocTypes] = useState([]);
   // --- LOADING STATES ---
   const [fetching, setFetching] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -33,10 +34,13 @@ export default function EditSenderScreen() {
   const isLandscape = windowDimensions.width > windowDimensions.height;
 
   const [form, setForm] = useState({
-    name: '', email: '', whatsapp_code: '+966', whatsapp_number: '',
+    name: '', email: '', contact_code: '+966', contact_number: '',
+    whatsapp_code: '+966', whatsapp_number: '', use_same_number: false,
     customer_type_id: 1, country_id: '', country_name: '',
     state_id: '', state_name: '', district_id: '', district_name: '',
-    city: '', address: ''
+    city: '', address: '',
+    document_type_id: '', document_type_name: '',
+    document_id: '', document_file: null
   });
 
   useEffect(() => {
@@ -59,11 +63,13 @@ export default function EditSenderScreen() {
 
   const loadInitialData = async () => {
     try {
-      const [co, partyRes] = await Promise.all([
-          getAllCountries(), getPartyDetails(id)
+      const [co, pc, dt, partyRes] = await Promise.all([
+          getAllCountries(), getAllPhoneCodes(), getAllDocumentTypes(), getPartyDetails(id)
       ]);
 
       setCountries(safeExtract(co));
+      setPhoneCodes(safeExtract(pc).map(i => ({ ...i, name: `${i.country_name || ''} (${i.code})` })));
+      setDocTypes(safeExtract(dt).map(i => ({ ...i, name: i.document_name })));
 
       const party = partyRes.data.data || partyRes.data;
       
@@ -85,8 +91,11 @@ export default function EditSenderScreen() {
       setForm({
         name: party.name || '',
         email: party.email || '',
+        contact_code: party.contact_code || '+966',
+        contact_number: party.contact_number || '',
         whatsapp_code: party.whatsapp_code || '+966',
         whatsapp_number: party.whatsapp_number || '',
+        use_same_number: false,
         customer_type_id: party.customer_type_id || 1,
         country_id: party.country_id,
         country_name: party.country?.name || party.country_name,
@@ -95,7 +104,11 @@ export default function EditSenderScreen() {
         district_id: party.district_id,
         district_name: party.district?.name || party.district_name,
         city: party.city || '',
-        address: party.address || ''
+        address: party.address || '',
+        document_type_id: party.document_type_id,
+        document_type_name: party.document_type?.name,
+        document_id: party.document_id || '',
+        document_file: null
       });
 
     } catch(e) {
@@ -179,62 +192,67 @@ export default function EditSenderScreen() {
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <MaterialCommunityIcons name="arrow-left" size={24} color="#000" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Edit Sender</Text>
+          <Text style={styles.headerTitle}>Edit Sender: {form.name}</Text>
           <View style={{width: 24}} />
         </View>
 
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scrollContent, isLandscape && styles.scrollContentLandscape]}>
-            {/* BASIC INFO */}
-            <View style={isLandscape ? styles.twoColumnLayout : {}}>
-              <View style={isLandscape ? {flex: 1, marginRight: 8} : {}}>
-                {renderInput("Name", form.name, t => setForm({...form, name: t}))}
-              </View>
-              <View style={isLandscape ? {flex: 1, marginLeft: 8} : {}}>
-                {renderInput("Email", form.email, t => setForm({...form, email: t}))}
-              </View>
-            </View>
+            {/* SECTION 1: PERSONAL & CONTACT INFO */}
+            <Text style={styles.sectionTitle}>1. Personal & Contact Info</Text>
             
-            {/* WHATSAPP */}
+            {/* FULL NAME */}
+            {renderInput("Full Name", form.name, t => setForm({...form, name: t}))}
+            
+            {/* CONTACT NUMBER */}
             <View style={{marginBottom: 15}}>
-                <Text style={{fontSize: 12, color:'#666', marginBottom: 5}}>WhatsApp Number</Text>
-                <View style={isLandscape ? styles.twoColumnLayout : {flexDirection: 'row', gap: 8}}>
-                    <TextInput value={form.whatsapp_code} onChangeText={t => setForm({...form, whatsapp_code: t})} style={[styles.input, isLandscape ? {flex: 0.4} : {flex: 0.3}]} placeholder="+966"/>
-                    <TextInput value={form.whatsapp_number} onChangeText={t => setForm({...form, whatsapp_number: t})} style={[styles.input, isLandscape ? {flex: 0.6} : {flex: 0.7}]} placeholder="Number"/>
+                <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5}}>
+                    <Text style={{fontSize: 12, color:'#666'}}>Contact Number</Text>
+                    <TouchableOpacity onPress={() => setForm({...form, contact_number: form.whatsapp_number, contact_code: form.whatsapp_code})}>
+                        <View style={{flexDirection: 'row', alignItems: 'center', gap: 6}}>
+                            <View style={{width: 16, height: 16, borderWidth: 2, borderColor: '#4CAF50', borderRadius: 4, backgroundColor: form.contact_number === form.whatsapp_number ? '#4CAF50' : '#fff'}}/>
+                            <Text style={{fontSize: 12, color: '#666'}}>Same as Contact</Text>
+                        </View>
+                    </TouchableOpacity>
+                </View>
+                <View style={{flexDirection: 'row', gap: 8}}>
+                    <TextInput value={form.contact_code} onChangeText={t => setForm({...form, contact_code: t})} style={[styles.input, {flex: 0.3}]} placeholder="+966"/>
+                    <TextInput value={form.contact_number} onChangeText={t => setForm({...form, contact_number: t})} style={[styles.input, {flex: 0.7}]} placeholder="Number"/>
                 </View>
             </View>
 
-            {/* LOCATION */}
-            <View style={isLandscape ? styles.twoColumnLayout : {}}>
-              <View style={isLandscape ? {flex: 1, marginRight: 8} : {}}>
-                {renderDropdown("Country", form.country_name, 'country')}
-              </View>
-              <View style={isLandscape ? {flex: 1, marginLeft: 8} : {}}>
-                {renderDropdown("State", form.state_name, 'state')}
-              </View>
-            </View>
-            
-            {manualDistrict 
-               ? renderInput("District", form.district_name, t => setForm({...form, district_name: t}))
-               : renderDropdown("District", form.district_name, 'district')
-            }
-            
-            <View style={isLandscape ? styles.twoColumnLayout : {}}>
-              <View style={isLandscape ? {flex: 1, marginRight: 8} : {}}>
-                {renderInput("City", form.city, t => setForm({...form, city: t}))}
-              </View>
-              <View style={isLandscape ? {flex: 1, marginLeft: 8} : {}}></View>
+            {/* WHATSAPP NUMBER */}
+            <View style={{marginBottom: 15}}>
+                <Text style={{fontSize: 12, color:'#666', marginBottom: 5}}>WhatsApp Number</Text>
+                <View style={{flexDirection: 'row', gap: 8}}>
+                    <TextInput value={form.whatsapp_code} onChangeText={t => setForm({...form, whatsapp_code: t})} style={[styles.input, {flex: 0.3}]} placeholder="+966"/>
+                    <TextInput value={form.whatsapp_number} onChangeText={t => setForm({...form, whatsapp_number: t})} style={[styles.input, {flex: 0.7}]} placeholder="Number"/>
+                </View>
             </View>
 
-            {renderInput("Address", form.address, t => setForm({...form, address: t}))}
+            {/* SECTION 2: DOCUMENTS */}
+            <Text style={styles.sectionTitle}>2. Documents</Text>
+            
+            {/* ID TYPE */}
+            {renderDropdown("ID Type", form.document_type_name, 'doctype')}
+            
+            {/* DOCUMENT ID */}
+            {renderInput("Document ID", form.document_id, t => setForm({...form, document_id: t}))}
+            
+            {/* SECTION 3: ADDRESS (READ-ONLY) */}
+            <Text style={styles.sectionTitle}>3. Address</Text>
+            <View style={{marginBottom: 15}}>
+                <Text style={{fontSize: 12, color:'#666', marginBottom: 5}}>Address</Text>
+                <View style={[styles.input, {backgroundColor: '#f0f0f0', borderColor: '#ccc'}]}>
+                    <Text style={{color: '#666', fontSize: 14}}>{form.address || 'No address provided'}</Text>
+                </View>
+            </View>
             
             <TouchableOpacity style={styles.saveBtn} onPress={handleSubmit} disabled={saving}>
                 {saving ? <ActivityIndicator color="#fff"/> : <Text style={{color:'#fff', fontWeight:'bold'}}>Update Sender</Text>}
             </TouchableOpacity>
         </ScrollView>
 
-        <BottomSheetSelect visible={modalType === 'country'} title="Country" data={countries} onClose={()=>setModalType(null)} onSelect={handleCountrySelect}/>
-        <BottomSheetSelect visible={modalType === 'state'} title="State" data={states} onClose={()=>setModalType(null)} onSelect={handleStateSelect}/>
-        <BottomSheetSelect visible={modalType === 'district'} title="District" data={districts} onClose={()=>setModalType(null)} onSelect={i => setForm({...form, district_id:i.id, district_name:i.name})}/>
+        <BottomSheetSelect visible={modalType === 'doctype'} title="ID Type" data={docTypes} onClose={()=>setModalType(null)} onSelect={i => setForm({...form, document_type_id:i.id, document_type_name:i.name})}/>
     </KeyboardAvoidingView>
   );
 }
@@ -273,5 +291,6 @@ const styles = StyleSheet.create({
     },
     input: { borderWidth:1, borderColor:'#ddd', borderRadius:8, padding:12, backgroundColor:'#f9f9f9', marginBottom: 15},
     dropdown: { borderWidth:1, borderColor:'#ddd', borderRadius:8, padding:12, backgroundColor:'#f9f9f9', flexDirection:'row', justifyContent:'space-between'},
-    saveBtn: { backgroundColor: colors.primary, padding: 15, borderRadius: 10, alignItems:'center', marginTop: 20, marginBottom: 20, height: 48, justifyContent: 'center'}
+    saveBtn: { backgroundColor: colors.primary, padding: 15, borderRadius: 10, alignItems:'center', marginTop: 20, marginBottom: 20, height: 48, justifyContent: 'center'},
+    sectionTitle: { fontSize: 16, fontWeight: '700', color: '#1e1e1e', marginBottom: 15, marginTop: 15 }
 });
