@@ -213,7 +213,8 @@ const createInvoiceHTML = (data) => {
   const structuredItems = [];
   safeBoxes.forEach((box, index) => {
     const boxLabel = `Box ${index + 1}`;
-    structuredItems.push({ isHeader: true, title: boxLabel });
+    const boxWeight = parseFloat(box.weight || 0).toFixed(3);
+    structuredItems.push({ isHeader: true, title: `${boxLabel} (${boxWeight} kg)` });
 
     const safeItems = Array.isArray(box.items) ? box.items : [];
     

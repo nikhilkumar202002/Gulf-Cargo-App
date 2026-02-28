@@ -44,10 +44,7 @@ export const deleteParty = (id) => {
   return API.delete(`/party/${id}`);
 };
 
-// 3. Update Party (POST with _method: PUT for FormData support)
+// 3. Update Party (PATCH method)
 export const updateParty = (id, data, config = {}) => {
-  // We use POST because React Native FormData often has issues with PUT method directly
-  // The backend should handle _method: 'PUT'
-  data.append('_method', 'PUT'); 
-  return API.post(`/party/${id}`, data, config);
+  return API.patch(`/party/${id}`, data, config);
 };

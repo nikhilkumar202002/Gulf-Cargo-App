@@ -119,8 +119,10 @@ export default function PartiesScreen() {
         navigation.navigate('PartyDetails', { id: selectedParty.id });
         break;
       case 'edit':
-        // Route to the appropriate edit screen based on party's customer_type_id
-        const editScreen = selectedParty.customer_type_id === 1 ? 'EditSender' : 'EditReceiver';
+        // Route based on party's customer_type_id (1=Sender, 2=Receiver)
+        // Convert to number to handle both string and number formats from API
+        const typeId = Number(selectedParty.customer_type_id);
+        const editScreen = typeId === 1 ? 'EditSender' : 'EditReceiver';
         navigation.navigate(editScreen, { id: selectedParty.id });
         break;
       case 'delete':

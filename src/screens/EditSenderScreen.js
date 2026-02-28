@@ -143,10 +143,19 @@ export default function EditSenderScreen() {
      setSaving(true);
      try {
         const formData = new FormData();
-        Object.keys(form).forEach(key => {
-            if(form[key] !== null) formData.append(key, form[key]);
-        });
         
+        // Only append essential fields for sender update
+        formData.append('name', form.name || '');
+        formData.append('email', form.email || '');
+        formData.append('contact_code', form.contact_code || '+966');
+        formData.append('contact_number', form.contact_number || '');
+        formData.append('whatsapp_code', form.whatsapp_code || '+966');
+        formData.append('whatsapp_number', form.whatsapp_number || '');
+        formData.append('customer_type_id', 1); // Sender
+        formData.append('document_type_id', form.document_type_id || '');
+        formData.append('document_id', form.document_id || '');
+        
+        // Handle District Logic
         if(!manualDistrict && form.district_id) formData.append('district_id', form.district_id);
         else if(manualDistrict && form.district_name) formData.append('district_name', form.district_name);
         
@@ -160,7 +169,7 @@ export default function EditSenderScreen() {
 
      } catch(e) {
         console.error(e);
-        Alert.alert("Error", "Failed to update sender");
+        Alert.alert("Error", "Failed to update sender: " + (e.response?.data?.message || e.message));
      } finally {
         setSaving(false);
      }
@@ -168,88 +177,142 @@ export default function EditSenderScreen() {
 
   const renderInput = (label, val, setVal) => (
       <View style={{marginBottom: 15}}>
-          <Text style={{fontSize: 12, color:'#666', marginBottom: 5}}>{label}</Text>
-          <TextInput value={String(val)} onChangeText={setVal} style={styles.input} />
+          <Text style={styles.label}>{label}</Text>
+          <TextInput value={val ? String(val) : ''} onChangeText={setVal} style={styles.input} editable={setVal !== null} />
       </View>
   );
 
   const renderDropdown = (label, val, key) => (
     <View style={{marginBottom: 15}}>
-        <Text style={{fontSize: 12, color:'#666', marginBottom: 5}}>{label}</Text>
-        <TouchableOpacity style={styles.dropdown} onPress={() => setModalType(key)}>
-            <Text>{val || 'Select'}</Text>
+        <Text style={styles.label}>{label}</Text>
+        <TouchableOpacity style={styles.dropdown} onPress={() => key && setModalType(key)} disabled={!key}>
+            <Text style={{color: val ? '#333' : '#999'}}>{val || 'Select'}</Text>
             <MaterialCommunityIcons name="chevron-down" size={20} color="#666"/>
         </TouchableOpacity>
+    </View>
+  );
+
+  const renderSectionHeader = (number, title) => (
+    <View style={styles.sectionHeader}>
+        <View style={styles.sectionNumberContainer}>
+            <Text style={styles.sectionNumber}>{number}</Text>
+        </View>
+        <Text style={styles.sectionTitle}>{title}</Text>
     </View>
   );
 
   if(fetching) return <View style={styles.center}><ActivityIndicator size="large" color={colors.primary}/></View>;
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{flex:1, backgroundColor:'#fff'}}>
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{flex:1, backgroundColor:'#f8f9ff'}}>
         {/* HEADER */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <MaterialCommunityIcons name="arrow-left" size={24} color="#000" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Edit Sender: {form.name}</Text>
+          <Text style={styles.headerTitle}>Edit Sender</Text>
           <View style={{width: 24}} />
         </View>
 
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scrollContent, isLandscape && styles.scrollContentLandscape]}>
-            {/* SECTION 1: PERSONAL & CONTACT INFO */}
-            <Text style={styles.sectionTitle}>1. Personal & Contact Info</Text>
-            
-            {/* FULL NAME */}
-            {renderInput("Full Name", form.name, t => setForm({...form, name: t}))}
-            
-            {/* CONTACT NUMBER */}
-            <View style={{marginBottom: 15}}>
-                <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5}}>
-                    <Text style={{fontSize: 12, color:'#666'}}>Contact Number</Text>
-                    <TouchableOpacity onPress={() => setForm({...form, contact_number: form.whatsapp_number, contact_code: form.whatsapp_code})}>
-                        <View style={{flexDirection: 'row', alignItems: 'center', gap: 6}}>
-                            <View style={{width: 16, height: 16, borderWidth: 2, borderColor: '#4CAF50', borderRadius: 4, backgroundColor: form.contact_number === form.whatsapp_number ? '#4CAF50' : '#fff'}}/>
-                            <Text style={{fontSize: 12, color: '#666'}}>Same as Contact</Text>
+            {/* SECTION 1: PERSONAL DETAILS */}
+            <View style={styles.card}>
+                {renderSectionHeader(1, "Personal Details")}
+                <View style={styles.cardContent}>
+                    {/* FULL NAME */}
+                    <View style={{marginBottom: 15}}>
+                        <Text style={styles.label}>Full Name <Text style={{color:'red'}}>*</Text></Text>
+                        <TextInput value={form.name} onChangeText={t => setForm({...form, name: t})} style={styles.input} placeholder="MOHD QAMARUDDIN"/>
+                    </View>
+                    
+                    <View style={isLandscape ? styles.twoColumnLayout : {}}>
+                        {/* CONTACT NUMBER */}
+                        <View style={[isLandscape ? {flex: 1, marginRight: 8} : {marginBottom: 15}]}>
+                            <Text style={styles.label}>Contact Number</Text>
+                            <View style={{flexDirection: 'row', gap: 8}}>
+                                <TextInput value={form.contact_code} onChangeText={t => setForm({...form, contact_code: t})} style={[styles.input, {flex: 0.3}]} placeholder="+966"/>
+                                <TextInput value={form.contact_number} onChangeText={t => setForm({...form, contact_number: t})} style={[styles.input, {flex: 0.7}]} placeholder="Number"/>
+                            </View>
                         </View>
-                    </TouchableOpacity>
-                </View>
-                <View style={{flexDirection: 'row', gap: 8}}>
-                    <TextInput value={form.contact_code} onChangeText={t => setForm({...form, contact_code: t})} style={[styles.input, {flex: 0.3}]} placeholder="+966"/>
-                    <TextInput value={form.contact_number} onChangeText={t => setForm({...form, contact_number: t})} style={[styles.input, {flex: 0.7}]} placeholder="Number"/>
+
+                        {/* WHATSAPP NUMBER */}
+                        <View style={[isLandscape ? {flex: 1, marginLeft: 8} : {marginBottom: 15}]}>
+                            <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5}}>
+                                <Text style={styles.label}>WhatsApp Number</Text>
+                                <TouchableOpacity style={{flexDirection:'row', alignItems:'center', gap:5}} onPress={() => setForm({...form, whatsapp_number: form.contact_number, whatsapp_code: form.contact_code})}>
+                                    <View style={{width: 14, height: 14, borderWidth: 1, borderColor: '#ccc', borderRadius: 2, backgroundColor: form.whatsapp_number === form.contact_number ? colors.primary : '#fff'}}/>
+                                    <Text style={{fontSize: 10, color: '#666'}}>Same as Contact</Text>
+                                </TouchableOpacity>
+                            </View>
+                            <View style={{flexDirection: 'row', gap: 8}}>
+                                <TextInput value={form.whatsapp_code} onChangeText={t => setForm({...form, whatsapp_code: t})} style={[styles.input, {flex: 0.3}]} placeholder="+966"/>
+                                <TextInput value={form.whatsapp_number} onChangeText={t => setForm({...form, whatsapp_number: t})} style={[styles.input, {flex: 0.7}]} placeholder="Number"/>
+                            </View>
+                        </View>
+                    </View>
                 </View>
             </View>
 
-            {/* WHATSAPP NUMBER */}
-            <View style={{marginBottom: 15}}>
-                <Text style={{fontSize: 12, color:'#666', marginBottom: 5}}>WhatsApp Number</Text>
-                <View style={{flexDirection: 'row', gap: 8}}>
-                    <TextInput value={form.whatsapp_code} onChangeText={t => setForm({...form, whatsapp_code: t})} style={[styles.input, {flex: 0.3}]} placeholder="+966"/>
-                    <TextInput value={form.whatsapp_number} onChangeText={t => setForm({...form, whatsapp_number: t})} style={[styles.input, {flex: 0.7}]} placeholder="Number"/>
+            {/* SECTION 2: ADDRESS DETAILS (READ-ONLY) */}
+            <View style={styles.card}>
+                {renderSectionHeader(2, "Address Details")}
+                <View style={[styles.cardContent, {opacity: 0.7}]}>
+                    <View style={isLandscape ? styles.twoColumnLayout : {}}>
+                         <View style={isLandscape ? {flex: 1, marginRight: 8} : {}}>
+                            {renderDropdown("Country", form.country_name, null)}
+                         </View>
+                         <View style={isLandscape ? {flex: 1, marginLeft: 8} : {}}>
+                            {renderDropdown("State", form.state_name, null)}
+                         </View>
+                    </View>
+                    
+                    <View style={isLandscape ? styles.twoColumnLayout : {}}>
+                        <View style={isLandscape ? {flex: 1, marginRight: 8} : {}}>
+                            {renderDropdown("District", form.district_name, null)}
+                        </View>
+                        <View style={isLandscape ? {flex: 1, marginLeft: 8} : {}}>
+                            {renderInput("City", form.city, null)}
+                        </View>
+                    </View>
+
+                    {renderInput("Full Address", form.address, null)}
                 </View>
             </View>
 
-            {/* SECTION 2: DOCUMENTS */}
-            <Text style={styles.sectionTitle}>2. Documents</Text>
-            
-            {/* ID TYPE */}
-            {renderDropdown("ID Type", form.document_type_name, 'doctype')}
-            
-            {/* DOCUMENT ID */}
-            {renderInput("Document ID", form.document_id, t => setForm({...form, document_id: t}))}
-            
-            {/* SECTION 3: ADDRESS (READ-ONLY) */}
-            <Text style={styles.sectionTitle}>3. Address</Text>
-            <View style={{marginBottom: 15}}>
-                <Text style={{fontSize: 12, color:'#666', marginBottom: 5}}>Address</Text>
-                <View style={[styles.input, {backgroundColor: '#f0f0f0', borderColor: '#ccc'}]}>
-                    <Text style={{color: '#666', fontSize: 14}}>{form.address || 'No address provided'}</Text>
+            {/* SECTION 3: DOCUMENTS */}
+            <View style={styles.card}>
+                {renderSectionHeader(3, "Documents")}
+                <View style={styles.cardContent}>
+                    <View style={isLandscape ? styles.twoColumnLayout : {}}>
+                        <View style={isLandscape ? {flex: 1, marginRight: 8} : {flex: 1}}>
+                            {renderDropdown("ID Type", form.document_type_name, 'doctype')}
+                        </View>
+                        <View style={isLandscape ? {flex: 1, marginLeft: 8} : {flex: 1}}>
+                            {renderInput("ID Number", form.document_id, t => setForm({...form, document_id: t}))}
+                        </View>
+                    </View>
+                    
+                    <View style={{marginTop: 10}}>
+                        <Text style={styles.label}>Upload File</Text>
+                        <TouchableOpacity style={styles.uploadBtn}>
+                            <View style={{flexDirection:'row', alignItems:'center', gap: 8}}>
+                                <View style={styles.chooseFileBtn}>
+                                    <Text style={{color: colors.primary, fontSize: 12, fontWeight: '600'}}>Choose Files</Text>
+                                </View>
+                                <Text style={{color: '#999', fontSize: 12}}>No file chosen</Text>
+                            </View>
+                        </TouchableOpacity>
+                    </View>
                 </View>
             </View>
             
             <TouchableOpacity style={styles.saveBtn} onPress={handleSubmit} disabled={saving}>
-                {saving ? <ActivityIndicator color="#fff"/> : <Text style={{color:'#fff', fontWeight:'bold'}}>Update Sender</Text>}
+                {saving ? <ActivityIndicator color="#fff"/> : <Text style={{color:'#fff', fontWeight:'bold', fontSize: 16}}>Update Sender</Text>}
             </TouchableOpacity>
+
+            <View style={styles.footerInfo}>
+                <Text style={styles.footerText}>Branch: GULF CARGO KSA RIYADH</Text>
+            </View>
         </ScrollView>
 
         <BottomSheetSelect visible={modalType === 'doctype'} title="ID Type" data={docTypes} onClose={()=>setModalType(null)} onSelect={i => setForm({...form, document_type_id:i.id, document_type_name:i.name})}/>
@@ -265,10 +328,10 @@ const styles = StyleSheet.create({
       justifyContent: 'space-between',
       paddingHorizontal: 16,
       paddingVertical: 12,
-      marginTop: 12,
+      marginTop: Platform.OS === 'ios' ? 40 : 10,
       backgroundColor: '#fff',
       borderBottomWidth: 1,
-      borderBottomColor: '#e0e0e0',
+      borderBottomColor: '#eee',
     },
     headerTitle: {
       fontSize: 18,
@@ -277,20 +340,119 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
       padding: 16,
-      paddingTop: 20,
-      paddingBottom: 30,
+      paddingBottom: 40,
     },
     scrollContentLandscape: {
-      paddingTop: 12,
-      paddingBottom: 12,
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'space-between',
+    },
+    card: {
+        backgroundColor: '#fff',
+        borderRadius: 12,
+        marginBottom: 20,
+        borderWidth: 1,
+        borderColor: '#eef0f7',
+        overflow: 'hidden',
+        ...Platform.select({
+            ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8 },
+            android: { elevation: 2 }
+        })
+    },
+    cardContent: {
+        padding: 16,
+    },
+    sectionHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: '#f0f0f0',
+        backgroundColor: '#fff',
+    },
+    sectionNumberContainer: {
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        backgroundColor: '#eff2ff',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 10,
+    },
+    sectionNumber: {
+        fontSize: 12,
+        fontWeight: 'bold',
+        color: '#5c7cfa',
+    },
+    sectionTitle: {
+        fontSize: 15,
+        fontWeight: '600',
+        color: '#333',
+    },
+    label: {
+        fontSize: 13,
+        fontWeight: '500',
+        color: '#444',
+        marginBottom: 8,
+    },
+    input: { 
+        borderWidth: 1, 
+        borderColor: '#e0e0e0', 
+        borderRadius: 8, 
+        padding: 12, 
+        backgroundColor: '#fff',
+        fontSize: 14,
+        color: '#333'
+    },
+    dropdown: { 
+        borderWidth: 1, 
+        borderColor: '#e0e0e0', 
+        borderRadius: 8, 
+        padding: 12, 
+        backgroundColor: '#fff', 
+        flexDirection: 'row', 
+        justifyContent: 'space-between',
+        alignItems: 'center'
     },
     twoColumnLayout: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      marginBottom: 15,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
     },
-    input: { borderWidth:1, borderColor:'#ddd', borderRadius:8, padding:12, backgroundColor:'#f9f9f9', marginBottom: 15},
-    dropdown: { borderWidth:1, borderColor:'#ddd', borderRadius:8, padding:12, backgroundColor:'#f9f9f9', flexDirection:'row', justifyContent:'space-between'},
-    saveBtn: { backgroundColor: colors.primary, padding: 15, borderRadius: 10, alignItems:'center', marginTop: 20, marginBottom: 20, height: 48, justifyContent: 'center'},
-    sectionTitle: { fontSize: 16, fontWeight: '700', color: '#1e1e1e', marginBottom: 15, marginTop: 15 }
+    saveBtn: { 
+        backgroundColor: colors.primary, 
+        padding: 16, 
+        borderRadius: 12, 
+        alignItems: 'center', 
+        marginTop: 10,
+        ...Platform.select({
+            ios: { shadowColor: colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8 },
+            android: { elevation: 4 }
+        })
+    },
+    uploadBtn: {
+        borderWidth: 1,
+        borderColor: '#e0e0e0',
+        borderRadius: 8,
+        padding: 8,
+        backgroundColor: '#fff',
+        marginTop: 5,
+    },
+    chooseFileBtn: {
+        backgroundColor: '#eff2ff',
+        paddingHorizontal: 15,
+        paddingVertical: 8,
+        borderRadius: 20,
+    },
+    footerInfo: {
+        marginTop: 25,
+        padding: 15,
+        backgroundColor: '#eff2ff',
+        borderRadius: 8,
+        alignItems: 'center',
+    },
+    footerText: {
+        fontSize: 12,
+        color: '#5c7cfa',
+        fontWeight: '600',
+    }
 });
