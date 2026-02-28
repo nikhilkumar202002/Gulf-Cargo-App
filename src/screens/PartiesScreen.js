@@ -171,7 +171,14 @@ export default function PartiesScreen() {
         <View style={styles.itemMainContent}>
             <View style={styles.itemTopRow}>
                 <Text style={styles.partyName} numberOfLines={1}>{item.name}</Text>
-                <TouchableOpacity onPress={() => { setSelectedParty(item); setMenuVisible(true); }}>
+                <TouchableOpacity 
+                  activeOpacity={0.6}
+                  onPress={() => { 
+                    setSelectedParty(item); 
+                    setMenuVisible(true); 
+                  }}
+                  style={styles.menuButton}
+                >
                     <MaterialCommunityIcons name="dots-vertical" size={24} color="#64748B" />
                 </TouchableOpacity>
             </View>
@@ -371,8 +378,7 @@ const styles = StyleSheet.create({
   cardLeftBorder: { width: 4, backgroundColor: '#E53935', borderTopLeftRadius: 4, borderBottomLeftRadius: 4 },
   itemMainContent: { flex: 1, padding: 16, justifyContent: 'center' },
   itemTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  partyName: { fontSize: 22, fontWeight: '700', color: '#1e1e1e', flex: 1, marginRight: 10, fontFamily: 'InstrumentSans-Regular' },
-  
+  partyName: { fontSize: 22, fontWeight: '700', color: '#1e1e1e', flex: 1, marginRight: 10, fontFamily: 'InstrumentSans-Regular' },  menuButton: { padding: 8, marginRight: -8 },  
   itemMetadataRow: { flexDirection: 'row', gap: 12, marginBottom: 8, alignItems: 'center' },
   metaPillLine: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   metaTextNumber: { fontSize: 13, color: '#64748B', fontWeight: '500', fontFamily: 'InstrumentSans-Regular' },
