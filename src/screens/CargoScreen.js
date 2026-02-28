@@ -241,6 +241,26 @@ export default function CargoScreen() {
   };
 
   const handleNext = () => {
+    if (currentStep === 1) {
+      if (!formData.boxes || formData.boxes.length === 0) {
+        return Alert.alert("Required", "Please add at least one box");
+      }
+      for (let i = 0; i < formData.boxes.length; i++) {
+        const box = formData.boxes[i];
+        if (!box.weight || parseFloat(box.weight) <= 0) {
+          return Alert.alert("Required", `Please enter a valid weight for Box ${i + 1}`);
+        }
+        if (!box.items || box.items.length === 0) {
+          return Alert.alert("Required", `Box ${i + 1} must have at least one item`);
+        }
+        for (let j = 0; j < box.items.length; j++) {
+          const item = box.items[j];
+          if (!item.name || item.name.trim() === "") {
+            return Alert.alert("Required", `Please enter a name for Item ${j + 1} in Box ${i + 1}`);
+          }
+        }
+      }
+    }
     if (currentStep === 2 && (!formData.sender || !formData.receiver)) return Alert.alert("Required", "Select Sender and Receiver");
     if (currentStep === 5 && !formData.collected_by && !formData.collected_by_id) return Alert.alert("Required", "Select Collector");
     if (currentStep < totalSteps) setCurrentStep(currentStep + 1);

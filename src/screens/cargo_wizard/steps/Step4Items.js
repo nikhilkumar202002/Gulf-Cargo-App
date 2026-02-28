@@ -80,9 +80,12 @@ export default function Step4Items({ data, update }) {
 
             {/* Box Weight Input */}
             <View style={styles.weightRow}>
-                <Text style={styles.label}>Total Box Weight (KG)</Text>
+                <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                    <Text style={styles.label}>Total Box Weight (KG)</Text>
+                    <Text style={{color: '#EF4444', marginLeft: 2}}>*</Text>
+                </View>
                 <TextInput 
-                    style={styles.weightInput} 
+                    style={[styles.weightInput, (!box.weight || parseFloat(box.weight) <= 0) && {borderWidth: 1, borderColor: '#FCA5A5'}]} 
                     placeholder="0.00" 
                     keyboardType="numeric"
                     value={String(box.weight)}
@@ -96,9 +99,12 @@ export default function Step4Items({ data, update }) {
                     <View key={itemIndex} style={styles.itemRow}>
                         {/* ITEM NAME */}
                         <View style={{flex: 3, marginRight: 8}}>
-                            <Text style={styles.itemLabel}>Item Name</Text>
+                            <View style={{flexDirection: 'row', alignItems: 'center', marginBottom: 6}}>
+                                <Text style={styles.itemLabel}>Item Name</Text>
+                                <Text style={{color: '#EF4444', fontSize: 10, marginLeft: 2}}>*</Text>
+                            </View>
                             <TextInput 
-                                style={styles.itemInput} 
+                                style={[styles.itemInput, (!item.name || item.name.trim() === "") && {borderColor: '#FCA5A5'}]} 
                                 placeholder="Dates" 
                                 value={item.name}
                                 onChangeText={(t) => updateItem(boxIndex, itemIndex, 'name', t)}
