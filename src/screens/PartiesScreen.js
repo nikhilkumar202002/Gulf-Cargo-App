@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   View, Text, StyleSheet, FlatList, TouchableOpacity, 
-  ActivityIndicator, TextInput, RefreshControl, Modal, TouchableWithoutFeedback, Alert, Platform 
+  ActivityIndicator, TextInput, RefreshControl, Modal, Pressable, Alert, Platform 
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import colors from '../styles/colors';
@@ -286,9 +286,9 @@ export default function PartiesScreen() {
 
       {/* 3. Redesigned Centered Context Modal */}
       <Modal visible={menuVisible} transparent animationType="fade" onRequestClose={() => setMenuVisible(false)}>
-        <TouchableWithoutFeedback onPress={() => setMenuVisible(false)}>
+        <Pressable onPress={() => setMenuVisible(false)}>
           <View style={styles.modalOverlay}>
-            <TouchableWithoutFeedback>
+            <Pressable>
               <View style={styles.contextMenu}>
                 <Text style={styles.menuTitle}>{selectedParty?.name}</Text>
                 
@@ -309,9 +309,9 @@ export default function PartiesScreen() {
                     <Text style={[styles.optionLabel, {color: '#EF4444'}]}>Remove Customer</Text>
                 </TouchableOpacity>
               </View>
-            </TouchableWithoutFeedback>
+            </Pressable>
           </View>
-        </TouchableWithoutFeedback>
+        </Pressable>
       </Modal>
     </View>
   );

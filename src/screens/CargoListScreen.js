@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { 
   View, Text, FlatList, StyleSheet, ActivityIndicator, 
   TouchableOpacity, RefreshControl, TextInput, Platform, StatusBar,
-  Modal, TouchableWithoutFeedback 
+  Modal, Pressable 
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -253,7 +253,7 @@ export default function CargoListScreen() {
 
       {/* Context Menu Modal */}
       <Modal visible={menuVisible} transparent animationType="fade">
-        <TouchableWithoutFeedback onPress={() => setMenuVisible(false)}>
+        <Pressable onPress={() => setMenuVisible(false)}>
           <View style={styles.modalOverlay}>
             <View style={styles.contextMenu}>
               <Text style={styles.menuTitle}>Actions: {selectedCargo?.booking_no}</Text>
@@ -274,7 +274,7 @@ export default function CargoListScreen() {
               </TouchableOpacity>
             </View>
           </View>
-        </TouchableWithoutFeedback>
+        </Pressable>
       </Modal>
     </SafeAreaView>
   );

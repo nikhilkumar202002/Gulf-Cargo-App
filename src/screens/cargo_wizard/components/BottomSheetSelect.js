@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Modal, View, Text, TouchableOpacity, FlatList, StyleSheet, 
-  TouchableWithoutFeedback, TextInput, KeyboardAvoidingView, Platform 
+  Pressable, TextInput, KeyboardAvoidingView, Platform 
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import colors from '../../../styles/colors'; 
@@ -37,9 +37,9 @@ export default function BottomSheetSelect({ visible, title, data, onClose, onSel
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <TouchableWithoutFeedback onPress={onClose}>
+      <Pressable onPress={onClose}>
         <View style={styles.overlay}>
-            <TouchableWithoutFeedback> 
+            <Pressable> 
             <View style={styles.sheet}>
               
               {/* Header */}
@@ -116,9 +116,9 @@ export default function BottomSheetSelect({ visible, title, data, onClose, onSel
                 )}
               />
             </View>
-          </TouchableWithoutFeedback>
+          </Pressable>
         </View>
-      </TouchableWithoutFeedback>
+      </Pressable>
     </Modal>
   );
 }

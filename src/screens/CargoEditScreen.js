@@ -36,6 +36,20 @@ export default function CargoEditScreen() {
   const [sendersList, setSendersList] = useState([]);
   const [receiversList, setReceiversList] = useState([]);
 
+  // Configuration of all Charge Rows
+  const chargeRows = [
+    { label: 'Total Weight', key: 'total_weight', readOnlyQty: true }, 
+    { label: 'Duty', key: 'duty' },
+    { label: 'Packing Charge', key: 'packing_charge' },
+    { label: 'Additional Packing Charges', key: 'additional_packing_charge' },
+    { label: 'Insurance', key: 'insurance' },
+    { label: 'AWB Fee', key: 'awb_fee' },
+    { label: 'VAT Amount', key: 'vat' },
+    { label: 'Volume Weight', key: 'volume_weight' },
+    { label: 'Other Charges', key: 'other_charges' },
+    { label: 'Discount', key: 'discount', isDeduction: true },
+  ];
+
   const shippingMethods = [
     { id: '1', name: 'IND SEA' },
     { id: '2', name: 'IND AIR' },
@@ -71,6 +85,55 @@ export default function CargoEditScreen() {
     fetchCargoDetails();
     fetchSendersAndReceivers();
   }, [id]);
+
+  // --- 1. AUTO-CALCULATE WEIGHT & BOX COUNT ---
+  useEffect(() => {
+    const boxCount = boxes.length;
+    const totalWeight = boxes.reduce((sum, box) => sum + (parseFloat(box.weight) || 0), 0);
+
+    if (String(formData.no_of_boxes) !== String(boxCount)) {
+        setFormData(prev => ({ ...prev, no_of_boxes: String(boxCount) }));
+    }
+    
+    if (parseFloat(formData.quantity_total_weight || 0) !== totalWeight) {
+        setFormData(prev => ({ ...prev, quantity_total_weight: String(totalWeight) }));
+    }
+  }, [boxes]); 
+
+  // --- 2. CALCULATION ENGINE ---
+  useEffect(() => {
+    calculateAll();
+  }, [
+    ...chargeRows.map(r => formData[`quantity_${r.key}`]),
+    ...chargeRows.map(r => formData[`unit_rate_${r.key}`]),
+  ]);
+
+  const calculateAll = () => {
+    let grandTotal = 0;
+
+    chargeRows.forEach(row => {
+      const qty = parseFloat(formData[`quantity_${row.key}`]) || 0;
+      const rate = parseFloat(formData[`unit_rate_${row.key}`]) || 0;
+      const amount = qty * rate;
+
+      const currentAmount = parseFloat(formData[`amount_${row.key}`]) || 0;
+      if (currentAmount !== amount) {
+         setFormData(prev => ({ ...prev, [`amount_${row.key}`]: amount.toFixed(2) }));
+      }
+
+      if (row.isDeduction) grandTotal -= amount;
+      else grandTotal += amount;
+    });
+
+    const currentTotal = parseFloat(formData.net_total) || 0;
+    if (currentTotal.toFixed(2) !== grandTotal.toFixed(2)) {
+      setFormData(prev => ({ 
+        ...prev, 
+        net_total: grandTotal.toFixed(2),
+        total_amount: grandTotal.toFixed(2)
+      }));
+    }
+  };
 
   const fetchSendersAndReceivers = async () => {
     try {
@@ -142,6 +205,38 @@ export default function CargoEditScreen() {
         quantity_discount: String(cargoData.quantity_discount || '0'),
         unit_rate_discount: String(cargoData.unit_rate_discount || '0'),
         total_weight: String(cargoData.total_weight || '0'),
+        // Add charge fields
+        no_of_boxes: String(cargoData.no_of_boxes || '0'),
+        quantity_total_weight: String(cargoData.quantity_total_weight || '0'),
+        quantity_duty: String(cargoData.quantity_duty || '0'),
+        unit_rate_duty: String(cargoData.unit_rate_duty || '0'),
+        amount_duty: String(cargoData.amount_duty || '0'),
+        quantity_packing_charge: String(cargoData.quantity_packing_charge || '0'),
+        unit_rate_packing_charge: String(cargoData.unit_rate_packing_charge || '0'),
+        amount_packing_charge: String(cargoData.amount_packing_charge || '0'),
+        quantity_additional_packing_charge: String(cargoData.quantity_additional_packing_charge || '0'),
+        unit_rate_additional_packing_charge: String(cargoData.unit_rate_additional_packing_charge || '0'),
+        amount_additional_packing_charge: String(cargoData.amount_additional_packing_charge || '0'),
+        quantity_insurance: String(cargoData.quantity_insurance || '0'),
+        unit_rate_insurance: String(cargoData.unit_rate_insurance || '0'),
+        amount_insurance: String(cargoData.amount_insurance || '0'),
+        quantity_awb_fee: String(cargoData.quantity_awb_fee || '0'),
+        unit_rate_awb_fee: String(cargoData.unit_rate_awb_fee || '0'),
+        amount_awb_fee: String(cargoData.amount_awb_fee || '0'),
+        quantity_vat: String(cargoData.quantity_vat || '0'),
+        unit_rate_vat: String(cargoData.unit_rate_vat || '0'),
+        amount_vat: String(cargoData.amount_vat || '0'),
+        quantity_volume_weight: String(cargoData.quantity_volume_weight || '0'),
+        unit_rate_volume_weight: String(cargoData.unit_rate_volume_weight || '0'),
+        amount_volume_weight: String(cargoData.amount_volume_weight || '0'),
+        quantity_other_charges: String(cargoData.quantity_other_charges || '0'),
+        unit_rate_other_charges: String(cargoData.unit_rate_other_charges || '0'),
+        amount_other_charges: String(cargoData.amount_other_charges || '0'),
+        quantity_discount: String(cargoData.quantity_discount || '0'),
+        unit_rate_discount: String(cargoData.unit_rate_discount || '0'),
+        amount_discount: String(cargoData.amount_discount || '0'),
+        net_total: String(cargoData.net_total || '0'),
+        total_amount: String(cargoData.total_amount || '0'),
       };
       
       console.log('Parsed form data:', parsedFormData);
@@ -321,6 +416,38 @@ export default function CargoEditScreen() {
         quantity_discount: parseFloat(formData.quantity_discount),
         unit_rate_discount: parseFloat(formData.unit_rate_discount),
         total_weight: totalWeight,
+        // Add charge fields
+        no_of_boxes: parseInt(formData.no_of_boxes),
+        quantity_total_weight: parseFloat(formData.quantity_total_weight),
+        quantity_duty: parseFloat(formData.quantity_duty),
+        unit_rate_duty: parseFloat(formData.unit_rate_duty),
+        amount_duty: parseFloat(formData.amount_duty),
+        quantity_packing_charge: parseFloat(formData.quantity_packing_charge),
+        unit_rate_packing_charge: parseFloat(formData.unit_rate_packing_charge),
+        amount_packing_charge: parseFloat(formData.amount_packing_charge),
+        quantity_additional_packing_charge: parseFloat(formData.quantity_additional_packing_charge),
+        unit_rate_additional_packing_charge: parseFloat(formData.unit_rate_additional_packing_charge),
+        amount_additional_packing_charge: parseFloat(formData.amount_additional_packing_charge),
+        quantity_insurance: parseFloat(formData.quantity_insurance),
+        unit_rate_insurance: parseFloat(formData.unit_rate_insurance),
+        amount_insurance: parseFloat(formData.amount_insurance),
+        quantity_awb_fee: parseFloat(formData.quantity_awb_fee),
+        unit_rate_awb_fee: parseFloat(formData.unit_rate_awb_fee),
+        amount_awb_fee: parseFloat(formData.amount_awb_fee),
+        quantity_vat: parseFloat(formData.quantity_vat),
+        unit_rate_vat: parseFloat(formData.unit_rate_vat),
+        amount_vat: parseFloat(formData.amount_vat),
+        quantity_volume_weight: parseFloat(formData.quantity_volume_weight),
+        unit_rate_volume_weight: parseFloat(formData.unit_rate_volume_weight),
+        amount_volume_weight: parseFloat(formData.amount_volume_weight),
+        quantity_other_charges: parseFloat(formData.quantity_other_charges),
+        unit_rate_other_charges: parseFloat(formData.unit_rate_other_charges),
+        amount_other_charges: parseFloat(formData.amount_other_charges),
+        quantity_discount: parseFloat(formData.quantity_discount),
+        unit_rate_discount: parseFloat(formData.unit_rate_discount),
+        amount_discount: parseFloat(formData.amount_discount),
+        net_total: parseFloat(formData.net_total),
+        total_amount: parseFloat(formData.total_amount),
         items: flatItems,
         box_weight: boxWeightsObj,
       };
@@ -359,6 +486,61 @@ export default function CargoEditScreen() {
       />
     </View>
   );
+
+  // --- CHARGES RENDER HELPERS ---
+  const renderChargesHeader = () => (
+    <View style={styles.chargesHeaderRow}>
+      <Text style={[styles.chargesHeaderText, styles.colCharges]}>Charges</Text>
+      <Text style={[styles.chargesHeaderText, styles.colQty, {textAlign: 'center'}]}>Qty</Text>
+      <Text style={[styles.chargesHeaderText, styles.colRate, {textAlign: 'center'}]}>Unit Rate</Text>
+      <Text style={[styles.chargesHeaderText, styles.colAmount, {textAlign: 'right'}]}>Amount</Text>
+    </View>
+  );
+
+  const renderChargeRow = (item) => {
+    const qtyKey = `quantity_${item.key}`;
+    const rateKey = `unit_rate_${item.key}`;
+    const amountKey = `amount_${item.key}`;
+
+    return (
+      <View key={item.key} style={styles.chargeRowContainer}>
+        {/* Label */}
+        <Text style={styles.chargeRowLabel} numberOfLines={2}>{item.label}</Text>
+
+        {/* Quantity Input */}
+        <View style={styles.colQty}>
+            <TextInput 
+                style={[styles.chargeInput, item.readOnlyQty && styles.readOnlyChargeInput]}
+                placeholder="0"
+                keyboardType="numeric"
+                value={String(formData[qtyKey] || '')}
+                onChangeText={(t) => setFormData(prev => ({ ...prev, [qtyKey]: t }))}
+                editable={!item.readOnlyQty}
+                placeholderTextColor="#D1D5DB"
+            />
+        </View>
+
+        {/* Unit Rate Input */}
+        <View style={styles.colRate}>
+             <TextInput 
+                style={styles.chargeInput}
+                placeholder="0.00"
+                keyboardType="decimal-pad"
+                value={String(formData[rateKey] || '')}
+                onChangeText={(t) => setFormData(prev => ({ ...prev, [rateKey]: t }))}
+                placeholderTextColor="#D1D5DB"
+            />
+        </View>
+
+        {/* Calculated Amount */}
+        <View style={styles.colAmount}>
+             <Text style={styles.chargeAmountText}>
+                {formData[amountKey] ? parseFloat(formData[amountKey]).toFixed(2) : '0.00'}
+             </Text>
+        </View>
+      </View>
+    );
+  };
 
   if (loading) {
     return (
@@ -718,7 +900,42 @@ export default function CargoEditScreen() {
 
           <View style={styles.netTotalContainer}>
             <Text style={styles.netTotalLabel}>Net Total</Text>
-            <Text style={styles.netTotalValue}>{formData.bill_charges || '0.00'}</Text>
+            <Text style={styles.netTotalValue}>{formData.net_total || '0.00'}</Text>
+          </View>
+        </View>
+
+        {/* CHARGES & FEES SECTION */}
+        <View style={styles.section}>
+          <SectionHeader title="Charges & Fees" icon="calculator" />
+          
+          {/* Main Charges Table */}
+          <View style={styles.chargesCard}>
+            {renderChargesHeader()}
+            <View style={styles.chargesDivider} />
+            <View style={{paddingVertical: 10}}>
+                 {chargeRows.map(row => renderChargeRow(row))}
+            </View>
+          </View>
+
+          {/* Footer Summary */}
+          <View style={styles.chargesFooterCard}>
+            
+            {/* No of Boxes Row */}
+            <View style={styles.chargesFooterRow}>
+                 <Text style={styles.chargesFooterLabel}>No. Of Boxes</Text>
+                 <View style={styles.boxCountContainer}>
+                     <Text style={styles.boxCountText}>{formData.no_of_boxes || '0'}</Text>
+                 </View>
+            </View>
+
+            {/* Total Amount Row */}
+            <View style={[styles.chargesFooterRow, {marginTop: 15}]}>
+                 <Text style={styles.totalLabel}>Total Amount</Text>
+                 <View style={{flexDirection: 'row', alignItems: 'baseline'}}>
+                    <Text style={styles.totalValue}>{formData.net_total || '0.00'}</Text>
+                    <Text style={styles.currency}> SAR</Text>
+                 </View>
+            </View>
           </View>
         </View>
 
@@ -1300,4 +1517,105 @@ const styles = StyleSheet.create({
   addItemText: { color: colors.primary, fontWeight: '600', fontSize: 15, marginLeft: 6, fontFamily: 'InstrumentSans-Regular' },
   title: { fontSize: 16, fontWeight: '600', color: '#111827', fontFamily: 'InstrumentSans-Regular' },
   summaryText: { fontSize: 13, color: '#9CA3AF', fontFamily: 'InstrumentSans-Regular' },
+  chargesCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 6,
+    marginBottom: 16,
+  },
+  chargesHeaderRow: { flexDirection: 'row', marginBottom: 12, alignItems: 'center' },
+  chargesHeaderText: { fontSize: 13, fontWeight: '600', color: '#111827', fontFamily: 'InstrumentSans-Regular' },
+  chargesDivider: { height: 1, backgroundColor: '#F3F4F6', marginHorizontal: -16 },
+  colCharges: { flex: 2.5, paddingRight: 8 },
+  colQty: { width: 50, alignItems: 'center' },
+  colRate: { width: 70, alignItems: 'center', marginLeft: 8 },
+  colAmount: { width: 60, alignItems: 'flex-end', marginLeft: 4 },
+  chargeRowContainer: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    marginBottom: 14,
+    height: 38 
+  },
+  chargeRowLabel: { 
+    flex: 2.5, 
+    fontSize: 13, 
+    color: '#111827', 
+    paddingRight: 8,
+    fontFamily: 'InstrumentSans-Regular'
+  },
+  chargeInput: {
+    width: '100%',
+    height: 38,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 6,
+    textAlign: 'center',
+    fontSize: 13,
+    color: '#111827',
+    backgroundColor: '#fff',
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    fontFamily: 'InstrumentSans-Regular'
+  },
+  readOnlyChargeInput: {
+    backgroundColor: '#E5E7EB',
+    color: '#111827',
+    borderColor: '#E5E7EB'
+  },
+  chargeAmountText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#EF4444',
+    fontFamily: 'InstrumentSans-Bold'
+  },
+  chargesFooterCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 20,
+  },
+  chargesFooterRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center'
+  },
+  chargesFooterLabel: {
+    fontSize: 14,
+    color: '#111827',
+    fontWeight: '500',
+    fontFamily: 'InstrumentSans-Regular'
+  },
+  boxCountContainer: {
+    backgroundColor: '#E5E7EB',
+    borderRadius: 6,
+    width: 60,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  boxCountText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#111827',
+    fontFamily: 'InstrumentSans-Regular'
+  },
+  totalLabel: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#111827',
+    fontFamily: 'InstrumentSans-Regular'
+  },
+  totalValue: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#EF4444',
+    fontFamily: 'InstrumentSans-Bold'
+  },
+  currency: {
+    fontSize: 13,
+    color: '#9CA3AF',
+    fontWeight: '500',
+    fontFamily: 'InstrumentSans-Regular'
+  }
 });

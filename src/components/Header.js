@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   View, Text, TouchableOpacity, StyleSheet, Modal, 
-  TouchableWithoutFeedback, Image, Alert 
+  Pressable, Image, Alert 
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -75,7 +75,7 @@ const Header = () => {
       {/* Dropdown Menu */}
       {menuVisible && (
         <Modal transparent visible={menuVisible} animationType="fade" onRequestClose={closeMenu}>
-          <TouchableWithoutFeedback onPress={closeMenu}>
+          <Pressable onPress={closeMenu}>
             <View style={styles.modalOverlay}>
               <View style={styles.dropdownMenu}>
                 <View style={styles.menuItemHeader}>
@@ -97,7 +97,7 @@ const Header = () => {
                 </TouchableOpacity>
               </View>
             </View>
-          </TouchableWithoutFeedback>
+          </Pressable>
         </Modal>
       )}
     </View>
