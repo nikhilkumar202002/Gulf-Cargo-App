@@ -638,9 +638,13 @@ export default function CargoEditScreen() {
             <View key={boxNum} style={styles.boxWeightRow}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.fieldLabel}>Box {boxNum}</Text>
-                <View style={styles.readOnlyInput}>
-                  <Text style={styles.readOnlyText}>{String(weight) || '0'}</Text>
-                </View>
+                <TextInput
+                  style={styles.input}
+                  value={String(weight || '')}
+                  onChangeText={(v) => handleBoxWeightChange(boxNum, v)}
+                  keyboardType="decimal-pad"
+                  placeholder="0.00"
+                />
               </View>
               <TouchableOpacity
                 style={styles.deleteBoxButton}
@@ -743,7 +747,7 @@ export default function CargoEditScreen() {
                           </TouchableOpacity>
                         </View>
                         
-                        <InputField label="Name" value={String(item.name || '')} onChangeText={(v) => handleItemChange(items.indexOf(item), 'name', v)} placeholder="Item name" />
+                        <InputField label="Item Name" value={String(item.name || '')} onChangeText={(v) => handleItemChange(items.indexOf(item), 'name', v)} placeholder="Item name" />
                         
                         <View style={styles.twoColRow}>
                           <View style={styles.halfField}>
