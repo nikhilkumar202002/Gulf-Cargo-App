@@ -7,8 +7,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { getPartyDetails, updateParty } from '../services/partiesServices';
 import { 
-  getAllCountries, getStatesByCountry, getDistrictsByState, 
-  getAllDocumentTypes, getAllPhoneCodes 
+  getAllPhoneCodes, getAllDocumentTypes 
 } from '../services/coreServices'; 
 import BottomSheetSelect from './cargo_wizard/components/BottomSheetSelect';
 import colors from '../styles/colors'; 
@@ -19,16 +18,12 @@ export default function EditSenderScreen() {
   const { id } = route.params;
 
   // --- MASTER DATA ---
-  const [countries, setCountries] = useState([]);
-  const [states, setStates] = useState([]);
-  const [districts, setDistricts] = useState([]);
   const [phoneCodes, setPhoneCodes] = useState([]);
   const [docTypes, setDocTypes] = useState([]);
   // --- LOADING STATES ---
   const [fetching, setFetching] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [modalType, setModalType] = useState(null); 
-  const [manualDistrict, setManualDistrict] = useState(false);
+  const [modalType, setModalType] = useState(null);
 
   const [windowDimensions, setWindowDimensions] = useState(Dimensions.get('window'));
   const isLandscape = windowDimensions.width > windowDimensions.height;
@@ -36,9 +31,7 @@ export default function EditSenderScreen() {
   const [form, setForm] = useState({
     name: '', email: '', contact_code: '+966', contact_number: '',
     whatsapp_code: '+966', whatsapp_number: '', use_same_number: false,
-    customer_type_id: 1, country_id: '', country_name: '',
-    state_id: '', state_name: '', district_id: '', district_name: '',
-    city: '', address: '',
+    customer_type_id: 1, city: '',
     document_type_id: '', document_type_name: '',
     document_id: '', document_file: null
   });
@@ -63,31 +56,15 @@ export default function EditSenderScreen() {
 
   const loadInitialData = async () => {
     try {
-      const [co, pc, dt, partyRes] = await Promise.all([
-          getAllCountries(), getAllPhoneCodes(), getAllDocumentTypes(), getPartyDetails(id)
+      const [pc, dt, partyRes] = await Promise.all([
+          getAllPhoneCodes(), getAllDocumentTypes(), getPartyDetails(id)
       ]);
 
-      setCountries(safeExtract(co));
       setPhoneCodes(safeExtract(pc).map(i => ({ ...i, name: `${i.country_name || ''} (${i.code})` })));
       setDocTypes(safeExtract(dt).map(i => ({ ...i, name: i.document_name })));
 
       const party = partyRes.data.data || partyRes.data;
       
-      let loadedStates = [];
-      let loadedDistricts = [];
-
-      if(party.country_id) {
-         const sRes = await getStatesByCountry(party.country_id);
-         loadedStates = safeExtract(sRes).filter(s => s.country_id == party.country_id);
-         setStates(loadedStates);
-      }
-      if(party.state_id) {
-         const dRes = await getDistrictsByState(party.state_id);
-         loadedDistricts = safeExtract(dRes).filter(d => d.state_id == party.state_id);
-         setDistricts(loadedDistricts);
-         if(loadedDistricts.length === 0) setManualDistrict(true);
-      }
-
       setForm({
         name: party.name || '',
         email: party.email || '',
@@ -97,14 +74,7 @@ export default function EditSenderScreen() {
         whatsapp_number: party.whatsapp_number || '',
         use_same_number: false,
         customer_type_id: party.customer_type_id || 1,
-        country_id: party.country_id,
-        country_name: party.country?.name || party.country_name,
-        state_id: party.state_id,
-        state_name: party.state?.name || party.state_name,
-        district_id: party.district_id,
-        district_name: party.district?.name || party.district_name,
         city: party.city || '',
-        address: party.address || '',
         document_type_id: party.document_type_id,
         document_type_name: party.document_type?.name,
         document_id: party.document_id || '',
@@ -120,25 +90,6 @@ export default function EditSenderScreen() {
     }
   };
 
-  const handleCountrySelect = async (item) => {
-     setForm(p => ({...p, country_id: item.id, country_name: item.name, state_id:'', district_id:''}));
-     try {
-       const res = await getStatesByCountry(item.id);
-       setStates(safeExtract(res).filter(s => s.country_id == item.id));
-     } catch(e){}
-  };
-
-  const handleStateSelect = async (item) => {
-     setForm(p => ({...p, state_id: item.id, state_name: item.name, district_id:''}));
-     setManualDistrict(false);
-     try {
-       const res = await getDistrictsByState(item.id);
-       const list = safeExtract(res).filter(d => d.state_id == item.id);
-       setDistricts(list);
-       if(list.length === 0) setManualDistrict(true);
-     } catch(e){ setManualDistrict(true); }
-  };
-
   const handleSubmit = async () => {
      setSaving(true);
      try {
@@ -152,12 +103,9 @@ export default function EditSenderScreen() {
         formData.append('whatsapp_code', form.whatsapp_code || '+966');
         formData.append('whatsapp_number', form.whatsapp_number || '');
         formData.append('customer_type_id', 1); // Sender
+        formData.append('city', form.city || '');
         formData.append('document_type_id', form.document_type_id || '');
         formData.append('document_id', form.document_id || '');
-        
-        // Handle District Logic
-        if(!manualDistrict && form.district_id) formData.append('district_id', form.district_id);
-        else if(manualDistrict && form.district_name) formData.append('district_name', form.district_name);
         
         const response = await updateParty(id, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
         
@@ -250,38 +198,18 @@ export default function EditSenderScreen() {
                             </View>
                         </View>
                     </View>
+
+                    {/* CITY */}
+                    <View style={{marginBottom: 15}}>
+                        <Text style={styles.label}>City</Text>
+                        <TextInput value={form.city} onChangeText={t => setForm({...form, city: t})} style={styles.input} placeholder="City"/>
+                    </View>
                 </View>
             </View>
 
-            {/* SECTION 2: ADDRESS DETAILS (READ-ONLY) */}
+            {/* SECTION 2: DOCUMENTS */}
             <View style={styles.card}>
-                {renderSectionHeader(2, "Address Details")}
-                <View style={[styles.cardContent, {opacity: 0.7}]}>
-                    <View style={isLandscape ? styles.twoColumnLayout : {}}>
-                         <View style={isLandscape ? {flex: 1, marginRight: 8} : {}}>
-                            {renderDropdown("Country", form.country_name, null)}
-                         </View>
-                         <View style={isLandscape ? {flex: 1, marginLeft: 8} : {}}>
-                            {renderDropdown("State", form.state_name, null)}
-                         </View>
-                    </View>
-                    
-                    <View style={isLandscape ? styles.twoColumnLayout : {}}>
-                        <View style={isLandscape ? {flex: 1, marginRight: 8} : {}}>
-                            {renderDropdown("District", form.district_name, null)}
-                        </View>
-                        <View style={isLandscape ? {flex: 1, marginLeft: 8} : {}}>
-                            {renderInput("City", form.city, null)}
-                        </View>
-                    </View>
-
-                    {renderInput("Full Address", form.address, null)}
-                </View>
-            </View>
-
-            {/* SECTION 3: DOCUMENTS */}
-            <View style={styles.card}>
-                {renderSectionHeader(3, "Documents")}
+                {renderSectionHeader(2, "Documents")}
                 <View style={styles.cardContent}>
                     <View style={isLandscape ? styles.twoColumnLayout : {}}>
                         <View style={isLandscape ? {flex: 1, marginRight: 8} : {flex: 1}}>

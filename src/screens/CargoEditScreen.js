@@ -26,8 +26,7 @@ export default function CargoEditScreen() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [formData, setFormData] = useState({});
-  const [items, setItems] = useState([]);
-  const [boxWeights, setBoxWeights] = useState({});
+  const [boxes, setBoxes] = useState([]);
   const [expandedBoxes, setExpandedBoxes] = useState({});
   const [shippingMethodModalVisible, setShippingMethodModalVisible] = useState(false);
   const [paymentMethodModalVisible, setPaymentMethodModalVisible] = useState(false);
@@ -38,23 +37,35 @@ export default function CargoEditScreen() {
   const [receiversList, setReceiversList] = useState([]);
 
   const shippingMethods = [
-    { id: 1, name: 'IND SEA' },
-    { id: 2, name: 'IND AIR' },
-    { id: 3, name: 'INTER SEA' },
-    { id: 4, name: 'INTER AIR' },
+    { id: '1', name: 'IND SEA' },
+    { id: '2', name: 'IND AIR' },
+    { id: '3', name: 'INTER SEA' },
+    { id: '4', name: 'INTER AIR' },
   ];
 
   const paymentMethods = [
-    { id: 1, name: 'CASH' },
-    { id: 2, name: 'CHEQUE' },
-    { id: 3, name: 'TRANSFER' },
+    { id: '1', name: 'CASH' },
+    { id: '2', name: 'CHEQUE' },
+    { id: '3', name: 'TRANSFER' },
   ];
 
   const deliveryTypes = [
-    { id: 1, name: 'DOOR TO DOOR' },
-    { id: 2, name: 'AIRPORT' },
-    { id: 3, name: 'PORT' },
+    { id: '1', name: 'DOOR TO DOOR' },
+    { id: '2', name: 'AIRPORT' },
+    { id: '3', name: 'PORT' },
   ];
+
+  const formatTime = (input) => {
+    if (!input) return '00:00';
+    const cleaned = input.replace(/[^0-9:]/g, '');
+    const parts = cleaned.split(':');
+    if (parts.length >= 2) {
+      const hours = parts[0].padStart(2, '0').slice(-2);
+      const minutes = parts[1].padStart(2, '0').slice(-2);
+      return `${hours}:${minutes}`;
+    }
+    return '00:00';
+  };
 
   useEffect(() => {
     fetchCargoDetails();
@@ -91,34 +102,33 @@ export default function CargoEditScreen() {
       
       // Parse shipment method ID and delivery type ID from strings
       const shippingMethodMap = {
-        'IND SEA': 1,
-        'IND AIR': 2,
-        'INTER SEA': 3,
-        'INTER AIR': 4,
+        'IND SEA': '1',
+        'IND AIR': '2',
+        'INTER SEA': '3',
+        'INTER AIR': '4',
       };
       
       const deliveryTypeMap = {
-        'DOOR TO DOOR': 1,
-        'AIRPORT': 2,
-        'PORT': 3,
+        'DOOR TO DOOR': '1',
+        'AIRPORT': '2',
+        'PORT': '3',
       };
       
       const paymentMethodMap = {
-        'CASH': 1,
-        'CHEQUE': 2,
-        'TRANSFER': 3,
+        'CASH': '1',
+        'CHEQUE': '2',
+        'TRANSFER': '3',
       };
       
       const parsedFormData = {
         branch_id: String(cargoData.branch_id || ''),
         sender_id: String(cargoData.sender_id || ''),
         receiver_id: String(cargoData.receiver_id || ''),
-        shipping_method_id: String(shippingMethodMap[cargoData.shipping_method] || cargoData.shipping_method_id || ''),
-        payment_method_id: String(paymentMethodMap[cargoData.payment_method] || cargoData.payment_method_id || ''),
-        delivery_type_id: String(deliveryTypeMap[cargoData.delivery_type] || cargoData.delivery_type_id || ''),
-        status_id: String(cargoData.status_id || ''),
+        shipping_method_id: String(shippingMethodMap[cargoData.shipping_method] || cargoData.shipping_method_id || '1'),
+        payment_method_id: String(paymentMethodMap[cargoData.payment_method] || cargoData.payment_method_id || '1'),
+        delivery_type_id: String(deliveryTypeMap[cargoData.delivery_type] || cargoData.delivery_type_id || '1'),
         date: String(cargoData.date || ''),
-        time: String(cargoData.time || ''),
+        time: formatTime(cargoData.time || '00:00'),
         lrl_tracking_code: String(cargoData.lrl_tracking_code || cargoData.tracking_code || ''),
         special_remarks: String(cargoData.special_remarks || ''),
         total_cost: String(cargoData.total_cost || '0'),
@@ -137,38 +147,59 @@ export default function CargoEditScreen() {
       console.log('Parsed form data:', parsedFormData);
       setFormData(parsedFormData);
       
-      // Parse items from nested boxes structure
-      let itemsArray = [];
-      if (cargoData.boxes && typeof cargoData.boxes === 'object') {
-        console.log('Boxes object:', cargoData.boxes);
-        Object.keys(cargoData.boxes).forEach(boxNum => {
-          const box = cargoData.boxes[boxNum];
-          if (box.items && Array.isArray(box.items)) {
-            itemsArray = itemsArray.concat(box.items);
-          }
-        });
-      } else if (Array.isArray(cargoData.items)) {
-        itemsArray = cargoData.items;
-      }
-      
-      console.log('Parsed items:', itemsArray);
-      console.log('Items length:', itemsArray.length);
-      if (itemsArray.length > 0) {
-        console.log('First item:', itemsArray[0]);
-      }
-      setItems(itemsArray);
-      
       // Parse box weights - handle array or object format
       let boxWeightsData = {};
       if (Array.isArray(cargoData.box_weight)) {
         cargoData.box_weight.forEach((weight, idx) => {
-          boxWeightsData[idx + 1] = weight;
+          boxWeightsData[(idx + 1).toString()] = weight;
         });
       } else if (typeof cargoData.box_weight === 'object') {
         boxWeightsData = cargoData.box_weight;
       }
-      console.log('Parsed box weights:', boxWeightsData);
-      setBoxWeights(boxWeightsData);
+      
+      // Parse items from nested boxes structure
+      let boxesArray = [];
+      if (cargoData.boxes && typeof cargoData.boxes === 'object') {
+        console.log('Boxes object:', cargoData.boxes);
+        Object.keys(cargoData.boxes).forEach(boxNum => {
+          const box = cargoData.boxes[boxNum];
+          const boxItems = box.items && Array.isArray(box.items) ? box.items.map((item, idx) => ({
+            slno: item.slno || String(idx + 1),
+            name: item.name || '',
+            qty: item.qty || item.piece_no || '1',
+            weight: item.weight || '0',
+            unit_price: item.unit_price || '0',
+            total_price: item.total_price || '0'
+          })) : [{ slno: '1', name: '', qty: '1', weight: '', unit_price: '0', total_price: '0' }];
+          boxesArray.push({
+            weight: box.weight || boxWeightsData[boxNum] || '0',
+            items: boxItems
+          });
+        });
+      } else if (Array.isArray(cargoData.items)) {
+        // If no boxes, create one box with all items
+        const allItems = cargoData.items.map((item, idx) => ({
+          slno: item.slno || String(idx + 1),
+          name: item.name || '',
+          qty: item.qty || item.piece_no || '1',
+          weight: item.weight || '0',
+          unit_price: item.unit_price || '0',
+          total_price: item.total_price || '0'
+        }));
+        boxesArray = [{
+          weight: cargoData.total_weight || '0',
+          items: allItems
+        }];
+      } else {
+        // Default empty box
+        boxesArray = [{
+          weight: '0',
+          items: [{ slno: '1', name: '', qty: '1', weight: '', unit_price: '0', total_price: '0' }]
+        }];
+      }
+      
+      console.log('Parsed boxes:', boxesArray);
+      setBoxes(boxesArray);
       
     } catch (error) {
       console.error('Error fetching cargo:', error);
@@ -196,14 +227,43 @@ export default function CargoEditScreen() {
     return item ? item.name : 'Select...';
   };
 
-  const handleItemChange = (index, field, value) => {
-    const updatedItems = [...items];
-    updatedItems[index] = { ...updatedItems[index], [field]: value };
-    setItems(updatedItems);
+  const addBox = () => {
+    const newBox = {
+      weight: '',
+      items: [{ slno: '1', name: '', qty: '1', weight: '', unit_price: '0', total_price: '0' }]
+    };
+    setBoxes([...boxes, newBox]);
   };
 
-  const handleBoxWeightChange = (boxNum, weight) => {
-    setBoxWeights(prev => ({ ...prev, [boxNum]: weight }));
+  const removeBox = (index) => {
+    const newBoxes = [...boxes];
+    newBoxes.splice(index, 1);
+    setBoxes(newBoxes);
+  };
+
+  const updateBoxWeight = (boxIndex, weight) => {
+    const newBoxes = [...boxes];
+    newBoxes[boxIndex].weight = weight;
+    setBoxes(newBoxes);
+  };
+
+  const addItem = (boxIndex) => {
+    const newBoxes = [...boxes];
+    const newSlno = String(newBoxes[boxIndex].items.length + 1);
+    newBoxes[boxIndex].items.push({ slno: newSlno, name: '', qty: '1', weight: '', unit_price: '0', total_price: '0' });
+    setBoxes(newBoxes);
+  };
+
+  const removeItem = (boxIndex, itemIndex) => {
+    const newBoxes = [...boxes];
+    newBoxes[boxIndex].items.splice(itemIndex, 1);
+    setBoxes(newBoxes);
+  };
+
+  const updateItem = (boxIndex, itemIndex, field, value) => {
+    const newBoxes = [...boxes];
+    newBoxes[boxIndex].items[itemIndex][field] = value;
+    setBoxes(newBoxes);
   };
 
   const toggleBoxExpand = (boxNum) => {
@@ -213,23 +273,43 @@ export default function CargoEditScreen() {
     }));
   };
 
-  const getItemsByBox = () => {
-    const boxedItems = {};
-    items.forEach(item => {
-      const boxNum = item.box_number || '1';
-      if (!boxedItems[boxNum]) {
-        boxedItems[boxNum] = [];
-      }
-      boxedItems[boxNum].push(item);
-    });
-    return boxedItems;
-  };
-
   const handleUpdate = async () => {
     try {
       setUpdating(true);
+      
+      // Convert boxes to flat items and box_weight
+      const flatItems = [];
+      const boxWeightsObj = {};
+      boxes.forEach((box, index) => {
+        const boxNum = (index + 1).toString();
+        boxWeightsObj[boxNum] = box.weight;
+        box.items.forEach(item => {
+          flatItems.push({
+            slno: item.slno,
+            name: item.name,
+            piece_no: item.qty,
+            unit_price: item.unit_price,
+            weight: item.weight,
+            total_price: item.total_price,
+            box_number: boxNum
+          });
+        });
+      });
+      
+      // Calculate total weight from boxes
+      let totalWeight = 0;
+      for (const key in boxWeightsObj) {
+        totalWeight += parseFloat(boxWeightsObj[key] || 0);
+      }
+      
       const payload = {
         ...formData,
+        branch_id: parseInt(formData.branch_id),
+        sender_id: parseInt(formData.sender_id),
+        receiver_id: parseInt(formData.receiver_id),
+        shipping_method_id: parseInt(formData.shipping_method_id),
+        payment_method_id: parseInt(formData.payment_method_id),
+        delivery_type_id: parseInt(formData.delivery_type_id),
         total_cost: parseFloat(formData.total_cost),
         bill_charges: parseFloat(formData.bill_charges),
         quantity_other_charges: parseFloat(formData.quantity_other_charges),
@@ -240,14 +320,14 @@ export default function CargoEditScreen() {
         unit_rate_insurance: parseFloat(formData.unit_rate_insurance),
         quantity_discount: parseFloat(formData.quantity_discount),
         unit_rate_discount: parseFloat(formData.unit_rate_discount),
-        total_weight: parseFloat(formData.total_weight),
-        items,
-        box_weight: boxWeights,
+        total_weight: totalWeight,
+        items: flatItems,
+        box_weight: boxWeightsObj,
       };
       
       await updateCargo(id, payload);
-      Alert.alert('Success', 'Cargo updated successfully', [
-        { text: 'OK', onPress: () => navigation.goBack() }
+      Alert.alert('Cargo updated', '', [
+        { text: 'OK', onPress: () => navigation.replace('CargoList') }
       ]);
     } catch (error) {
       console.error('Error updating cargo:', error);
@@ -372,6 +452,28 @@ export default function CargoEditScreen() {
               <Text style={styles.dropdownText}>{getDropdownLabel(formData.delivery_type_id, deliveryTypes)}</Text>
               <MaterialCommunityIcons name="chevron-down" size={20} color={colors.secondary} />
             </TouchableOpacity>
+          </View>
+
+          {/* Date Input */}
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>Date</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="YYYY-MM-DD"
+              value={formData.date}
+              onChangeText={(value) => setFormData(prev => ({ ...prev, date: value }))}
+            />
+          </View>
+
+          {/* Time Input */}
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>Time</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="HH:MM"
+              value={formData.time}
+              onChangeText={(value) => setFormData(prev => ({ ...prev, time: formatTime(value) }))}
+            />
           </View>
         </View>
 
@@ -620,163 +722,117 @@ export default function CargoEditScreen() {
           </View>
         </View>
 
-        {/* BOX WEIGHTS SECTION */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeaderRow}>
-            <SectionHeader title="Box Weights" icon="package-variant" />
-            <TouchableOpacity
-              style={styles.addButton}
-              onPress={() => {
-                const nextBox = Math.max(...Object.keys(boxWeights).map(Number), 0) + 1;
-                setBoxWeights(prev => ({ ...prev, [nextBox]: 0 }));
-              }}
-            >
-              <MaterialCommunityIcons name="plus" size={20} color="#fff" />
-            </TouchableOpacity>
-          </View>
-          {Object.entries(boxWeights).map(([boxNum, weight]) => (
-            <View key={boxNum} style={styles.boxWeightRow}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.fieldLabel}>Box {boxNum}</Text>
-                <TextInput
-                  style={styles.input}
-                  value={String(weight || '')}
-                  onChangeText={(v) => handleBoxWeightChange(boxNum, v)}
-                  keyboardType="decimal-pad"
-                  placeholder="0.00"
-                />
-              </View>
-              <TouchableOpacity
-                style={styles.deleteBoxButton}
-                onPress={() => {
-                  const newBoxWeights = { ...boxWeights };
-                  delete newBoxWeights[boxNum];
-                  setBoxWeights(newBoxWeights);
-                }}
-              >
-                <MaterialCommunityIcons name="trash-can-outline" size={20} color="#EF4444" />
-              </TouchableOpacity>
-            </View>
-          ))}
-        </View>
-
         {/* ITEMS SECTION */}
         <View style={styles.section}>
+          <View style={styles.header}>
+            <Text style={styles.title}>Boxes & Items</Text>
+            <Text style={styles.summaryText}>{boxes.length} Boxes | {boxes.reduce((acc, box) => acc + box.items.length, 0)} Items</Text>
+          </View>
+
           <View style={styles.sectionHeaderRow}>
-            <SectionHeader title="Items" icon="cube-outline" />
-            <TouchableOpacity
-              style={styles.addButton}
-              onPress={() => {
-                const newItem = {
-                  id: Date.now(),
-                  box_number: Object.keys(getItemsByBox())[0] || '1',
-                  name: '',
-                  piece_no: '',
-                  unit_price: '',
-                  weight: '',
-                };
-                setItems([...items, newItem]);
-              }}
-            >
+            <View />
+            <TouchableOpacity style={styles.addButton} onPress={addBox}>
               <MaterialCommunityIcons name="plus" size={20} color="#fff" />
             </TouchableOpacity>
           </View>
-          {items && items.length > 0 ? (
-            Object.entries(getItemsByBox()).map(([boxNum, boxItems]) => (
-              <View key={boxNum} style={styles.boxContainer}>
-                <TouchableOpacity 
-                  style={styles.boxHeader}
-                  onPress={() => toggleBoxExpand(boxNum)}
-                >
-                  <View style={styles.boxHeaderLeft}>
-                    <MaterialCommunityIcons 
-                      name={expandedBoxes[boxNum] ? "chevron-down" : "chevron-right"} 
-                      size={22} 
-                      color={colors.primary} 
-                    />
-                    <Text style={styles.boxTitle}>Box {boxNum}</Text>
-                    <View style={styles.boxBadge}>
-                      <Text style={styles.boxBadgeText}>{boxItems.length} items</Text>
-                    </View>
+
+          {boxes.map((box, boxIndex) => (
+            <View key={boxIndex} style={styles.boxCard}>
+              {/* Box Header */}
+              <View style={styles.boxHeader}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <View style={styles.boxIconContainer}>
+                    <MaterialCommunityIcons name="cube-outline" size={20} color={colors.primary} />
                   </View>
-                  {boxWeights[boxNum] && (
-                    <Text style={styles.boxWeight}>{boxWeights[boxNum]} kg</Text>
-                  )}
-                </TouchableOpacity>
-
-                {expandedBoxes[boxNum] && (
-                  <View style={styles.boxContent}>
-                    {boxItems.map((item, itemIdx) => {
-                      const actualIndex = items.indexOf(item);
-                      return (
-                      <View key={itemIdx} style={styles.itemCard}>
-                        <View style={styles.itemHeader}>
-                          <View>
-                            <Text style={styles.itemNumber}>Item {itemIdx + 1}</Text>
-                            <Text style={styles.itemId}>#{item.slno || itemIdx + 1}</Text>
-                          </View>
-                          <TouchableOpacity
-                            style={styles.deleteItemButton}
-                            onPress={() => {
-                              const updatedItems = items.filter((_, idx) => idx !== actualIndex);
-                              setItems(updatedItems);
-                            }}
-                          >
-                            <MaterialCommunityIcons name="close-circle" size={24} color="#EF4444" />
-                          </TouchableOpacity>
-                        </View>
-                        <View style={styles.itemDivider} />
-                        
-                        {/* Box Assignment Dropdown */}
-                        <View style={styles.fieldGroup}>
-                          <Text style={styles.fieldLabel}>Assigned to Box</Text>
-                          <TouchableOpacity
-                            style={styles.dropdownInput}
-                            onPress={() => {
-                              // Simple dropdown for box assignment
-                              const availableBoxes = Object.keys(boxWeights);
-                              if (availableBoxes.length > 0) {
-                                const currentIndex = availableBoxes.indexOf(String(item.box_number || '1'));
-                                const nextIndex = (currentIndex + 1) % availableBoxes.length;
-                                handleItemChange(actualIndex, 'box_number', availableBoxes[nextIndex]);
-                              }
-                            }}
-                          >
-                            <Text style={styles.dropdownText}>Box {item.box_number || '1'}</Text>
-                            <MaterialCommunityIcons name="chevron-down" size={20} color={colors.secondary} />
-                          </TouchableOpacity>
-                        </View>
-                        
-                        <InputField label="Item Name" value={String(item.name || '')} onChangeText={(v) => handleItemChange(items.indexOf(item), 'name', v)} placeholder="Item name" />
-                        
-                        <View style={styles.twoColRow}>
-                          <View style={styles.halfField}>
-                            <InputField label="Pieces" value={String(item.piece_no || '')} onChangeText={(v) => handleItemChange(items.indexOf(item), 'piece_no', v)} placeholder="# pieces" keyboardType="numeric" />
-                          </View>
-                          <View style={styles.halfField}>
-                            <InputField label="Unit Price" value={String(item.unit_price || '')} onChangeText={(v) => handleItemChange(items.indexOf(item), 'unit_price', v)} placeholder="0.00" keyboardType="decimal-pad" />
-                          </View>
-                        </View>
-
-                        <InputField label="Weight (kg)" value={String(item.weight || '')} onChangeText={(v) => handleItemChange(items.indexOf(item), 'weight', v)} placeholder="0.00" keyboardType="decimal-pad" />
-
-                        {item.total_price && (
-                          <View style={styles.itemSummary}>
-                            <Text style={styles.summaryLabel}>Total Price:</Text>
-                            <Text style={styles.summaryValue}>{item.total_price}</Text>
-                          </View>
-                        )}
-                      </View>
-                    );
-                    })}
-                  </View>
+                  <Text style={styles.boxTitle}>Box {boxIndex + 1}</Text>
+                </View>
+                {boxes.length > 1 && (
+                  <TouchableOpacity onPress={() => removeBox(boxIndex)} style={styles.deleteBoxBtn}>
+                    <MaterialCommunityIcons name="trash-can-outline" size={18} color="#EF4444" />
+                  </TouchableOpacity>
                 )}
               </View>
-            ))
-          ) : (
+
+              <View style={styles.divider} />
+
+              {/* Box Weight Input */}
+              <View style={styles.weightRow}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Text style={styles.label}>Total Box Weight (KG)</Text>
+                  <Text style={{ color: '#EF4444', marginLeft: 2 }}>*</Text>
+                </View>
+                <TextInput
+                  style={[styles.weightInput, (!box.weight || parseFloat(box.weight) <= 0) && { borderWidth: 1, borderColor: '#FCA5A5' }]}
+                  placeholder="0.00"
+                  keyboardType="numeric"
+                  value={String(box.weight)}
+                  onChangeText={(t) => updateBoxWeight(boxIndex, t)}
+                />
+              </View>
+
+              {/* Items List */}
+              <View style={styles.itemsContainer}>
+                {box.items.map((item, itemIndex) => (
+                  <View key={itemIndex} style={styles.itemRow}>
+                    {/* ITEM NAME */}
+                    <View style={{ flex: 3, marginRight: 8 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+                        <Text style={styles.itemLabel}>Item Name</Text>
+                        <Text style={{ color: '#EF4444', fontSize: 10, marginLeft: 2 }}>*</Text>
+                      </View>
+                      <TextInput
+                        style={[styles.itemInput, (!item.name || item.name.trim() === "") && { borderColor: '#FCA5A5' }]}
+                        placeholder="Dates"
+                        value={item.name}
+                        onChangeText={(t) => updateItem(boxIndex, itemIndex, 'name', t)}
+                      />
+                    </View>
+
+                    {/* QTY */}
+                    <View style={{ flex: 1, marginRight: 8 }}>
+                      <Text style={styles.itemLabel}>Qty</Text>
+                      <TextInput
+                        style={[styles.itemInput, { textAlign: 'center' }]}
+                        placeholder="0"
+                        keyboardType="numeric"
+                        value={String(item.qty)}
+                        onChangeText={(t) => updateItem(boxIndex, itemIndex, 'qty', t)}
+                      />
+                    </View>
+
+                    {/* WEIGHT (KG) */}
+                    <View style={{ flex: 1.2 }}>
+                      <Text style={styles.itemLabel}>KG</Text>
+                      <TextInput
+                        style={[styles.itemInput, { textAlign: 'center' }]}
+                        placeholder="0"
+                        keyboardType="numeric"
+                        value={String(item.weight)}
+                        onChangeText={(t) => updateItem(boxIndex, itemIndex, 'weight', t)}
+                      />
+                    </View>
+
+                    {/* Remove Item Button (Small X) */}
+                    {box.items.length > 1 && (
+                      <TouchableOpacity onPress={() => removeItem(boxIndex, itemIndex)} style={styles.deleteItemBtn}>
+                        <MaterialCommunityIcons name="close" size={16} color="#999" />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                ))}
+
+                <TouchableOpacity style={styles.addItemBtn} onPress={() => addItem(boxIndex)}>
+                  <MaterialCommunityIcons name="plus" size={20} color={colors.primary} />
+                  <Text style={styles.addItemText}>Add Item</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ))}
+
+          {boxes.length === 0 && (
             <View style={styles.emptyStateBox}>
               <MaterialCommunityIcons name="package-variant-closed" size={40} color="#D1D5DB" />
-              <Text style={styles.emptyStateText}>No items added</Text>
+              <Text style={styles.emptyStateText}>No boxes added</Text>
             </View>
           )}
         </View>
@@ -1213,4 +1269,35 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontFamily: 'InstrumentSans-Bold',
   },
+  boxCard: { 
+    backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 16,
+    elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 6,
+  },
+  boxIconContainer: { marginRight: 10 },
+  deleteBoxBtn: { 
+    width: 32, height: 32, borderRadius: 16, backgroundColor: '#FEE2E2', 
+    justifyContent: 'center', alignItems: 'center' 
+  },
+  divider: { height: 1, backgroundColor: '#F3F4F6', marginBottom: 16 },
+  weightRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  label: { fontSize: 14, fontWeight: '600', color: '#111827', fontFamily: 'InstrumentSans-Regular' },
+  weightInput: { 
+    backgroundColor: '#F3F4F6', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, 
+    width: 100, textAlign: 'right', fontSize: 15, color: '#111827', fontFamily: 'InstrumentSans-Regular'
+  },
+  itemsContainer: { },
+  itemRow: { flexDirection: 'row', alignItems: 'flex-end', marginBottom: 12 },
+  itemLabel: { fontSize: 11, color: '#6B7280', marginBottom: 6, fontFamily: 'InstrumentSans-Regular' },
+  itemInput: { 
+    backgroundColor: '#F9FAFB', borderRadius: 8, paddingHorizontal: 12, height: 44, 
+    fontSize: 14, color: '#111827', borderWidth: 1, borderColor: '#F3F4F6', fontFamily: 'InstrumentSans-Regular'
+  },
+  deleteItemBtn: { marginLeft: 8, marginBottom: 12, padding: 4 },
+  addItemBtn: { 
+    backgroundColor: '#E0E7FF', borderRadius: 8, height: 48, 
+    flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 8 
+  },
+  addItemText: { color: colors.primary, fontWeight: '600', fontSize: 15, marginLeft: 6, fontFamily: 'InstrumentSans-Regular' },
+  title: { fontSize: 16, fontWeight: '600', color: '#111827', fontFamily: 'InstrumentSans-Regular' },
+  summaryText: { fontSize: 13, color: '#9CA3AF', fontFamily: 'InstrumentSans-Regular' },
 });
