@@ -34,7 +34,6 @@ export default function EditProfileScreen() {
         email: profile.email || '',
       });
     } catch (error) {
-      console.error('Error loading profile:', error);
       Alert.alert('Error', 'Could not load profile');
     } finally {
       setLoading(false);
@@ -56,7 +55,6 @@ export default function EditProfileScreen() {
       Alert.alert('Success', 'Profile updated successfully');
       navigation.goBack();
     } catch (error) {
-      console.error('Error updating profile:', error);
       Alert.alert('Error', 'Could not update profile');
     } finally {
       setSaving(false);

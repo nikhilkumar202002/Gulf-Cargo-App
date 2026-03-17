@@ -82,7 +82,6 @@ export default function DashboardScreen({ navigation }) {
         setRecentCargos(Array.isArray(list) ? list.slice(0, 5) : []);
 
     } catch (error) {
-        console.error("Dashboard Fetch Error:", error);
         // Use mock data for development when API is unavailable
         setStats({
             shipments: 25,

@@ -63,7 +63,7 @@ export default function Step3Shipment({ data, update }) {
       }
 
     } catch (e) {
-      console.error("Error loading shipment data:", e);
+      // Silently handle shipment data load errors
     }
   };
 

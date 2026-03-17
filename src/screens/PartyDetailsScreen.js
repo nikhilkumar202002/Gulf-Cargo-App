@@ -26,7 +26,7 @@ export default function PartyDetailsScreen() {
       // Handle response.data.data (common Laravel pattern) or response.data
       setParty(response.data.data || response.data);
     } catch (error) {
-      console.error("Error fetching details", error);
+      // Silently handle fetch errors
     } finally {
       setLoading(false);
     }

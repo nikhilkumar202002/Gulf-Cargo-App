@@ -167,7 +167,6 @@ export default function EditReceiverScreen() {
       });
 
     } catch(e) {
-      console.error(e);
       Alert.alert("Error", "Failed to load receiver details");
       navigation.goBack();
     } finally {
@@ -243,7 +242,6 @@ export default function EditReceiverScreen() {
         }
 
      } catch(e) {
-        console.error(e);
         Alert.alert("Error", "Failed to update receiver: " + (e.response?.data?.message || e.message));
      } finally {
         setSaving(false);

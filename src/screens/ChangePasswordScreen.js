@@ -45,7 +45,6 @@ export default function ChangePasswordScreen() {
       Alert.alert('Success', 'Password changed successfully');
       navigation.goBack();
     } catch (error) {
-      console.error('Error changing password:', error);
       Alert.alert('Error', 'Could not change password');
     } finally {
       setSaving(false);

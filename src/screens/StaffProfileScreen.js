@@ -15,13 +15,10 @@ export default function StaffProfileScreen() {
       // Fetching specifically for ID 10 as requested
       const response = await getStaffDetails(10);
       
-      console.log('Staff Data:', response.data);
-      
       if (response.data) {
         setStaff(response.data); // Adjust this depending on if data is nested like response.data.data
       }
     } catch (error) {
-      console.error('Error fetching staff:', error);
       Alert.alert('Error', 'Could not fetch staff details');
     } finally {
       setLoading(false);

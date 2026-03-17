@@ -18,7 +18,7 @@ export default function Step1Collection({ data, update }) {
       const list = response?.data?.data || response?.data || [];
       setRolesList(list);
     } catch (error) {
-      console.error("Error fetching collectors:", error);
+      // Silently handle fetch errors
     } finally {
       setLoading(false);
     }

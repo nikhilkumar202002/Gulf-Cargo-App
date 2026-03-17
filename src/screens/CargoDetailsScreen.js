@@ -41,7 +41,6 @@ export default function CargoDetailsScreen() {
           setReceiverFull(rRes.data.data || rRes.data);
       }
     } catch (error) {
-      console.error("Error fetching data:", error);
       Alert.alert("Error", "Could not load full cargo details.");
     } finally {
       setLoading(false);

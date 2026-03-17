@@ -36,12 +36,6 @@ export default function PartiesScreen() {
         setFilteredData(list);
       }
     } catch (error) {
-      console.error("Error fetching sender parties:", error.message || error);
-      if (error.response?.status) {
-        console.error(`API Status: ${error.response.status}`, error.response.data);
-      } else if (error.code === 'ENOTFOUND') {
-        console.error("DNS Resolution Failed - Check your internet or backend server");
-      }
       setSenderError(error?.message || "Failed to load senders. Check your connection.");
       setSenderData([]);
     } finally {
@@ -61,12 +55,6 @@ export default function PartiesScreen() {
         setFilteredData(list);
       }
     } catch (error) {
-      console.error("Error fetching receiver parties:", error.message || error);
-      if (error.response?.status) {
-        console.error(`API Status: ${error.response.status}`, error.response.data);
-      } else if (error.code === 'ENOTFOUND') {
-        console.error("DNS Resolution Failed - Check your internet or backend server");
-      }
       setReceiverError(error?.message || "Failed to load receivers. Check your connection.");
       setReceiverData([]);
     } finally {
@@ -284,33 +272,66 @@ export default function PartiesScreen() {
         />
       )}
 
-      {/* 3. Redesigned Centered Context Modal */}
-      <Modal visible={menuVisible} transparent animationType="fade" onRequestClose={() => setMenuVisible(false)}>
-        <Pressable onPress={() => setMenuVisible(false)}>
-          <View style={styles.modalOverlay}>
-            <Pressable>
-              <View style={styles.contextMenu}>
-                <Text style={styles.menuTitle}>{selectedParty?.name}</Text>
-                
-                <TouchableOpacity style={styles.menuOption} onPress={() => handleMenuAction('view')}>
-                    <MaterialCommunityIcons name="eye-outline" size={22} color="#0F172A" />
-                    <Text style={styles.optionLabel}>View Profile</Text>
-                </TouchableOpacity>
+      {/* Action Sheet Modal */}
+      <Modal visible={menuVisible} transparent animationType="slide" onRequestClose={() => setMenuVisible(false)}>
+        <Pressable style={styles.modalOverlay} onPress={() => setMenuVisible(false)}>
+          <Pressable onPress={(e) => e.stopPropagation()} style={styles.contextMenu}>
+            {/* Drag Handle */}
+            <View style={styles.dragHandle} />
 
-                <TouchableOpacity style={styles.menuOption} onPress={() => handleMenuAction('edit')}>
-                    <MaterialCommunityIcons name="pencil-outline" size={22} color="#0F172A" />
-                    <Text style={styles.optionLabel}>Edit Information</Text>
-                </TouchableOpacity>
-
-                <View style={styles.menuDivider} />
-
-                <TouchableOpacity style={styles.menuOption} onPress={() => handleMenuAction('delete')}>
-                    <MaterialCommunityIcons name="trash-can-outline" size={22} color="#EF4444" />
-                    <Text style={[styles.optionLabel, {color: '#EF4444'}]}>Remove Customer</Text>
-                </TouchableOpacity>
+            {/* Party Identity */}
+            <View style={styles.menuPartyRow}>
+              <View style={[styles.menuAvatar, { backgroundColor: activeTab === 'sender' ? '#FDECEA' : '#EEF0FD' }]}>
+                <Text style={[styles.menuAvatarText, { color: activeTab === 'sender' ? '#C7245C' : '#5B6EF5' }]}>
+                  {selectedParty?.name?.charAt(0)?.toUpperCase() || '?'}
+                </Text>
               </View>
-            </Pressable>
-          </View>
+              <View style={styles.menuPartyInfo}>
+                <Text style={styles.menuPartyName} numberOfLines={1}>{selectedParty?.name}</Text>
+                <Text style={styles.menuPartyType}>{activeTab === 'sender' ? 'Sender' : 'Receiver'}</Text>
+              </View>
+            </View>
+
+            <View style={styles.menuDivider} />
+
+            {/* Actions */}
+            <TouchableOpacity style={styles.menuOption} onPress={() => handleMenuAction('view')}>
+              <View style={[styles.menuOptionIcon, { backgroundColor: '#EFF6FF' }]}>
+                <MaterialCommunityIcons name="eye-outline" size={20} color="#3B82F6" />
+              </View>
+              <View style={styles.menuOptionText}>
+                <Text style={styles.optionLabel}>View Profile</Text>
+                <Text style={styles.optionSub}>See full details</Text>
+              </View>
+              <MaterialCommunityIcons name="chevron-right" size={20} color="#CBD5E1" />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.menuOption} onPress={() => handleMenuAction('edit')}>
+              <View style={[styles.menuOptionIcon, { backgroundColor: '#F0FDF4' }]}>
+                <MaterialCommunityIcons name="pencil-outline" size={20} color="#22C55E" />
+              </View>
+              <View style={styles.menuOptionText}>
+                <Text style={styles.optionLabel}>Edit Information</Text>
+                <Text style={styles.optionSub}>Update party details</Text>
+              </View>
+              <MaterialCommunityIcons name="chevron-right" size={20} color="#CBD5E1" />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.menuOption, styles.menuOptionDanger]} onPress={() => handleMenuAction('delete')}>
+              <View style={[styles.menuOptionIcon, { backgroundColor: '#FEF2F2' }]}>
+                <MaterialCommunityIcons name="trash-can-outline" size={20} color="#EF4444" />
+              </View>
+              <View style={styles.menuOptionText}>
+                <Text style={[styles.optionLabel, { color: '#EF4444' }]}>Remove Customer</Text>
+                <Text style={styles.optionSub}>This action cannot be undone</Text>
+              </View>
+              <MaterialCommunityIcons name="chevron-right" size={20} color="#FCA5A5" />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.cancelButton} onPress={() => setMenuVisible(false)}>
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+          </Pressable>
         </Pressable>
       </Modal>
     </View>
@@ -430,22 +451,78 @@ const styles = StyleSheet.create({
   // Context Menu Modal
   modalOverlay: { 
     flex: 1, 
-    backgroundColor: 'rgba(15, 23, 42, 0.5)', 
-    justifyContent: 'center', 
-    alignItems: 'center' 
+    backgroundColor: 'rgba(15, 23, 42, 0.55)', 
+    justifyContent: 'flex-end', 
+    width: '100%',
+    height: '100%',
   },
   contextMenu: { 
     backgroundColor: '#FFFFFF', 
-    width: '82%', 
-    borderRadius: 20, 
-    padding: 24,
+    width: '100%',
+    borderTopLeftRadius: 28, 
+    borderTopRightRadius: 28,
+    paddingHorizontal: 20,
+    paddingBottom: 30,
+    paddingTop: 12,
     shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 5
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 10,
   },
-  menuTitle: { fontSize: 14, fontWeight: '800', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 20 },
-  menuOption: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14 },
-  optionLabel: { fontSize: 16, color: '#0F172A', fontWeight: '600', marginLeft: 14 },
-  menuDivider: { height: 1, backgroundColor: '#F1F5F9', marginVertical: 8 }
+  dragHandle: {
+    width: 40,
+    height: 4,
+    backgroundColor: '#E2E8F0',
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: 20,
+  },
+  menuPartyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  menuAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  menuAvatarText: {
+    fontSize: 22,
+    fontWeight: '800',
+    fontFamily: 'InstrumentSans-Regular',
+  },
+  menuPartyInfo: { flex: 1 },
+  menuPartyName: { fontSize: 17, fontWeight: '700', color: '#0F172A', fontFamily: 'InstrumentSans-Regular' },
+  menuPartyType: { fontSize: 12, color: '#94A3B8', fontWeight: '500', marginTop: 2, textTransform: 'uppercase', letterSpacing: 0.8, fontFamily: 'InstrumentSans-Regular' },
+  menuDivider: { height: 1, backgroundColor: '#F1F5F9', marginVertical: 8 },
+  menuOption: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, gap: 14 },
+  menuOptionDanger: {},
+  menuOptionIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  menuOptionText: { flex: 1 },
+  optionLabel: { fontSize: 15, color: '#0F172A', fontWeight: '600', fontFamily: 'InstrumentSans-Regular' },
+  optionSub: { fontSize: 12, color: '#94A3B8', marginTop: 1, fontFamily: 'InstrumentSans-Regular' },
+  cancelButton: {
+    marginTop: 8,
+    backgroundColor: '#F1F5F9',
+    borderRadius: 14,
+    paddingVertical: 15,
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#64748B',
+    fontFamily: 'InstrumentSans-Regular',
+  },
 });

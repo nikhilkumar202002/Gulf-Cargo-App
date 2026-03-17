@@ -22,8 +22,7 @@ export default function Step6Review({ data }) {
   // Additional calculations for API fields
   const totalCost = subtotalValue;
   const billCharges = billChargesValue;
-  const vatPercentage = parseFloat(data.vat_percentage) || 0;
-  const vatCost = parseFloat(data.amount_vat_amount) || 0;
+  const vatCost = parseFloat(data.amount_vat) || 0; // Only use if provided
   const netTotal = totalCost + billCharges + vatCost;
   
   // Flatten Items for display
@@ -158,7 +157,7 @@ export default function Step6Review({ data }) {
         <View style={styles.sectionContent}>
             <InfoRow label="Subtotal (Weight)" value={formatCurrency(totalCost)} suffix="SAR" isBold />
             <InfoRow label="Bill Charges" value={formatCurrency(billCharges)} suffix="SAR" isBold />
-            <InfoRow label="VAT" value={`${vatPercentage}%`} isBold />
+            {vatCost > 0 && <InfoRow label="VAT" value={formatCurrency(vatCost)} suffix="SAR" isBold />}
             
             <View style={styles.netTotalRow}>
                 <Text style={styles.netTotalLabel}>NET Total</Text>

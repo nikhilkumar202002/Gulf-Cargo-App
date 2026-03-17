@@ -30,7 +30,6 @@ export default function CargoListScreen() {
   const [selectedCargo, setSelectedCargo] = useState(null);
 
   useEffect(() => { 
-    console.log('CargoListScreen mounted');
     fetchCargos(1); 
   }, []);
 
@@ -38,11 +37,7 @@ export default function CargoListScreen() {
     try {
       if (pageNum === 1) setLoading(true);
       setError(null);
-      console.log('Fetching cargos for page:', pageNum);
       const response = await getCargoList(pageNum);
-      console.log('Full response object:', response);
-      console.log('Response status:', response.status);
-      console.log('Response data:', response.data);
       
       // Handle different response formats
       let list = [];
@@ -54,19 +49,13 @@ export default function CargoListScreen() {
         list = [response.data];
       }
       
-      const meta = response.data?.meta || {}; 
-      console.log('Parsed list:', list);
-      console.log('List length:', list.length);
+      const meta = response.data?.meta || {};
 
       if (pageNum === 1) setCargos(list);
       else setCargos(prev => [...prev, ...list]);
 
       setLastPage(meta.last_page || (list.length < 10 ? pageNum : pageNum + 1));
     } catch (e) { 
-      console.error('Error fetching cargos:', e);
-      console.error('Error details - status:', e.response?.status);
-      console.error('Error details - data:', e.response?.data);
-      console.error('Error details - message:', e.message);
       setError(e.response?.data?.message || e.message || 'Failed to load cargo list');
       setCargos([]);
     } finally { 
@@ -87,7 +76,6 @@ export default function CargoListScreen() {
       const results = response.data.data || response.data || [];
       setCargos(Array.isArray(results) ? results : [results]);
     } catch (e) { 
-      console.error('Search error:', e);
       setError(e.message || 'Search failed');
       setCargos([]); 
     } finally { 
@@ -110,7 +98,7 @@ export default function CargoListScreen() {
     else { setPage(1); fetchCargos(1); }
   };
 
-  const handleMenuAction = (action) => {
+  const handleMenuAction = async (action) => {
     setMenuVisible(false);
     if (!selectedCargo) return;
 
@@ -119,7 +107,13 @@ export default function CargoListScreen() {
     } else if (action === 'edit') {
       navigation.navigate('CargoEdit', { id: selectedCargo.id }); 
     } else if (action === 'bill') {
-        generateInvoicePDF(selectedCargo, userData);
+        try {
+          console.log('[Cargo List] Calling generateInvoicePDF with:', { cargoId: selectedCargo.id, bookingNo: selectedCargo.booking_no });
+          await generateInvoicePDF(selectedCargo, userData);
+          console.log('[Cargo List] Invoice generation completed successfully');
+        } catch (error) {
+          console.error('[Cargo List] Error calling generateInvoicePDF:', error);
+        }
     }
   };
 
@@ -134,9 +128,6 @@ export default function CargoListScreen() {
     const boxCount = item.no_of_boxes || (Array.isArray(item.boxes) ? item.boxes.length : 0);
     const totalWeight = item.total_weight || (Array.isArray(item.boxes) ? item.boxes.reduce((sum, box) => sum + parseFloat(box.weight || 0), 0) : 0);
     const weight = parseFloat(totalWeight).toFixed(3);
-
-    console.log("Item boxes:", item.boxes);
-    console.log("Calculated total weight:", totalWeight);
 
     return (
       <TouchableOpacity 
@@ -188,13 +179,44 @@ export default function CargoListScreen() {
                 </Text>
             </View>
         </View>
+
+        {/* Net Total Row */}
+        <View style={styles.netTotalRow}>
+            <Text style={styles.netTotalLabel}>Net Total</Text>
+            <Text style={styles.netTotalValue}>SAR {parseFloat(item.net_total || 0).toFixed(2)}</Text>
+        </View>
       </TouchableOpacity>
     );
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
-      <StatusBar barStyle="dark-content" />
+    <>
+      {/* Context Menu Modal */}
+      <Modal visible={menuVisible} transparent animationType="fade">
+        <Pressable style={styles.modalOverlay} onPress={() => setMenuVisible(false)}>
+          <View style={styles.contextMenu}>
+            <Text style={styles.menuTitle}>Actions: {selectedCargo?.booking_no}</Text>
+            
+            <TouchableOpacity style={styles.menuOption} onPress={() => handleMenuAction('view')}>
+              <MaterialCommunityIcons name="eye-outline" size={22} color="#0F172A" />
+              <Text style={styles.optionLabel}>View Details</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.menuOption} onPress={() => handleMenuAction('edit')}>
+              <MaterialCommunityIcons name="pencil-outline" size={22} color="#0F172A" />
+              <Text style={styles.optionLabel}>Edit Cargo</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={styles.menuOption} onPress={() => handleMenuAction('bill')}>
+              <MaterialCommunityIcons name="file-document-outline" size={22} color="#0F172A" />
+              <Text style={styles.optionLabel}>Generate Bill</Text>
+            </TouchableOpacity>
+          </View>
+        </Pressable>
+      </Modal>
+
+      <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
+        <StatusBar barStyle="dark-content" />
       
       {/* Search Header */}
       <View style={styles.headerContainer}>
@@ -251,33 +273,9 @@ export default function CargoListScreen() {
         />
       )}
 
-      {/* Context Menu Modal */}
-      <Modal visible={menuVisible} transparent animationType="fade">
-        <Pressable onPress={() => setMenuVisible(false)}>
-          <View style={styles.modalOverlay}>
-            <View style={styles.contextMenu}>
-              <Text style={styles.menuTitle}>Actions: {selectedCargo?.booking_no}</Text>
-              
-              <TouchableOpacity style={styles.menuOption} onPress={() => handleMenuAction('view')}>
-                <MaterialCommunityIcons name="eye-outline" size={22} color="#0F172A" />
-                <Text style={styles.optionLabel}>View Details</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.menuOption} onPress={() => handleMenuAction('edit')}>
-                <MaterialCommunityIcons name="pencil-outline" size={22} color="#0F172A" />
-                <Text style={styles.optionLabel}>Edit Cargo</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity style={styles.menuOption} onPress={() => handleMenuAction('bill')}>
-                <MaterialCommunityIcons name="file-document-outline" size={22} color="#0F172A" />
-                <Text style={styles.optionLabel}>Generate Bill</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Pressable>
-      </Modal>
     </SafeAreaView>
-  );
+  </>
+);
 }
 
 const styles = StyleSheet.create({
@@ -415,6 +413,28 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
+  // Net Total Row
+  netTotalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+  },
+  netTotalLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#6B7280',
+    textTransform: 'uppercase',
+  },
+  netTotalValue: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#34339A',
+  },
+
   // Misc
   centerLoader: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   emptyState: { alignItems: 'center', marginTop: 100 },
@@ -426,8 +446,20 @@ const styles = StyleSheet.create({
   retryButtonText: { color: '#fff', fontWeight: '600', fontSize: 14 },
 
   // Modal
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' },
-  contextMenu: { backgroundColor: '#FFF', width: '80%', borderRadius: 16, padding: 20 },
+  modalOverlay: { 
+    flex: 1, 
+    backgroundColor: 'rgba(0,0,0,0.4)', 
+    justifyContent: 'center', 
+    alignItems: 'center',
+    paddingHorizontal: 20
+  },
+  contextMenu: { 
+    backgroundColor: '#FFF', 
+    borderRadius: 16, 
+    padding: 20,
+    maxWidth: '90%',
+    minWidth: 280
+  },
   menuTitle: { fontSize: 13, fontWeight: '700', color: '#6B7280', marginBottom: 15, textTransform: 'uppercase' },
   menuOption: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12 },
   optionLabel: { fontSize: 15, color: '#111827', marginLeft: 12 },

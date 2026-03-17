@@ -93,7 +93,7 @@ export default function CreatePartyForm({ type, branchId, onCancel, onSuccess })
       setDocTypes(formattedDocs);
 
     } catch(e) {
-      console.log("Error loading master data", e);
+      // Silently handle load errors
     }
   };
 
@@ -124,7 +124,7 @@ export default function CreatePartyForm({ type, branchId, onCancel, onSuccess })
         const filteredStates = allStates.filter(s => s.country_id == item.id);
         setStates(filteredStates.length > 0 ? filteredStates : []);
     } catch(e) {
-        console.log("Error fetching states", e);
+        // Silently handle state fetch errors
     }
   };
 

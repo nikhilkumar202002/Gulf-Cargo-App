@@ -82,7 +82,6 @@ export default function EditSenderScreen() {
       });
 
     } catch(e) {
-      console.error(e);
       Alert.alert("Error", "Failed to load sender details");
       navigation.goBack();
     } finally {
@@ -116,7 +115,6 @@ export default function EditSenderScreen() {
         }
 
      } catch(e) {
-        console.error(e);
         Alert.alert("Error", "Failed to update sender: " + (e.response?.data?.message || e.message));
      } finally {
         setSaving(false);

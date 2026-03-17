@@ -48,7 +48,6 @@ API.interceptors.response.use(
   async (error) => {
     // If the server returns 401, the token is invalid or expired on the backend
     if (error.response && error.response.status === 401) {
-      console.log("Global 401 Detected: Clearing local session...");
       await AsyncStorage.multiRemove(['userToken', 'session_start', 'last_activity']);
       // Note: You may want to use a navigation reference or an event emitter 
       // here to force a redirect to the Login screen.

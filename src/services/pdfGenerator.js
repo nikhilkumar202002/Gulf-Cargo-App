@@ -17,16 +17,11 @@ const formatDate = (dateString) => {
 
 const formatPhone = (phone) => {
   if (!phone) return '';
-  // Remove country code and ensure it starts with 0
-  let cleaned = phone.replace(/^\+?\d{1,3}/, '').replace(/^0+/, '');
-  return '0' + cleaned;
+  return phone.startsWith('+') ? phone : '+' + phone;
 };
 
 // --- 1. DATA FETCHING ---
 const fetchInvoiceData = async (input) => {
-  console.log("--- START INVOICE DATA FETCH ---");
-  console.log("Input to fetchInvoiceData:", input);
-
   let branchData = {};
   let cargoData = {};
   let senderData = {};
@@ -37,10 +32,12 @@ const fetchInvoiceData = async (input) => {
     // STEP 1: FETCH CARGO (Single View)
     // ------------------------------------------
     let cargoId = typeof input === 'object' ? input.id : input;
+    console.log('[fetchInvoiceData] STEP 1: Fetching cargo...', { cargoId, inputType: typeof input });
+    
     if (!cargoId) throw new Error("No Cargo ID provided");
 
-    console.log(`Fetching Cargo Details for ID: ${cargoId}`);
     const cargoRes = await getCargoDetails(cargoId);
+    console.log('[fetchInvoiceData] Cargo response received:', { status: cargoRes.status, dataKeys: Object.keys(cargoRes.data || {}) });
     
     cargoData = cargoRes.data.data || cargoRes.data.cargo || cargoRes.data || {};
     
@@ -49,22 +46,23 @@ const fetchInvoiceData = async (input) => {
     }
 
     if (!cargoData || !cargoData.id) {
+        console.error('[fetchInvoiceData] Cargo data missing:', { cargoData });
         throw new Error("Cargo not found in API response.");
     }
-
-    console.log("Fetched cargoData:", cargoData);
+    console.log('[fetchInvoiceData] Cargo data extracted:', { id: cargoData.id, booking_no: cargoData.booking_no });
 
     // ------------------------------------------
-    // STEP 2: FETCH BRANCH
+// STEP 2: FETCH BRANCH
     // ------------------------------------------
     const branchId = cargoData.branch_id || (cargoData.branch && cargoData.branch.id);
+    console.log('[fetchInvoiceData] STEP 2: Fetching branch...', { branchId });
 
     if (branchId) {
         try {
             const branchRes = await getBranchDetails(branchId);
             branchData = branchRes.data.branch || branchRes.data.data || {};
         } catch (e) {
-            console.warn(`Failed to fetch branch details for ID ${branchId}`, e);
+            // Silently ignore branch fetch errors
         }
     }
 
@@ -77,7 +75,8 @@ const fetchInvoiceData = async (input) => {
       return {
         name: p.name || '',
         address: p.address || '',
-        phone: p.phone || p.contact_number || p.mobile || p.whatsapp_number || '', 
+        phone: p.phone || p.contact_number || p.mobile || '',
+        whatsapp: p.whatsapp_number || p.whatsapp || '',
         post: p.post || '',
         pin: p.pin || p.postal_code || '', 
         // Extract individual fields for the grid layout
@@ -90,46 +89,66 @@ const fetchInvoiceData = async (input) => {
     };
 
     // A. Sender
+    console.log('[fetchInvoiceData] STEP 3A: Fetching sender...', { sender_id: cargoData.sender_id });
     if (cargoData.sender_id) {
       try {
         const senderRes = await getPartyDetails(cargoData.sender_id);
         const rawSender = senderRes.data.data || senderRes.data;
         senderData = normalizeParty(rawSender);
+        console.log('[fetchInvoiceData] Sender fetched:', { name: senderData.name });
       } catch (e) {
+        console.warn('[fetchInvoiceData] Sender fetch failed, using inline data:', e.message);
         senderData = normalizeParty(cargoData.sender); 
       }
     } else {
        senderData = normalizeParty(cargoData.sender);
+       console.log('[fetchInvoiceData] Using inline sender data:', { name: senderData.name });
     }
 
     // B. Receiver
+    console.log('[fetchInvoiceData] STEP 3B: Fetching receiver...', { receiver_id: cargoData.receiver_id });
     if (cargoData.receiver_id) {
       try {
         const receiverRes = await getPartyDetails(cargoData.receiver_id);
         const rawReceiver = receiverRes.data.data || receiverRes.data;
         receiverData = normalizeParty(rawReceiver);
+        console.log('[fetchInvoiceData] Receiver fetched:', { name: receiverData.name });
       } catch (e) {
+        console.warn('[fetchInvoiceData] Receiver fetch failed, using inline data:', e.message);
         receiverData = normalizeParty(cargoData.receiver);
       }
     } else {
       receiverData = normalizeParty(cargoData.receiver);
+      console.log('[fetchInvoiceData] Using inline receiver data:', { name: receiverData.name });
     }
 
     // ------------------------------------------
     // STEP 4: ASSEMBLE DATA
     // ------------------------------------------
-    console.log("Cargo data boxes:", cargoData.boxes);
-    console.log("Cargo data items:", cargoData.items);
-    console.log("Cargo data total_weight:", cargoData.total_weight);
+    console.log('[fetchInvoiceData] STEP 4: Assembling data...');
+    // Parse box weights - handle array or object format (MUST be before boxes mapping)
+    let boxWeightsData = {};
+    if (Array.isArray(cargoData.box_weight)) {
+      cargoData.box_weight.forEach((weight, idx) => {
+        boxWeightsData[(idx + 1).toString()] = weight;
+      });
+    } else if (typeof cargoData.box_weight === 'object' && cargoData.box_weight !== null) {
+      boxWeightsData = cargoData.box_weight;
+    }
+    
+    // Extract raw boxes from cargoData
+    const rawBoxes = cargoData.boxes || cargoData.box || [];
+    console.log('[fetchInvoiceData] rawBoxes:', { type: typeof rawBoxes, isArray: Array.isArray(rawBoxes), length: Array.isArray(rawBoxes) ? rawBoxes.length : 'N/A', rawBoxes });
     
     let boxes = [];
-    const rawBoxes = cargoData.boxes;
-
     if (Array.isArray(rawBoxes) && rawBoxes.length > 0) {
+        console.log('[fetchInvoiceData] Using boxes from cargoData');
         boxes = rawBoxes;
     } else {
         // Reconstruct boxes from items if boxes not available
+        console.log('[fetchInvoiceData] Reconstructing boxes from items...');
         const rawItems = Array.isArray(cargoData.items) ? cargoData.items : [];
+        console.log('[fetchInvoiceData] Items found:', { count: rawItems.length });
         const boxMap = {};
         
         rawItems.forEach(item => {
@@ -147,32 +166,49 @@ const fetchInvoiceData = async (input) => {
         });
         
         boxes = Object.values(boxMap);
+        console.log('[fetchInvoiceData] Boxes reconstructed:', { count: boxes.length });
     }
 
     // Fallback parsing for old formats
+    console.log('[fetchInvoiceData] Checking for old formats...');
     if (typeof rawBoxes === 'string') {
+        console.log('[fetchInvoiceData] Parsing string format boxes...');
         try {
             const parsed = JSON.parse(rawBoxes);
             if (Array.isArray(parsed)) boxes = parsed;
             else if (typeof parsed === 'object' && parsed !== null) boxes = Object.values(parsed);
         } catch (e) {
+            console.warn('[fetchInvoiceData] Failed to parse string boxes:', e.message);
             // Keep reconstructed boxes
         }
     } else if (typeof rawBoxes === 'object' && rawBoxes !== null && !Array.isArray(rawBoxes)) {
+        console.log('[fetchInvoiceData] Converting object format boxes...');
         boxes = Object.values(rawBoxes);
     }
 
-    boxes = boxes.map(box => ({
+    console.log('[fetchInvoiceData] Final boxes before mapping:', { count: boxes.length });
+
+    boxes = boxes.map((box, index) => {
+      const boxNum = (index + 1).toString();
+      // Use manual box weight from box_weight data, only calculate from items if no manual weight
+      const manualWeight = boxWeightsData[boxNum];
+      const itemsArray = Array.isArray(box.items) ? box.items : (
+          typeof box.items === 'object' && box.items !== null ? Object.values(box.items) : []
+      );
+      
+      return {
         ...box,
-        items: Array.isArray(box.items) ? box.items : (
-            typeof box.items === 'object' && box.items !== null ? Object.values(box.items) : []
-        ),
-        weight: box.weight || (Array.isArray(box.items) ? box.items.reduce((sum, item) => sum + parseFloat(item.weight || 0), 0) : 0)
-    }));
+        items: itemsArray,
+        weight: manualWeight !== undefined && manualWeight !== null && manualWeight !== '' 
+          ? parseFloat(manualWeight) 
+          : box.weight || (itemsArray.length > 0 ? itemsArray.reduce((sum, item) => sum + parseFloat(item.weight || 0), 0) : 0)
+      };
+    });
 
-    console.log("Processed boxes:", boxes);
-    console.log("Calculated total weight from boxes:", boxes.reduce((sum, box) => sum + parseFloat(box.weight || 0), 0));
-
+    // Recalculate total_weight from actual box weights (manual entries)
+    const calculatedTotalWeight = boxes.reduce((sum, box) => sum + parseFloat(box.weight || 0), 0);
+    console.log('[fetchInvoiceData] Calculated total weight:', { calculatedTotalWeight });
+    
     const finalData = {
       ...cargoData,
       sender: senderData,
@@ -185,16 +221,25 @@ const fetchInvoiceData = async (input) => {
       branch_logo: branchData.logo_url || null,
       boxes: boxes,
       total_boxes: boxes.length,
-      total_weight: cargoData.total_weight ? parseFloat(cargoData.total_weight) : boxes.reduce((sum, box) => sum + parseFloat(box.weight || 0), 0)
+      total_weight: calculatedTotalWeight > 0 ? calculatedTotalWeight : (cargoData.total_weight ? parseFloat(cargoData.total_weight) : 0)
     };
 
-    console.log("Final total_weight:", finalData.total_weight);
+    console.log('[fetchInvoiceData] Final data assembled successfully:', { 
+      booking_no: finalData.booking_no,
+      total_boxes: finalData.total_boxes,
+      total_weight: finalData.total_weight
+    });
 
-    console.log(`--- INVOICE DATA READY [Boxes: ${boxes.length}] ---`);
     return finalData;
 
   } catch (error) {
-    console.error("Critical Error generating invoice data:", error);
+    console.error('[fetchInvoiceData] DETAILED ERROR:', {
+      message: error.message,
+      code: error.code,
+      stack: error.stack,
+      name: error.name,
+      fullError: JSON.stringify(error, null, 2)
+    });
     throw error;
   }
 };
@@ -393,7 +438,6 @@ const createInvoiceHTML = (data) => {
           <div class="info-bar">
             <div class="info-col">
               <div class="info-label">VAT NO: 310434479300003</div>
-              <div class="info-label">TYPE: ${data.shipping_method_name || 'SEA'}</div>
             </div>
             <div class="info-col info-title">
               <div>فاتورة ضريبة مبسطة</div>
@@ -412,7 +456,7 @@ const createInvoiceHTML = (data) => {
               <div class="party-content">
                 <div class="party-row"><div class="p-label">Name</div><div class="p-val">: ${data.sender?.name || '-'}</div></div>
                 <div class="party-row"><div class="p-label">ID No</div><div class="p-val">: ${data.sender?.document_id || '-'}</div></div>
-                <div class="party-row"><div class="p-label">Tel</div><div class="p-val">: ${formatPhone(data.sender?.phone) || '-'}</div></div>
+                <div class="party-row"><div class="p-label">Tel</div><div class="p-val" style="white-space: nowrap; overflow: hidden;">: ${data.sender?.phone || '-'}</div></div>
                 <div class="party-row"><div class="p-label">No. Pcs</div><div class="p-val">: ${data.total_boxes || data.no_of_pieces || safeBoxes.length}</div></div>
                 <div class="party-row"><div class="p-label">Weight</div><div class="p-val">: ${parseFloat(totalWeight).toFixed(3)} kg</div></div>
                 <div class="party-row"><div class="p-label">Date</div><div class="p-val">: ${formatDate(data.date)}</div></div>
@@ -420,7 +464,7 @@ const createInvoiceHTML = (data) => {
               </div>
             </div>
 
-            <div class="col-party">
+            <div class="col-party" style="border: none;">
               <div class="section-header">CONSIGNEE</div>
               <div class="party-content">
                 <div class="party-row"><div class="p-label">Name</div><div class="p-val">: ${data.receiver?.name || '-'}</div></div>
@@ -461,7 +505,11 @@ const createInvoiceHTML = (data) => {
 
                 <div class="party-row" style="margin-top: 2px;">
                     <div class="p-label">Tel</div>
-                    <div class="p-val">: ${formatPhone(data.receiver?.phone) || '-'}</div>
+                    <div class="p-val" style="white-space: nowrap; overflow: hidden;">: ${formatPhone(data.receiver?.phone) || '-'}</div>
+                </div>
+                <div class="party-row">
+                    <div class="p-label">WhatsApp</div>
+                    <div class="p-val" style="white-space: nowrap; overflow: hidden;">: ${formatPhone(data.receiver?.whatsapp) || '-'}</div>
                 </div>
               </div>
             </div>
@@ -510,9 +558,9 @@ const createInvoiceHTML = (data) => {
                   ${rightFillers.map(() => `<tr><td>&nbsp;</td><td></td><td></td><td></td></tr>`).join('')}
                 </tbody>
                 <tfoot>
-                  <tr class="total-row"><td colspan="3"><div class="total-label"><span>Total</span><span>المجموع</span></div></td><td>${fmtMoney(data.bill_charges)}</td></tr>
-                  <tr class="total-row"><td colspan="3"><div class="total-label"><span>VAT %</span><span>ضريبة</span></div></td><td>${fmtMoney(data.vat_cost)}</td></tr>
-                  <tr class="total-row"><td colspan="3"><div class="total-label"><span>Discount</span><span>خصم</span></div></td><td>${fmtMoney(data.amount_discount)}</td></tr>
+                  <tr class="total-row"><td colspan="3"><div class="total-label"><span>TOTAL</span><span>المجموع</span></div></td><td>${fmtMoney(data.total_cost)}</td></tr>
+                  <tr class="total-row"><td colspan="3"><div class="total-label"><span>BILL CHARGES</span><span>رسوم أخرى</span></div></td><td>${fmtMoney(data.bill_charges)}</td></tr>
+                  <tr class="total-row"><td colspan="3"><div class="total-label"><span>VAT %</span><span>ضريبة القيمة المضافة</span></div></td><td>${fmtMoney(data.vat_cost)}</td></tr>
                   <tr class="total-row" style="background-color: #f8fafc;"><td colspan="3"><div class="total-label"><span>NET TOTAL</span><span>الصافي</span></div></td><td style="font-size: 12px;">${fmtMoney(data.net_total)}</td></tr>
                 </tfoot>
               </table>
@@ -542,38 +590,50 @@ let isSharing = false;
 
 export const printInvoice = async (idOrData) => {
   if (isSharing) {
-    console.warn('Share operation already in progress, ignoring duplicate request');
+    console.warn('[Invoice] Already sharing, skipping...');
     return;
   }
 
   isSharing = true;
-  console.log("Starting printInvoice with:", idOrData);
+  console.log('[Invoice] Starting invoice generation...', { idOrData });
   try {
+    console.log('[Invoice] Fetching invoice data...');
     const data = await fetchInvoiceData(idOrData);
+    console.log('[Invoice] Invoice data fetched:', { booking_no: data.booking_no, id: data.id });
+    
+    console.log('[Invoice] Creating invoice HTML...');
     const html = createInvoiceHTML(data);
+    console.log('[Invoice] HTML created successfully');
     
     // 1. Generate PDF
+    console.log('[Invoice] Generating PDF from HTML...');
     const { uri } = await Print.printToFileAsync({ html });
+    console.log('[Invoice] PDF generated at:', uri);
     
     // 2. Prepare Filename
     const bookingNo = data.booking_no || data.invoice_no || `Invoice-${data.id}`;
     const safeFilename = bookingNo.replace(/[^a-zA-Z0-9-_]/g, '_');
     const newUri = `${FileSystem.documentDirectory}${safeFilename}.pdf`;
+    console.log('[Invoice] Target PDF path:', newUri);
 
     // 3. Rename with legacy fallback
     try {
+        console.log('[Invoice] Moving PDF file...');
         await FileSystem.moveAsync({ from: uri, to: newUri });
+        console.log('[Invoice] PDF file moved successfully');
     } catch (e) {
-        console.warn("Failed to rename PDF (moveAsync failed):", e);
         // Fallback to sharing original if move fails
+        console.warn('[Invoice] Failed to move file, falling back to original URI:', e.message);
         try {
+          console.log('[Invoice] Sharing PDF from original URI...');
           await Sharing.shareAsync(uri, { 
               UTI: '.pdf', 
               mimeType: 'application/pdf',
               dialogTitle: `Share Invoice ${bookingNo}` 
           });
+          console.log('[Invoice] PDF shared successfully (fallback)');
         } catch (shareError) {
-          console.error('Error sharing PDF (fallback):', shareError);
+          console.error('[Invoice] Share fallback failed:', shareError);
           throw shareError; // Re-throw to be caught by outer catch
         }
         return;
@@ -581,24 +641,28 @@ export const printInvoice = async (idOrData) => {
 
     // 4. Share Renamed File
     try {
+      console.log('[Invoice] Sharing renamed PDF file...');
       await Sharing.shareAsync(newUri, { 
           UTI: '.pdf', 
           mimeType: 'application/pdf',
           dialogTitle: `Share Invoice ${bookingNo}` 
       });
+      console.log('[Invoice] PDF shared successfully');
     } catch (shareError) {
-      console.error('Error sharing PDF:', shareError);
+      console.error('[Invoice] PDF sharing failed:', shareError);
       throw shareError; // Re-throw to be caught by outer catch
     }
 
   } catch (error) {
-    console.error('Error printing invoice:', error);
-    // Check if it's the sharing conflict error
-    if (error.message && error.message.includes('Another share request is being processed')) {
-      console.warn('Share request blocked - another share operation is in progress');
-    }
+    console.error('[Invoice] ERROR GENERATING INVOICE:', {
+      message: error.message || error,
+      code: error.code,
+      stack: error.stack,
+      fullError: error
+    });
   } finally {
     isSharing = false;
+    console.log('[Invoice] Invoice generation complete');
   }
 };
 

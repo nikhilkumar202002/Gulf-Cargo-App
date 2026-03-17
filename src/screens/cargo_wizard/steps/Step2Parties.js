@@ -34,7 +34,7 @@ export default function Step2Parties({ data, update }) {
       setSendersList(sRes.data.data || sRes.data || []);
       setReceiversList(rRes.data.data || rRes.data || []);
     } catch (e) {
-      console.error("Error fetching parties", e);
+      // Silently handle fetch errors
     } finally {
       setLoading(false);
     }
@@ -156,17 +156,17 @@ export default function Step2Parties({ data, update }) {
         <View style={{height: 10}} />
 
         {renderCard(
-            'sender', 
-            data.sender, 
-            () => setShowSenderSelect(true), 
-            () => setViewMode('create_sender')
+          'sender', 
+          data.sender, 
+          () => setShowSenderSelect(true), 
+          () => setViewMode('create_sender')
         )}
 
         {renderCard(
-            'receiver', 
-            data.receiver, 
-            () => setShowReceiverSelect(true), 
-            () => setViewMode('create_receiver')
+          'receiver', 
+          data.receiver, 
+          () => setShowReceiverSelect(true), 
+          () => setViewMode('create_receiver')
         )}
 
         {loading && <ActivityIndicator style={{marginTop: 10}} color={colors.primary} />}

@@ -217,13 +217,9 @@ export default function CargoScreen() {
     }
     
     setLoading(true);
-    console.log('Submitting formData:', formData); // Debug log
-    console.log('Formatted submitData:', submitData);
     
     try {
       const response = await createCargo(submitData);
-      console.log('Create cargo response:', response);
-      console.log('Cargo ID from response:', response.data?.id);
       if (response.status === 200 || response.status === 201) {
         Alert.alert("Success", "Cargo created successfully!");
         setFormData(getInitialState()); // Reset form to fresh state
@@ -232,7 +228,6 @@ export default function CargoScreen() {
         Alert.alert("Error", "Failed to create cargo");
       }
     } catch (error) {
-      console.error("Submit Error:", error);
       const errorMessage = error.response?.data?.message || error.response?.data?.error || error.message || "Failed to create cargo";
       Alert.alert("Error", errorMessage);
     } finally {
