@@ -3,6 +3,7 @@ import {
   View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, 
   ActivityIndicator, Alert, Platform, KeyboardAvoidingView, Dimensions 
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { getPartyDetails, updateParty } from '../services/partiesServices';
@@ -16,6 +17,7 @@ export default function EditSenderScreen() {
   const navigation = useNavigation();
   const route = useRoute();
   const { id } = route.params;
+  const insets = useSafeAreaInsets();
 
   // --- MASTER DATA ---
   const [phoneCodes, setPhoneCodes] = useState([]);
@@ -152,7 +154,7 @@ export default function EditSenderScreen() {
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{flex:1, backgroundColor:'#f8f9ff'}}>
         {/* HEADER */}
-        <View style={styles.header}>
+        <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <MaterialCommunityIcons name="arrow-left" size={24} color="#000" />
           </TouchableOpacity>
@@ -253,8 +255,7 @@ const styles = StyleSheet.create({
       alignItems: 'center',
       justifyContent: 'space-between',
       paddingHorizontal: 16,
-      paddingVertical: 12,
-      marginTop: Platform.OS === 'ios' ? 40 : 10,
+      paddingBottom: 12,
       backgroundColor: '#fff',
       borderBottomWidth: 1,
       borderBottomColor: '#eee',

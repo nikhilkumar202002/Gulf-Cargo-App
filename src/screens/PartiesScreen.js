@@ -154,42 +154,62 @@ export default function PartiesScreen() {
     const whatsapp = item.whatsapp || item.whatsapp_number || item.whatsapp_mobile || item.mobile || item.phone || '';
     const location = item.address || item.city || item.location || item.country || '';
 
+    const isSender = activeTab === 'sender';
+    const accentColor = isSender ? '#C7245C' : '#262262';
+    const avatarBg = isSender ? '#FDECEA' : '#ECEFFE';
+    const initial = item.name?.charAt(0)?.toUpperCase() || '?';
+
     return (
-      <View style={styles.partyItem}>
-        <View style={[styles.cardLeftBorder, { backgroundColor: activeTab === 'sender' ? '#ED2624' : '#262262' }]} />
-        
-        <View style={styles.itemMainContent}>
-            <View style={styles.itemTopRow}>
-                <Text style={styles.partyName} numberOfLines={1}>{item.name}</Text>
-                <TouchableOpacity 
-                  activeOpacity={0.6}
-                  onPress={() => { 
-                    setSelectedParty(item); 
-                    setMenuVisible(true); 
-                  }}
-                  style={styles.menuButton}
-                >
-                    <MaterialCommunityIcons name="dots-vertical" size={24} color="#64748B" />
-                </TouchableOpacity>
-            </View>
-
-            <View style={styles.itemMetadataRow}>
-                <View style={styles.metaPillLine}>
-                    <MaterialCommunityIcons name="phone" size={16} color="#64748B" />
-                    <Text style={styles.metaTextNumber}>{phone || 'N/A'}</Text>
-                </View>
-                <View style={styles.metaPillLine}>
-                    <MaterialCommunityIcons name="message" size={16} color="#E53935" />
-                    <Text style={styles.metaTextNumber}>{whatsapp || 'N/A'}</Text>
-                </View>
-            </View>
-
-            <View style={styles.locationRow}>
-                <MaterialCommunityIcons name="map-marker" size={16} color="#64748B" />
-                <Text style={styles.locationText} numberOfLines={1}>{location || 'N/A'}</Text>
-            </View>
+      <TouchableOpacity
+        activeOpacity={0.85}
+        onPress={() => navigation.navigate('PartyDetails', { id: item.id })}
+        style={styles.partyItem}
+      >
+        {/* Left Avatar */}
+        <View style={[styles.cardAvatar, { backgroundColor: avatarBg }]}>
+          <Text style={[styles.cardAvatarText, { color: accentColor }]}>{initial}</Text>
         </View>
-      </View>
+
+        {/* Main Content */}
+        <View style={styles.itemMainContent}>
+          <View style={styles.itemTopRow}>
+            <Text style={styles.partyName} numberOfLines={1}>{item.name}</Text>
+            <TouchableOpacity
+              activeOpacity={0.6}
+              onPress={() => { setSelectedParty(item); setMenuVisible(true); }}
+              style={styles.menuButton}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <MaterialCommunityIcons name="dots-vertical" size={22} color="#94A3B8" />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.itemMetadataRow}>
+            {phone ? (
+              <View style={styles.infoPill}>
+                <MaterialCommunityIcons name="phone-outline" size={13} color="#64748B" />
+                <Text style={styles.infoPillText} numberOfLines={1}>{phone}</Text>
+              </View>
+            ) : null}
+            {whatsapp && whatsapp !== phone ? (
+              <View style={[styles.infoPill, { backgroundColor: '#F0FDF4' }]}>
+                <MaterialCommunityIcons name="whatsapp" size={13} color="#22C55E" />
+                <Text style={[styles.infoPillText, { color: '#15803D' }]} numberOfLines={1}>{whatsapp}</Text>
+              </View>
+            ) : null}
+          </View>
+
+          {location ? (
+            <View style={styles.locationRow}>
+              <MaterialCommunityIcons name="map-marker-outline" size={13} color="#94A3B8" />
+              <Text style={styles.locationText} numberOfLines={1}>{location}</Text>
+            </View>
+          ) : null}
+        </View>
+
+        {/* Right accent bar */}
+        <View style={[styles.cardRightBar, { backgroundColor: accentColor }]} />
+      </TouchableOpacity>
     );
   };
 
@@ -390,23 +410,63 @@ const styles = StyleSheet.create({
   tabLabelReceiverActive: { color: '#FFFFFF', fontFamily: 'InstrumentSans-Regular' },
 
   // List Items
-  listInside: { padding: 20, paddingTop: 15 },
-  partyItem: { 
-    flexDirection: 'row', 
-    backgroundColor: '#FFFFFF', 
-    marginBottom: 12, 
-    borderRadius: 10,
-    overflow: 'hidden'
+  listInside: { padding: 16, paddingTop: 12 },
+  partyItem: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    marginBottom: 10,
+    borderRadius: 16,
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingLeft: 14,
+    paddingRight: 0,
+    shadowColor: '#94A3B8',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
+    overflow: 'hidden',
   },
-  cardLeftBorder: { width: 4, backgroundColor: '#E53935', borderTopLeftRadius: 4, borderBottomLeftRadius: 4 },
-  itemMainContent: { flex: 1, padding: 16, justifyContent: 'center' },
-  itemTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  partyName: { fontSize: 22, fontWeight: '700', color: '#1e1e1e', flex: 1, marginRight: 10, fontFamily: 'InstrumentSans-Regular' },  menuButton: { padding: 8, marginRight: -8 },  
-  itemMetadataRow: { flexDirection: 'row', gap: 12, marginBottom: 8, alignItems: 'center' },
-  metaPillLine: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  metaTextNumber: { fontSize: 13, color: '#64748B', fontWeight: '500', fontFamily: 'InstrumentSans-Regular' },
-  locationRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  locationText: { fontSize: 13, color: '#64748B', fontWeight: '500', fontFamily: 'InstrumentSans-Regular', flex: 1 },
+  cardAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+    flexShrink: 0,
+  },
+  cardAvatarText: {
+    fontSize: 22,
+    fontWeight: '800',
+    fontFamily: 'InstrumentSans-Regular',
+  },
+  cardRightBar: {
+    width: 4,
+    alignSelf: 'stretch',
+    borderTopRightRadius: 16,
+    borderBottomRightRadius: 16,
+    marginLeft: 10,
+  },
+  itemMainContent: { flex: 1, justifyContent: 'center' },
+  itemTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
+  partyName: { fontSize: 16, fontWeight: '700', color: '#0F172A', flex: 1, marginRight: 6, fontFamily: 'InstrumentSans-Regular' },
+  menuButton: { padding: 4, marginRight: 8 },
+  itemMetadataRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 6 },
+  infoPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 20,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    gap: 4,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  infoPillText: { fontSize: 12, color: '#475569', fontWeight: '500', fontFamily: 'InstrumentSans-Regular' },
+  locationRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  locationText: { fontSize: 12, color: '#94A3B8', fontWeight: '500', fontFamily: 'InstrumentSans-Regular', flex: 1 },
 
   centerLoading: { marginTop: 40, alignItems: 'center' },
   emptyState: { alignItems: 'center', marginTop: 100 },

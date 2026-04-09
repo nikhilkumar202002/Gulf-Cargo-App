@@ -75,8 +75,9 @@ const Header = () => {
       {/* Dropdown Menu */}
       {menuVisible && (
         <Modal transparent visible={menuVisible} animationType="fade" onRequestClose={closeMenu}>
-          <Pressable onPress={closeMenu}>
+          <Pressable style={{ flex: 1 }} onPress={closeMenu}>
             <View style={styles.modalOverlay}>
+              <Pressable onPress={e => e.stopPropagation()}>
               <View style={styles.dropdownMenu}>
                 <View style={styles.menuItemHeader}>
                   <Text style={styles.userName}>{currentUser.name || 'User'}</Text>
@@ -86,16 +87,12 @@ const Header = () => {
                 
                 <View style={styles.divider} />
                 
-                <TouchableOpacity style={styles.menuItem} onPress={() => { closeMenu(); Alert.alert('Account'); }}>
-                  <MaterialCommunityIcons name="card-account-details-outline" size={20} color="#333" />
-                  <Text style={styles.menuText}>Account</Text>
-                </TouchableOpacity>
-                
                 <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
                   <MaterialCommunityIcons name="logout" size={20} color={colors.primary} />
                   <Text style={[styles.menuText, { color: colors.primary }]}>Logout</Text>
                 </TouchableOpacity>
               </View>
+              </Pressable>
             </View>
           </Pressable>
         </Modal>
