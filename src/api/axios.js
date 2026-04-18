@@ -2,7 +2,7 @@ import axios from "axios";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const API = axios.create({
-  baseURL: "https://developmentapi.gulfcargoksa.com/public/api",
+  baseURL: "https://api.gulfcargoksa.com/public/api",
   timeout: 10000, 
   headers: {
     "Content-Type": "application/json",
@@ -46,11 +46,9 @@ API.interceptors.request.use(
 API.interceptors.response.use(
   (response) => response,
   async (error) => {
-    // If the server returns 401, the token is invalid or expired on the backend
+  
     if (error.response && error.response.status === 401) {
       await AsyncStorage.multiRemove(['userToken', 'session_start', 'last_activity']);
-      // Note: You may want to use a navigation reference or an event emitter 
-      // here to force a redirect to the Login screen.
     }
     return Promise.reject(error);
   }

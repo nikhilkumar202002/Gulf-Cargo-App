@@ -213,6 +213,10 @@ const fetchInvoiceData = async (input) => {
       ...cargoData,
       sender: senderData,
       receiver: receiverData,
+      // Normalize commonly used display fields
+      payment_method_name: cargoData.payment_method_name || cargoData.payment_method || cargoData.payment || '',
+      shipment_method_name: cargoData.shipping_method_name || cargoData.shipping_method || cargoData.shipment_method || cargoData.service_name || cargoData.service_type || cargoData.delivery_type || '',
+      lrl_tracking_code: cargoData.lrl_tracking_code || cargoData.tracking_code || cargoData.tracking || null,
       branch_name: branchData.branch_name || cargoData.branch_name || 'GULF CARGO',
       branch_name_ar: branchData.branch_name_ar || 'جلف كارغو',
       branch_address: branchData.branch_address || 'KINGDOM OF SAUDI ARABIA',
@@ -254,6 +258,8 @@ const createInvoiceHTML = (data) => {
   }));
 
   const totalWeight = parseFloat(data.total_weight || 0);
+
+  const shipmentMethod = data.shipment_method_name || data.shipment_method || data.shipping_method || data.service_name || data.service_type || '';
 
   const structuredItems = [];
   safeBoxes.forEach((box, index) => {
@@ -352,14 +358,15 @@ const createInvoiceHTML = (data) => {
           .qr-img { height: 85px; width: 85px; margin: 0 auto; }
           
           .branch-name { font-size: 20px; font-weight: 700; color: var(--secondary-color); text-transform: uppercase; }
-          .branch-name-ar { font-size: 22px; font-weight: 600; color: var(--primary-color); line-height: 25px;}
-          .branch-contact { font-size: 15px; font-weight: 600; color: #333; margin-top: 2px; }
-          .branch-address { font-size: 12px; font-weight: 700; color: var(--primary-color); text-transform: uppercase; margin-top: 4px; line-height: 1.2; }
+          .branch-name-ar { font-size: 15px; font-weight: 600; color: var(--primary-color); line-height: 25px;}
+          .branch-contact { font-size: 14px; font-weight: 600; color: #333; margin-top: 2px; }
+          .branch-address { font-size: 14px; font-weight: 700; color: var(--primary-color); text-transform: uppercase; margin-top: 4px; line-height: 1.2; }
 
           /* INFO BAR */
           .info-bar { display: flex; background-color: var(--secondary-color); color: white; padding: 4px 8px; border-radius: 4px; margin-bottom: 10px; align-items: center; height: 38px; }
           .info-col { flex: 1; }
           .info-label { font-size: 11px; font-weight: 600; }
+          .info-sub { font-size: 11px; font-weight: 600; opacity: 0.95; margin-top: 2px; }
           .info-title { font-size: 14px; font-weight: 700; text-align: center; line-height: 1.1; }
           .info-track { text-align: right; }
           .track-pill { background-color: #000; color: #fff; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; margin-left: 5px; }
@@ -438,6 +445,7 @@ const createInvoiceHTML = (data) => {
           <div class="info-bar">
             <div class="info-col">
               <div class="info-label">VAT NO: 310434479300003</div>
+              <div class="info-sub">Shipment: ${shipmentMethod || '-'}</div>
             </div>
             <div class="info-col info-title">
               <div>فاتورة ضريبة مبسطة</div>
