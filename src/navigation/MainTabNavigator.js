@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Platform, View, StyleSheet, Animated } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import colors from '../styles/colors'; // Brand colors: primary (#ed2624) and secondary (#283891)
 
 // Screens
@@ -49,14 +50,18 @@ const AnimatedTabIcon = ({ iconName, focused, IconComponent = Ionicons, isPrimar
 };
 
 export default function MainTabNavigator() {
+  const insets = useSafeAreaInsets();
+  const bottomOffset = Math.max(insets.bottom, Platform.OS === 'ios' ? 8 : 6);
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        keyboardHidesTabBar: true,
+        tabBarHideOnKeyboard: true,
         tabBarActiveTintColor: colors.primary, 
         tabBarInactiveTintColor: '#1F2937', 
-        tabBarStyle: styles.tabBar,
+        tabBarStyle: [styles.tabBar, { bottom: bottomOffset }],
+        tabBarItemStyle: styles.tabBarItem,
         tabBarLabelStyle: styles.tabBarLabel,
         tabBarIcon: ({ focused }) => {
           let iconName;
@@ -111,9 +116,9 @@ const styles = StyleSheet.create({
   tabBar: {
     backgroundColor: '#fff',
     borderTopWidth: 0, 
-    height: Platform.OS === 'ios' ? 88 : 82,
-    paddingBottom: Platform.OS === 'ios' ? 18 : 12,
-    paddingTop: 8,
+    height: 66,
+    paddingBottom: 8,
+    paddingTop: 6,
     paddingHorizontal: 8,
     elevation: 16,
     shadowColor: '#000',
@@ -121,30 +126,32 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 12,
     position: 'absolute', 
-    bottom: Platform.OS === 'ios' ? 8 : 10,
     left: 12,
     right: 12,
     borderRadius: 22,
     borderWidth: 1,
     borderColor: '#F1F5F9',
   },
+  tabBarItem: {
+    paddingVertical: 0,
+  },
   tabBarLabel: {
     fontSize: 10,
     fontWeight: '700',
-    marginTop: 4,
+    marginTop: 2,
     fontFamily: 'InstrumentSans-Regular'
   },
   iconContainer: {
     alignItems: 'center',
     justifyContent: 'center',
     width: 38,
-    height: 32,
-    marginTop: 4,
+    height: 30,
+    marginTop: 3,
   },
   primaryIconContainer: {
-    width: 48,
-    height: 42,
-    marginTop: -8,
+    width: 46,
+    height: 38,
+    marginTop: -6,
   },
   activeBackground: {
     ...StyleSheet.absoluteFillObject,

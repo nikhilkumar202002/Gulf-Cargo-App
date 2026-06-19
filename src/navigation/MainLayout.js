@@ -1,11 +1,12 @@
 import React from 'react';
-import { View, StyleSheet, Platform, StatusBar, SafeAreaView } from 'react-native';
+import { View, StyleSheet, StatusBar } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Header from '../components/Header';
 import MainTabNavigator from './MainTabNavigator';
 
 export default function MainLayout() {
   return (
-    <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" translucent={false} />
       {/* Header */}
       <Header />

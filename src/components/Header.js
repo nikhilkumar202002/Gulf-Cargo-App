@@ -40,19 +40,30 @@ const Header = () => {
     <View style={styles.headerContainer}>
       {/* Left Content */}
       <View style={styles.leftContainer}>
+        <View style={styles.brandMark}>
+          <MaterialCommunityIcons name="truck-fast-outline" size={20} color="#fff" />
+        </View>
         {currentUser.name ? (
-          <>
+          <View style={styles.identityBlock}>
+            <Text style={styles.welcomeText}>Welcome back</Text>
             <Text style={styles.headerNameText}>{currentUser.name}</Text>
-            <Text style={styles.headerBranchText}>
-              {currentUser.branch?.name || 'No Branch Assigned'}
-            </Text>
-          </>
+            {/* <View style={styles.branchPill}>
+              <MaterialCommunityIcons name="office-building-marker-outline" size={12} color={colors.secondary} />
+              <Text style={styles.headerBranchText} numberOfLines={1}>
+                {currentUser.branch?.name || 'No Branch Assigned'}
+              </Text>
+            </View> */}
+          </View>
         ) : (
-          <>
-             {/* Fallback values matching your design if user data is loading */}
+          <View style={styles.identityBlock}>
+            <Text style={styles.welcomeText}>Welcome</Text>
+            {/* Fallback values matching your design if user data is loading */}
             <Text style={styles.headerNameText}>Gulf Cargo KSA</Text>
-            <Text style={styles.headerBranchText}>Gulf Cargo KSA Riyadh</Text>
-          </>
+            <View style={styles.branchPill}>
+              <MaterialCommunityIcons name="office-building-marker-outline" size={12} color={colors.secondary} />
+              <Text style={styles.headerBranchText} numberOfLines={1}>Gulf Cargo KSA Riyadh</Text>
+            </View>
+          </View>
         )}
       </View>
 
@@ -66,7 +77,7 @@ const Header = () => {
             />
           ) : (
             <View style={styles.fallbackAvatar}>
-              <MaterialCommunityIcons name="account" size={28} color={colors.secondary || '#283891'} />
+              <MaterialCommunityIcons name="account" size={23} color={colors.secondary || '#283891'} />
             </View>
           )}
         </TouchableOpacity>
@@ -80,9 +91,14 @@ const Header = () => {
               <Pressable onPress={e => e.stopPropagation()}>
               <View style={styles.dropdownMenu}>
                 <View style={styles.menuItemHeader}>
+                  <View style={styles.menuAvatar}>
+                    <MaterialCommunityIcons name="account" size={20} color={colors.secondary} />
+                  </View>
+                  <View style={styles.menuIdentity}>
                   <Text style={styles.userName}>{currentUser.name || 'User'}</Text>
                   <Text style={styles.userEmail}>{currentUser.email}</Text>
                   <Text style={styles.userRole}>{currentUser.role?.name}</Text>
+                  </View>
                 </View>
                 
                 <View style={styles.divider} />
@@ -106,49 +122,83 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 24, // Slightly increased for a cleaner look
-    paddingTop:45, // Adjusted for typical mobile status bar
-    paddingBottom: 15,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 12,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#F3F4F6', // Very subtle bottom border
   },
   leftContainer: { 
     flex: 1, 
-    justifyContent: 'center' 
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingRight: 12,
+  },
+  brandMark: {
+    width: 38,
+    height: 38,
+    borderRadius: 11,
+    backgroundColor: colors.secondary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
+  identityBlock: {
+    flex: 1,
+  },
+  welcomeText: {
+    fontFamily: 'InstrumentSans-Regular',
+    fontSize: 11,
+    color: '#9CA3AF',
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+    marginBottom: 1,
   },
   headerNameText: { 
     fontFamily: 'InstrumentSans-SemiBold', // Make sure this is loaded in your Expo app
-    fontSize: 22, 
-    fontWeight: '600', 
-    color: '#283891', // Dark blue from your design
-    letterSpacing: -0.3,
+    fontSize: 17, 
+    fontWeight: '700', 
+    color: '#111827',
+  },
+  branchPill: {
+    alignSelf: 'flex-start',
+    maxWidth: '96%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#EEF2FF',
+    borderRadius: 9,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    marginTop: 4,
   },
   headerBranchText: { 
     fontFamily: 'InstrumentSans-Regular',
-    fontSize: 14, 
-    color: '#6B7280', // Clean gray
-    marginTop: 2,
-    fontWeight: '400',
+    fontSize: 11, 
+    color: colors.secondary,
+    marginLeft: 4,
+    fontWeight: '700',
   },
   rightContainer: { 
     flexDirection: 'row', 
     alignItems: 'center' 
   },
   avatarButton: { 
-    padding: 2 
+    padding: 2,
+    borderRadius: 22,
   },
   profileImage: { 
-    width: 48, 
-    height: 48, 
-    borderRadius: 24, 
-    borderWidth: 2, 
+    width: 42, 
+    height: 42, 
+    borderRadius: 21, 
+    borderWidth: 2,
     borderColor: '#ed2624', // Red border matching design
   },
   fallbackAvatar: {
-    width: 48, 
-    height: 48, 
-    borderRadius: 24, 
+    width: 42, 
+    height: 42, 
+    borderRadius: 21, 
     borderWidth: 2, 
     borderColor: '#ed2624', // Red border matching design
     backgroundColor: '#F3F4F6',
@@ -162,12 +212,12 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end' 
   },
   dropdownMenu: { 
-    marginTop: 90, 
-    marginRight: 24, 
+    marginTop: 72, 
+    marginRight: 16, 
     backgroundColor: '#fff', 
-    borderRadius: 12, 
-    width: 220, 
-    paddingVertical: 10, 
+    borderRadius: 16, 
+    width: 240, 
+    paddingVertical: 8, 
     elevation: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -175,18 +225,32 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
   },
   menuItemHeader: { 
-    paddingHorizontal: 16, 
-    paddingBottom: 12 
+    flexDirection: 'row',
+    paddingHorizontal: 14, 
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  menuAvatar: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#EEF2FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
+  menuIdentity: {
+    flex: 1,
   },
   userName: { 
     fontFamily: 'InstrumentSans-SemiBold',
-    fontWeight: '600', 
-    fontSize: 16, 
+    fontWeight: '700', 
+    fontSize: 14, 
     color: '#111827' 
   },
   userEmail: { 
     fontFamily: 'InstrumentSans-Regular',
-    fontSize: 13, 
+    fontSize: 11, 
     color: '#6B7280',
     marginTop: 2
   },
@@ -202,18 +266,18 @@ const styles = StyleSheet.create({
   divider: { 
     height: 1, 
     backgroundColor: '#F3F4F6', 
-    marginBottom: 5 
+    marginBottom: 4 
   },
   menuItem: { 
     flexDirection: 'row', 
     alignItems: 'center', 
-    paddingVertical: 12, 
-    paddingHorizontal: 16 
+    paddingVertical: 11, 
+    paddingHorizontal: 14 
   },
   menuText: { 
     fontFamily: 'InstrumentSans-Regular',
-    marginLeft: 12, 
-    fontSize: 15, 
+    marginLeft: 10, 
+    fontSize: 14, 
     color: '#374151' 
   },
 });
