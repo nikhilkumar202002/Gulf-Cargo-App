@@ -9,6 +9,7 @@ import BottomSheetSelect from '../components/BottomSheetSelect';
 import colors from '../../../styles/colors'; 
 import { useUser } from '../../../context/UserContext';
 import CreatePartyForm from '../forms/CreatePartyForm'; 
+import SkeletonLoader from '../../../components/SkeletonLoader';
 
 export default function Step2Parties({ data, update }) {
   const { userData } = useUser();
@@ -169,7 +170,11 @@ export default function Step2Parties({ data, update }) {
           () => setViewMode('create_receiver')
         )}
 
-        {loading && <ActivityIndicator style={{marginTop: 10}} color={colors.primary} />}
+        {loading && (
+          <View style={styles.loadingSkeleton}>
+            <SkeletonLoader variant="list" count={1} />
+          </View>
+        )}
 
         {/* SELECTION MODALS */}
         <BottomSheetSelect 
@@ -282,5 +287,6 @@ const styles = StyleSheet.create({
       width: 36, height: 36, borderRadius: 18, backgroundColor: '#f3f4f6', 
       justifyContent: 'center', alignItems: 'center', marginRight: 12 
   },
-  placeholder: { fontSize: 15, color: '#9ca3af', flex: 1, fontWeight: '500' }
+  placeholder: { fontSize: 15, color: '#9ca3af', flex: 1, fontWeight: '500' },
+  loadingSkeleton: { height: 92, marginTop: 4, overflow: 'hidden' }
 });

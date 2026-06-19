@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, ActivityIndicator, Alert, StyleSheet } from 'react-native';
 import { getStaffDetails } from '../api/staff'; // Import the new function
+import SkeletonLoader from '../components/SkeletonLoader';
 
 export default function StaffProfileScreen() {
   const [staff, setStaff] = useState(null);
@@ -25,7 +26,7 @@ export default function StaffProfileScreen() {
     }
   };
 
-  if (loading) return <ActivityIndicator size="large" style={{ marginTop: 50 }} />;
+  if (loading) return <SkeletonLoader variant="details" count={2} />;
 
   return (
     <View style={styles.container}>

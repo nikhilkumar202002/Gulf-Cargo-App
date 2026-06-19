@@ -9,6 +9,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { getCargoDetails } from '../services/cargoService';
 import { getPartyDetails } from '../services/partiesServices';
 import colors from '../styles/colors';
+import SkeletonLoader from '../components/SkeletonLoader';
 
 export default function CargoDetailsScreen() {
   const route = useRoute();
@@ -88,9 +89,9 @@ export default function CargoDetailsScreen() {
 
   if (loading) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
+        <SkeletonLoader variant="details" count={3} />
+      </SafeAreaView>
     );
   }
 

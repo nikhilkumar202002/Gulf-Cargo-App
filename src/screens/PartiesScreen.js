@@ -7,6 +7,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import colors from '../styles/colors';
 import { getSenderParties, getReceiverParties, deleteParty } from '../services/partiesServices'; 
 import { useNavigation, useIsFocused } from '@react-navigation/native';
+import SkeletonLoader from '../components/SkeletonLoader';
 
 export default function PartiesScreen() {
   const [activeTab, setActiveTab] = useState('sender'); 
@@ -246,9 +247,7 @@ export default function PartiesScreen() {
 
       {/* 2. List Body */}
       {isCurrentLoading() && !searchQuery ? (
-        <View style={styles.centerLoading}>
-            <ActivityIndicator size="small" color={colors.primary} />
-        </View>
+        <SkeletonLoader variant="list" count={5} />
       ) : getCurrentError() ? (
         <View style={styles.errorContainer}>
             <MaterialCommunityIcons name="wifi-off" size={48} color="#E53935" />

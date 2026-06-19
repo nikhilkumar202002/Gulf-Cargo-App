@@ -15,6 +15,7 @@ import CargoDetailsScreen from './src/screens/CargoDetailsScreen';
 import CargoEditScreen from './src/screens/CargoEditScreen';
 import EditProfileScreen from './src/screens/EditProfileScreen';
 import ChangePasswordScreen from './src/screens/ChangePasswordScreen';
+import SkeletonLoader from './src/components/SkeletonLoader';
 
 const Stack = createStackNavigator();
 
@@ -27,7 +28,7 @@ export default function App() {
   });
 
   if (!fontsLoaded) {
-    return null; // or a loading screen
+    return <SkeletonLoader variant="boot" />;
   }
 
   return (

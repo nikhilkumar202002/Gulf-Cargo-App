@@ -8,6 +8,7 @@ import { useRoute, useNavigation } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { getPartyDetails } from '../services/partiesServices';
 import colors from '../styles/colors';
+import SkeletonLoader from '../components/SkeletonLoader';
 
 export default function PartyDetailsScreen() {
   const route = useRoute();
@@ -63,9 +64,7 @@ export default function PartyDetailsScreen() {
 
         {/* --- CONTENT --- */}
         {loading ? (
-          <View style={styles.center}>
-            <ActivityIndicator size="large" color={colors.primary} />
-          </View>
+          <SkeletonLoader variant="details" count={3} />
         ) : !party ? (
           <View style={styles.center}>
             <Text style={{color: '#666'}}>No details found.</Text>

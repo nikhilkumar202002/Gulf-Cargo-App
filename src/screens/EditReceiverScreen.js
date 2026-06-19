@@ -12,6 +12,7 @@ import {
 } from '../services/coreServices'; 
 import BottomSheetSelect from './cargo_wizard/components/BottomSheetSelect';
 import colors from '../styles/colors'; 
+import SkeletonLoader from '../components/SkeletonLoader';
 
 export default function EditReceiverScreen() {
   const navigation = useNavigation();
@@ -274,7 +275,7 @@ export default function EditReceiverScreen() {
     </View>
   );
 
-  if(fetching) return <View style={styles.center}><ActivityIndicator size="large" color={colors.primary}/></View>;
+  if(fetching) return <SkeletonLoader variant="form" count={3} />;
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{flex:1, backgroundColor:'#f8f9ff'}}>

@@ -16,6 +16,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { getCargoDetails, updateCargo } from '../services/cargoService';
 import { getSenderParties, getReceiverParties } from '../services/partiesServices';
 import colors from '../styles/colors';
+import SkeletonLoader from '../components/SkeletonLoader';
 
 export default function CargoEditScreen() {
   const route = useRoute();
@@ -570,9 +571,7 @@ export default function CargoEditScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
-        <View style={styles.loaderContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
-        </View>
+        <SkeletonLoader variant="form" count={4} />
       </SafeAreaView>
     );
   }

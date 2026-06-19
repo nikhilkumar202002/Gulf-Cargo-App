@@ -8,6 +8,7 @@ import { useNavigation } from '@react-navigation/native';
 import { getProfile, updateProfile } from '../api/auth';
 import { useUser } from '../context/UserContext';
 import colors from '../styles/colors';
+import SkeletonLoader from '../components/SkeletonLoader';
 
 export default function EditProfileScreen() {
   const navigation = useNavigation();
@@ -63,10 +64,7 @@ export default function EditProfileScreen() {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.loadingText}>Loading profile...</Text>
-      </View>
+      <SkeletonLoader variant="form" count={1} />
     );
   }
 

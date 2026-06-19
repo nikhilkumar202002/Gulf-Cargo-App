@@ -18,6 +18,7 @@ import {
 } from '../services/coreServices'; 
 import { useUser } from '../context/UserContext'; 
 import colors from '../styles/colors'; 
+import SkeletonLoader from '../components/SkeletonLoader';
 
 export default function DashboardScreen({ navigation }) {
   const { userData, setUserData } = useUser();
@@ -112,11 +113,10 @@ export default function DashboardScreen({ navigation }) {
   // Full-screen Loader for initial load (Optimized for iOS)
   if (loading && !refreshing) {
     return (
-      <View style={styles.loaderContainer}>
+      <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
         <StatusBar barStyle="dark-content" />
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.loadingText}>Synchronizing Data...</Text>
-      </View>
+        <SkeletonLoader variant="dashboard" />
+      </SafeAreaView>
     );
   }
 

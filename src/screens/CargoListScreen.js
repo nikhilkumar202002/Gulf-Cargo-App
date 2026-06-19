@@ -11,6 +11,7 @@ import { getCargoList, searchCargoByBookingNo } from '../services/cargoService';
 import { generateInvoicePDF } from '../services/pdfGenerator';
 import { useUser } from '../context/UserContext';
 import colors from '../styles/colors';
+import SkeletonLoader from '../components/SkeletonLoader';
 
 export default function CargoListScreen() {
   const navigation = useNavigation();
@@ -249,9 +250,7 @@ export default function CargoListScreen() {
           </TouchableOpacity>
         </View>
       ) : loading ? (
-        <View style={styles.centerLoader}>
-          <ActivityIndicator size="small" color={colors.primary} />
-        </View>
+        <SkeletonLoader variant="list" count={5} />
       ) : (
         <FlatList
           data={cargos}
