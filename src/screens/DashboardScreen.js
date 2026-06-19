@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { 
   View, Text, StyleSheet, ScrollView, TouchableOpacity, 
-  RefreshControl, StatusBar, ActivityIndicator, Alert, Platform, useWindowDimensions
+  RefreshControl, StatusBar, Alert, Platform, useWindowDimensions
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -146,7 +146,18 @@ export default function DashboardScreen({ navigation }) {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => {setRefreshing(true); fetchDashboardData();}} tintColor={colors.primary} />}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.pageHeader}>Overview</Text>
+        <View style={styles.heroHeader}>
+          <View>
+            <Text style={styles.pageEyebrow}>Dashboard</Text>
+            <Text style={styles.pageHeader}>Overview</Text>
+          </View>
+          <View style={styles.branchBadge}>
+            <MaterialCommunityIcons name="office-building-marker-outline" size={16} color={colors.secondary} />
+            <Text style={styles.branchBadgeText} numberOfLines={1}>
+              {userData?.branchName || userData?.branch?.name || userData?.user?.branch?.name || 'Gulf Cargo'}
+            </Text>
+          </View>
+        </View>
 
         {/* Stats Grid */}
         <View style={styles.statsGrid}>
@@ -154,7 +165,7 @@ export default function DashboardScreen({ navigation }) {
                 <View key={widget.id} style={[styles.statCard, { width: `${100 / numColumns - 2}%` }]}>
                     <View style={styles.cardTop}>
                         <View style={[styles.iconWrapper, { backgroundColor: widget.color + '10' }]}>
-                            <MaterialCommunityIcons name={widget.icon} size={20} color={widget.color} />
+                            <MaterialCommunityIcons name={widget.icon} size={18} color={widget.color} />
                         </View>
                         <Text style={styles.statValue}>{widget.value}</Text>
                     </View>
@@ -177,7 +188,7 @@ export default function DashboardScreen({ navigation }) {
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 0 }}
                     >
-                        <MaterialCommunityIcons name="plus" size={22} color="#FFF" />
+                        <MaterialCommunityIcons name="plus" size={19} color="#FFF" />
                         <Text style={styles.actionBtnText}>Create Cargo</Text>
                     </LinearGradient>
                 </TouchableOpacity>
@@ -186,7 +197,7 @@ export default function DashboardScreen({ navigation }) {
                     style={[styles.actionBtn, { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E2E8F0' }]} 
                     onPress={() => navigation.navigate('History')}
                 >
-                    <MaterialCommunityIcons name="history" size={20} color="#0F172A" />
+                    <MaterialCommunityIcons name="history" size={18} color="#0F172A" />
                     <Text style={[styles.actionBtnText, { color: '#0F172A' }]}>Cargo History</Text>
                 </TouchableOpacity>
             </View>
@@ -206,14 +217,16 @@ export default function DashboardScreen({ navigation }) {
                     <View style={styles.cardLeftBorder} />
                     <View style={styles.cardInner}>
                         <View style={styles.cardTopRow}>
-                            <Text style={styles.cardBookingNo}>{item.booking_no || `#${item.id}`}</Text>
-                            <Text style={styles.cardPrice}>{item.net_total || '0.00'}</Text>
+                            <View style={styles.bookingPill}>
+                              <MaterialCommunityIcons name="file-document-outline" size={13} color={colors.secondary} />
+                              <Text style={styles.cardBookingNo}>{item.booking_no || `#${item.id}`}</Text>
+                            </View>
+                            <Text style={styles.cardPrice}>{item.net_total || '0.00'} <Text style={styles.cardCurrency}>SAR</Text></Text>
                         </View>
                         <View style={styles.cardBottomRow}>
                             <Text style={styles.cardParties} numberOfLines={1}>
                                 {item.sender?.name || item.sender_name} ⟶ {item.receiver?.name || item.receiver_name}
                             </Text>
-                            <Text style={styles.cardCurrency}>SAR</Text>
                         </View>
                     </View>
                 </View>
@@ -228,50 +241,47 @@ export default function DashboardScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F9F9F9' },
 
-  loadingText: {
-    marginTop: 15,
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#64748B',
-    letterSpacing: 0.5,
-    fontFamily: 'InstrumentSans-Regular',
-  },
-  scrollContent: { paddingHorizontal: 20, paddingTop: 10, paddingBottom: Platform.OS === 'ios' ? 120 : 100 },
-  pageHeader: { fontSize: 20, fontWeight: '600', color: '#1e1e1e', marginBottom: 6, letterSpacing: -0.5, fontFamily: 'InstrumentSans-Semibold' },
+  scrollContent: { paddingHorizontal: 16, paddingTop: 10, paddingBottom: Platform.OS === 'ios' ? 110 : 96 },
+  heroHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
+  pageEyebrow: { fontSize: 11, color: colors.primary, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.6, fontFamily: 'InstrumentSans-Regular' },
+  pageHeader: { fontSize: 19, fontWeight: '700', color: '#111827', marginTop: 1, fontFamily: 'InstrumentSans-Semibold' },
+  branchBadge: { maxWidth: '52%', height: 34, flexDirection: 'row', alignItems: 'center', backgroundColor: '#EEF2FF', borderRadius: 10, paddingHorizontal: 9, borderWidth: 1, borderColor: '#E0E7FF' },
+  branchBadgeText: { marginLeft: 5, fontSize: 11, color: colors.secondary, fontWeight: '700', fontFamily: 'InstrumentSans-Regular' },
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
   statCard: {
     backgroundColor: '#FFFFFF',
-    padding: 15,
+    padding: 12,
     borderRadius: 10,
-    marginBottom: 10,
+    marginBottom: 8,
     marginHorizontal: 1,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
   },
-  cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  iconWrapper: { width: 36, height: 36, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
-  statValue: { fontSize: 25, fontWeight: '700', color: '#1e1e1e', fontFamily: 'InstrumentSans-Regular' },
-  statLabel: { fontSize: 14, color: '#1e1e1e', textTransform: 'capitalize', fontFamily: 'InstrumentSans-Semibold' },
-  section: { marginTop: 20, marginBottom: 24 },
-  sectionTitle: { fontSize: 20, fontWeight: '700', color: '#1e1e1e', marginBottom: 10, textTransform: 'capitalize', fontFamily: 'InstrumentSans-Regular !important' },
-  actionRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
+  iconWrapper: { width: 32, height: 32, borderRadius: 9, justifyContent: 'center', alignItems: 'center' },
+  statValue: { fontSize: 22, fontWeight: '800', color: '#111827', fontFamily: 'InstrumentSans-Regular' },
+  statLabel: { fontSize: 11, color: '#475569', textTransform: 'uppercase', fontWeight: '700', letterSpacing: 0.2, fontFamily: 'InstrumentSans-Semibold' },
+  section: { marginTop: 14, marginBottom: 18 },
+  sectionTitle: { fontSize: 16, fontWeight: '800', color: '#111827', marginBottom: 8, textTransform: 'capitalize', fontFamily: 'InstrumentSans-Regular' },
+  actionRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 8 },
   actionBtn: { 
-    flex: 1, height: 54, borderRadius: 12, flexDirection: 'row', 
-    alignItems: 'center', justifyContent: 'center', marginHorizontal: 4
-  },
-  actionBtnGradient: {
-    flex: 1, height: 54, borderRadius: 12, flexDirection: 'row', 
+    flex: 1, height: 46, borderRadius: 10, flexDirection: 'row', 
     alignItems: 'center', justifyContent: 'center'
   },
-  actionBtnText: { color: '#FFF', fontWeight: '600', fontSize: 16, marginLeft: 8, letterSpacing: 0.5, fontFamily: 'InstrumentSans-Regular !important' },
-  activityHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  seeAllText: { fontSize: 12, fontWeight: '800', color: '#4F46E5', fontFamily: 'InstrumentSans-Regular' },
+  actionBtnGradient: {
+    flex: 1, height: 46, borderRadius: 10, flexDirection: 'row', 
+    alignItems: 'center', justifyContent: 'center'
+  },
+  actionBtnText: { color: '#FFF', fontWeight: '700', fontSize: 13, marginLeft: 7, fontFamily: 'InstrumentSans-Regular' },
+  activityHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
   recentTitle: { 
-    fontSize: 24, 
-    fontWeight: '600', 
-    color: '#000000', 
+    fontSize: 16, 
+    fontWeight: '800', 
+    color: '#111827', 
     fontFamily: 'InstrumentSans-Regular' 
   },
   viewAllText: { 
-    fontSize: 15, 
+    fontSize: 13, 
     fontWeight: '700', 
     color: '#3F39A3', 
     fontFamily: 'InstrumentSans-Regular' 
@@ -279,34 +289,38 @@ const styles = StyleSheet.create({
   cargoCard: {
     flexDirection: 'row',
     backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-    marginBottom: 10,
+    borderRadius: 12,
+    marginBottom: 8,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
   },
   cardLeftBorder: {
-    width: 4,
+    width: 3,
     backgroundColor: '#E53935',
   },
   cardInner: {
     flex: 1,
-    paddingVertical: 16,
-    paddingHorizontal: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
   },
   cardTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: 6,
   },
+  bookingPill: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#EEF2FF', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, maxWidth: '58%' },
   cardBookingNo: { 
-    fontSize: 20, 
-    fontWeight: '600', 
-    color: '#1e1e1e', 
+    fontSize: 12, 
+    fontWeight: '800', 
+    color: colors.secondary, 
+    marginLeft: 4,
     fontFamily: 'InstrumentSans-Regular' 
   },
   cardPrice: { 
-    fontSize: 20, 
-    fontWeight: '700', 
+    fontSize: 15, 
+    fontWeight: '800', 
     color: '#E53935', 
     fontFamily: 'InstrumentSans-Regular' 
   },
@@ -316,29 +330,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cardParties: { 
-    fontSize: 14, 
+    fontSize: 12, 
     color: '#9CA3AF', 
     fontFamily: 'InstrumentSans-Regular',
     flex: 1,
     paddingRight: 10,
   },
   cardCurrency: { 
-    fontSize: 11, 
+    fontSize: 10, 
     color: '#9CA3AF', 
     fontFamily: 'InstrumentSans-Regular' 
   },
-  activityRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F8FAFC'
-  },
-  activityIndicator: { width: 4, height: 24, backgroundColor: '#E2E8F0', borderRadius: 2, marginRight: 12 },
-  activityContent: { flex: 1 },
-  bookingNo: { fontSize: 15, fontWeight: '700', color: '#0F172A', fontFamily: 'InstrumentSans-Regular' },
-  bookingParties: { fontSize: 13, color: '#64748B', marginTop: 2, fontFamily: 'InstrumentSans-Regular' },
-  activityPrice: { alignItems: 'flex-end' },
-  priceText: { fontSize: 15, fontWeight: '800', color: '#0F172A', fontFamily: 'InstrumentSans-Regular' },
-  currencyText: { fontSize: 10, fontWeight: '700', color: '#94A3B8', fontFamily: 'InstrumentSans-Regular' }
 });

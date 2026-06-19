@@ -14,7 +14,7 @@ import PartiesScreen from '../screens/PartiesScreen';
 const Tab = createBottomTabNavigator();
 
 // Custom component to handle the smooth spring animation
-const AnimatedTabIcon = ({ iconName, focused, IconComponent = Ionicons }) => {
+const AnimatedTabIcon = ({ iconName, focused, IconComponent = Ionicons, isPrimary = false }) => {
   const scaleValue = useRef(new Animated.Value(focused ? 1 : 0)).current;
 
   useEffect(() => {
@@ -27,21 +27,21 @@ const AnimatedTabIcon = ({ iconName, focused, IconComponent = Ionicons }) => {
   }, [focused]);
 
   return (
-    <View style={styles.iconContainer}>
+    <View style={[styles.iconContainer, isPrimary && styles.primaryIconContainer]}>
       <Animated.View
         style={[
-          styles.activeBackground,
+          isPrimary ? styles.primaryBackground : styles.activeBackground,
           {
-            opacity: scaleValue,
-            transform: [{ scale: scaleValue }],
+            opacity: isPrimary ? 1 : scaleValue,
+            transform: [{ scale: isPrimary ? 1 : scaleValue }],
           },
         ]}
       />
       {/* Render the Icon */}
       <IconComponent 
         name={iconName} 
-        size={24} 
-        color={focused ? "#FFFFFF" : "#1F2937"} 
+        size={isPrimary ? 25 : 22} 
+        color={focused || isPrimary ? "#FFFFFF" : "#64748B"} 
         style={styles.iconElement}
       />
     </View>
@@ -61,6 +61,7 @@ export default function MainTabNavigator() {
         tabBarIcon: ({ focused }) => {
           let iconName;
           let IconComponent = Ionicons;
+          let isPrimary = false;
           
           // Map routes to their respective Ionicons
           if (route.name === 'Home') {
@@ -70,13 +71,14 @@ export default function MainTabNavigator() {
           } else if (route.name === 'Create Cargo') {
             iconName = 'truck-delivery-outline'; 
             IconComponent = MaterialCommunityIcons;
+            isPrimary = true;
           } else if (route.name === 'History') {
             iconName = 'time-outline';
           } else if (route.name === 'Setting') {
             iconName = 'settings-outline';
           }
           
-          return <AnimatedTabIcon iconName={iconName} focused={focused} IconComponent={IconComponent} />;
+          return <AnimatedTabIcon iconName={iconName} focused={focused} IconComponent={IconComponent} isPrimary={isPrimary} />;
         },
       })}
     >
@@ -109,36 +111,55 @@ const styles = StyleSheet.create({
   tabBar: {
     backgroundColor: '#fff',
     borderTopWidth: 0, 
-    height: Platform.OS === 'ios' ? 120 : 120,
-    paddingBottom: Platform.OS === 'ios' ? 15 : 15,
-    paddingTop: 8, 
-    elevation: 20,
+    height: Platform.OS === 'ios' ? 88 : 82,
+    paddingBottom: Platform.OS === 'ios' ? 18 : 12,
+    paddingTop: 8,
+    paddingHorizontal: 8,
+    elevation: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
     position: 'absolute', 
-    bottom: 0,
-    left: 0,
-    right: 0,
+    bottom: Platform.OS === 'ios' ? 8 : 10,
+    left: 12,
+    right: 12,
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
   },
   tabBarLabel: {
-    fontSize: 12,
-    fontWeight: '500',
-    marginTop: 14,
+    fontSize: 10,
+    fontWeight: '700',
+    marginTop: 4,
     fontFamily: 'InstrumentSans-Regular'
   },
   iconContainer: {
     alignItems: 'center',
     justifyContent: 'center',
+    width: 38,
+    height: 32,
+    marginTop: 4,
+  },
+  primaryIconContainer: {
     width: 48,
-    height: 48,
-    marginTop: 6,
+    height: 42,
+    marginTop: -8,
   },
   activeBackground: {
     ...StyleSheet.absoluteFillObject,
+    backgroundColor: colors.secondary,
+    borderRadius: 16, 
+  },
+  primaryBackground: {
+    ...StyleSheet.absoluteFillObject,
     backgroundColor: colors.primary,
-    borderRadius: 24, 
+    borderRadius: 18,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 5,
   },
   iconElement: {
     zIndex: 1, 
