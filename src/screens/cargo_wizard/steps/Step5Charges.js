@@ -1,8 +1,9 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TextInput, ScrollView, Platform } from 'react-native';
 import colors from '../../../styles/colors';
 
 export default function Step5Charges({ data, update }) {
+  const [focusedField, setFocusedField] = useState(null);
 
   // Configuration of all Charge Rows
   const chargeRows = [
@@ -82,19 +83,25 @@ export default function Step5Charges({ data, update }) {
     const amountKey = `amount_${item.key}`;
 
     return (
-      <View key={item.key} style={styles.rowContainer}>
+      <View key={item.key} style={[styles.rowContainer, item.isDeduction && styles.deductionRow]}>
         {/* Label */}
-        <Text style={styles.rowLabel} numberOfLines={2}>{item.label}</Text>
+        <Text style={[styles.rowLabel, item.isDeduction && styles.deductionLabel]} numberOfLines={2}>{item.label}</Text>
 
         {/* Quantity Input */}
         <View style={styles.colQty}>
             <TextInput 
-                style={[styles.input, item.readOnlyQty && styles.readOnlyInput]}
+                style={[
+                  styles.input,
+                  focusedField === qtyKey && styles.focusedInput,
+                  item.readOnlyQty && styles.readOnlyInput
+                ]}
                 placeholder="0"
                 keyboardType="numeric"
                 value={String(data[qtyKey] || '')}
                 onChangeText={(t) => update(qtyKey, t)}
                 editable={!item.readOnlyQty}
+                onFocus={() => setFocusedField(qtyKey)}
+                onBlur={() => setFocusedField(null)}
                 placeholderTextColor="#D1D5DB"
             />
         </View>
@@ -102,19 +109,21 @@ export default function Step5Charges({ data, update }) {
         {/* Unit Rate Input */}
         <View style={styles.colRate}>
              <TextInput 
-                style={styles.input}
+                style={[styles.input, focusedField === rateKey && styles.focusedInput]}
                 placeholder="0.00"
                 keyboardType="decimal-pad"
                 value={String(data[rateKey] || '')}
                 onChangeText={(t) => update(rateKey, t)}
+                onFocus={() => setFocusedField(rateKey)}
+                onBlur={() => setFocusedField(null)}
                 placeholderTextColor="#D1D5DB"
             />
         </View>
 
         {/* Calculated Amount */}
         <View style={styles.colAmount}>
-             <Text style={styles.amountText}>
-                {data[amountKey] ? parseFloat(data[amountKey]).toFixed(2) : '0.00'}
+             <Text style={[styles.amountText, item.isDeduction && styles.deductionAmount]}>
+                {item.isDeduction && parseFloat(data[amountKey] || 0) > 0 ? '-' : ''}{data[amountKey] ? parseFloat(data[amountKey]).toFixed(2) : '0.00'}
              </Text>
         </View>
       </View>
@@ -124,6 +133,17 @@ export default function Step5Charges({ data, update }) {
   return (
     <ScrollView style={styles.container} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
       <Text style={styles.pageTitle}>Charges & Fees</Text>
+      <View style={styles.quickSummary}>
+        <View style={styles.summaryItem}>
+          <Text style={styles.summaryLabel}>Boxes</Text>
+          <Text style={styles.summaryValue}>{data.no_of_boxes || '0'}</Text>
+        </View>
+        <View style={styles.summaryDivider} />
+        <View style={styles.summaryItem}>
+          <Text style={styles.summaryLabel}>Weight</Text>
+          <Text style={styles.summaryValue}>{data.quantity_total_weight || '0'} KG</Text>
+        </View>
+      </View>
 
       {/* Main Table Card */}
       <View style={styles.card}>
@@ -163,13 +183,26 @@ export default function Step5Charges({ data, update }) {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   pageTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 17,
+    fontWeight: '700',
     color: '#111827',
     marginBottom: 12,
     marginTop: 8,
     fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
   },
+  quickSummary: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#EEF2FF',
+  },
+  summaryItem: { flex: 1 },
+  summaryLabel: { fontSize: 11, color: '#9CA3AF', fontWeight: '700', textTransform: 'uppercase' },
+  summaryValue: { fontSize: 15, color: '#111827', fontWeight: '700', marginTop: 2 },
+  summaryDivider: { width: 1, backgroundColor: '#F3F4F6', marginHorizontal: 12 },
   
   // Card
   card: {
@@ -200,12 +233,19 @@ const styles = StyleSheet.create({
     marginBottom: 14,
     height: 38 
   },
+  deductionRow: {
+    backgroundColor: '#FFFBFB',
+    borderRadius: 8,
+    paddingHorizontal: 6,
+    marginHorizontal: -6,
+  },
   rowLabel: { 
     flex: 2.5, 
     fontSize: 13, 
     color: '#111827', 
     paddingRight: 8 
   },
+  deductionLabel: { color: '#991B1B', fontWeight: '600' },
   
   // Inputs
   input: {
@@ -226,12 +266,19 @@ const styles = StyleSheet.create({
     color: '#111827',
     borderColor: '#E5E7EB'
   },
+  focusedInput: {
+    borderColor: colors.secondary,
+    backgroundColor: '#FBFCFF',
+  },
 
   // Amount Text
   amountText: {
     fontSize: 13,
     fontWeight: '700',
     color: '#EF4444', // Red color matching UI
+  },
+  deductionAmount: {
+    color: '#991B1B',
   },
 
   // Footer Card

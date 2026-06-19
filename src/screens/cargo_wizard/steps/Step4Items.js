@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Alert } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import colors from '../../../styles/colors'; // Adjust path if needed
 
 export default function Step4Items({ data, update }) {
   
@@ -16,9 +15,26 @@ export default function Step4Items({ data, update }) {
   };
 
   const removeBox = (index) => {
-    const newBoxes = [...data.boxes];
-    newBoxes.splice(index, 1);
-    update('boxes', newBoxes);
+    if (data.boxes.length === 1) {
+      Alert.alert("Keep one box", "At least one box is required for a cargo entry.");
+      return;
+    }
+    Alert.alert(
+      "Remove Box",
+      `Remove Box ${index + 1} and its items?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Remove",
+          style: "destructive",
+          onPress: () => {
+            const newBoxes = [...data.boxes];
+            newBoxes.splice(index, 1);
+            update('boxes', newBoxes);
+          }
+        }
+      ]
+    );
   };
 
   const updateBoxField = (boxIndex, field, value) => {
@@ -36,6 +52,10 @@ export default function Step4Items({ data, update }) {
   };
 
   const removeItem = (boxIndex, itemIndex) => {
+    if (data.boxes[boxIndex].items.length === 1) {
+      Alert.alert("Keep one item", `Box ${boxIndex + 1} must have at least one item.`);
+      return;
+    }
     const newBoxes = [...data.boxes];
     newBoxes[boxIndex].items.splice(itemIndex, 1);
     update('boxes', newBoxes);
@@ -52,11 +72,21 @@ export default function Step4Items({ data, update }) {
     return data.boxes.reduce((acc, box) => acc + box.items.length, 0);
   };
 
+  const getTotalWeight = () => {
+    return data.boxes.reduce((acc, box) => acc + (parseFloat(box.weight) || 0), 0).toFixed(2);
+  };
+
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
-        <Text style={styles.title}>Boxes & Items</Text>
-        <Text style={styles.summaryText}>{data.boxes.length} Boxes | {getTotalItems()} Items</Text>
+        <View>
+          {/* <Text style={styles.eyebrow}>Cargo Content</Text> */}
+          <Text style={styles.title}>Boxes & Items</Text>
+        </View>
+        <View style={styles.summaryPills}>
+          <View style={styles.summaryPill}><Text style={styles.summaryText}>{data.boxes.length} Boxes</Text></View>
+          <View style={styles.summaryPill}><Text style={styles.summaryText}>{getTotalItems()} Items</Text></View>
+        </View>
       </View>
 
       {data.boxes.map((box, boxIndex) => (
@@ -67,10 +97,13 @@ export default function Step4Items({ data, update }) {
                     <View style={styles.boxIconContainer}>
                          <MaterialCommunityIcons name="cube-outline" size={20} color="#283891" />
                     </View>
-                    <Text style={styles.boxTitle}>Box {boxIndex + 1}</Text>
+                    <View>
+                      <Text style={styles.boxTitle}>Box {boxIndex + 1}</Text>
+                      <Text style={styles.boxSubtitle}>{box.items.length} item{box.items.length === 1 ? '' : 's'}</Text>
+                    </View>
                 </View>
                 {data.boxes.length > 0 && (
-                    <TouchableOpacity onPress={() => removeBox(boxIndex)} style={styles.deleteBoxBtn}>
+                    <TouchableOpacity onPress={() => removeBox(boxIndex)} style={styles.deleteBoxBtn} activeOpacity={0.75}>
                         <MaterialCommunityIcons name="trash-can-outline" size={18} color="#EF4444" />
                     </TouchableOpacity>
                 )}
@@ -91,6 +124,9 @@ export default function Step4Items({ data, update }) {
                     onChangeText={(t) => updateBoxField(boxIndex, 'weight', t)}
                 />
             </View>
+            {(!box.weight || parseFloat(box.weight) <= 0) && (
+              <Text style={styles.inlineHelp}>Enter the total weight for this box.</Text>
+            )}
 
             {/* Items List */}
             <View style={styles.itemsContainer}>
@@ -133,14 +169,14 @@ export default function Step4Items({ data, update }) {
 
                         {/* Remove Item Button (Small X) */}
                          {box.items.length > 1 && (
-                            <TouchableOpacity onPress={() => removeItem(boxIndex, itemIndex)} style={styles.deleteItemBtn}>
+                            <TouchableOpacity onPress={() => removeItem(boxIndex, itemIndex)} style={styles.deleteItemBtn} activeOpacity={0.75}>
                                 <MaterialCommunityIcons name="close" size={16} color="#999" />
                             </TouchableOpacity>
                         )}
                     </View>
                 ))}
                 
-                <TouchableOpacity style={styles.addItemBtn} onPress={() => addItem(boxIndex)}>
+                <TouchableOpacity style={styles.addItemBtn} onPress={() => addItem(boxIndex)} activeOpacity={0.82}>
                     <MaterialCommunityIcons name="plus" size={20} color="#34339A" />
                     <Text style={styles.addItemText}>Add Item</Text>
                 </TouchableOpacity>
@@ -148,7 +184,13 @@ export default function Step4Items({ data, update }) {
         </View>
       ))}
 
-      <TouchableOpacity style={styles.addBoxBtn} onPress={addBox}>
+      <View style={styles.weightSummaryCard}>
+        <MaterialCommunityIcons name="weight-kilogram" size={20} color="#34339A" />
+        <Text style={styles.weightSummaryLabel}>Total entered weight</Text>
+        <Text style={styles.weightSummaryValue}>{getTotalWeight()} KG</Text>
+      </View>
+
+      <TouchableOpacity style={styles.addBoxBtn} onPress={addBox} activeOpacity={0.85}>
         <MaterialCommunityIcons name="plus" size={24} color="#fff" />
         <Text style={styles.addBoxText}>Add New Box</Text>
       </TouchableOpacity>
@@ -162,20 +204,24 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   header: { 
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', 
-    marginBottom: 15, marginTop: 10
+    marginBottom: 12, marginTop: 6
   },
-  title: { fontSize: 16, fontWeight: '600', color: '#111827' },
-  summaryText: { fontSize: 13, color: '#9CA3AF' },
+  eyebrow: { fontSize: 11, color: '#EF4444', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.6 },
+  title: { fontSize: 17, fontWeight: '700', color: '#111827' },
+  summaryPills: { flexDirection: 'row', gap: 6 },
+  summaryPill: { backgroundColor: '#EEF2FF', borderRadius: 12, paddingHorizontal: 8, paddingVertical: 4 },
+  summaryText: { fontSize: 11, color: '#34339A', fontWeight: '700' },
   
   boxCard: { 
-    backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 16, 
-   
+    backgroundColor: '#fff', borderRadius: 14, padding: 14, marginBottom: 14,
+    borderWidth: 1, borderColor: '#EEF2FF',
   },
   
   // Header
   boxHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  boxIconContainer: { marginRight: 10 },
+  boxIconContainer: { width: 36, height: 36, borderRadius: 10, backgroundColor: '#EEF2FF', justifyContent: 'center', alignItems: 'center', marginRight: 10 },
   boxTitle: { fontSize: 15, fontWeight: '600', color: '#111827' },
+  boxSubtitle: { fontSize: 11, color: '#9CA3AF', marginTop: 1 },
   deleteBoxBtn: { 
     width: 32, height: 32, borderRadius: 16, backgroundColor: '#FEE2E2', 
     justifyContent: 'center', alignItems: 'center' 
@@ -183,12 +229,13 @@ const styles = StyleSheet.create({
   divider: { height: 1, backgroundColor: '#F3F4F6', marginBottom: 16 },
 
   // Weight Row
-  weightRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  weightRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   label: { fontSize: 14, fontWeight: '600', color: '#111827' },
   weightInput: { 
     backgroundColor: '#F3F4F6', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, 
     width: 100, textAlign: 'right', fontSize: 15, color: '#111827' 
   },
+  inlineHelp: { fontSize: 11, color: '#EF4444', marginBottom: 14 },
 
   // Items List
   itemsContainer: { },
@@ -212,5 +259,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#ed2624', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', 
     height: 54, borderRadius: 12, marginTop: 8 
   },
-  addBoxText: { color: '#fff', fontWeight: '600', marginLeft: 8, fontSize: 16 }
+  addBoxText: { color: '#fff', fontWeight: '600', marginLeft: 8, fontSize: 16 },
+  weightSummaryCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#E0E7FF',
+  },
+  weightSummaryLabel: { flex: 1, marginLeft: 8, fontSize: 13, color: '#6B7280', fontWeight: '600' },
+  weightSummaryValue: { fontSize: 14, color: '#111827', fontWeight: '700' }
 });

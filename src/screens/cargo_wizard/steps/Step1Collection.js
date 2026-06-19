@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { getActiveCollectedBy, getAllCollectedBy } from '../../../services/coreServices'; 
+import { getActiveCollectedBy } from '../../../services/coreServices'; 
 import BottomSheetSelect from '../components/BottomSheetSelect'; 
 
 export default function Step1Collection({ data, update }) {
@@ -71,7 +71,12 @@ export default function Step1Collection({ data, update }) {
 
       <View style={styles.inputGroup}>
         <Text style={styles.inputLabel}>Collected by</Text>
-        <TouchableOpacity style={styles.dropdownBtn} onPress={() => setRoleModalVisible(true)} activeOpacity={0.8}>
+        <TouchableOpacity
+          style={[styles.dropdownBtn, data.collected_by && styles.dropdownBtnSelected]}
+          onPress={() => setRoleModalVisible(true)}
+          activeOpacity={0.8}
+          disabled={loading}
+        >
             <View style={styles.dropdownContent}>
                 <View style={styles.dropdownIconBox}>
                   <MaterialCommunityIcons name="account-tie-outline" size={21} color="#34339A" />
@@ -83,7 +88,15 @@ export default function Step1Collection({ data, update }) {
                   <Text style={styles.dropdownHint}>Assigned collection staff</Text>
                 </View>
             </View>
-            {loading ? <ActivityIndicator size="small" color="#34339A"/> : <MaterialCommunityIcons name="chevron-down" size={24} color="#111827" />}
+            {loading ? (
+              <ActivityIndicator size="small" color="#34339A"/>
+            ) : data.collected_by ? (
+              <View style={styles.selectedBadge}>
+                <MaterialCommunityIcons name="check" size={14} color="#fff" />
+              </View>
+            ) : (
+              <MaterialCommunityIcons name="chevron-down" size={24} color="#111827" />
+            )}
         </TouchableOpacity>
       </View>
 
@@ -114,10 +127,12 @@ const styles = StyleSheet.create({
     inputGroup: { marginBottom: 16 },
     inputLabel: { fontSize: 12, color: '#111827', marginBottom: 6, fontFamily: 'InstrumentSans-Regular' },
     dropdownBtn: { backgroundColor: '#fff', borderRadius: 12, minHeight: 56, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, paddingVertical: 8, borderWidth: 1, borderColor: '#E5E7EB', elevation: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 3 },
+    dropdownBtnSelected: { borderColor: '#C7D2FE', backgroundColor: '#FBFCFF' },
     dropdownContent: { flex: 1, flexDirection: 'row', alignItems: 'center', marginRight: 8 },
     dropdownIconBox: { width: 36, height: 36, borderRadius: 9, backgroundColor: '#EEF2FF', alignItems: 'center', justifyContent: 'center', marginRight: 10 },
     dropdownTextBlock: { flex: 1 },
     dropdownText: { fontSize: 14, color: '#111827', fontWeight: '600', fontFamily: 'InstrumentSans-Regular' },
     dropdownHint: { fontSize: 11, color: '#9CA3AF', marginTop: 1, fontFamily: 'InstrumentSans-Regular' },
+    selectedBadge: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#34339A', alignItems: 'center', justifyContent: 'center' },
     placeholderText: { color: '#6B7280' },
 });

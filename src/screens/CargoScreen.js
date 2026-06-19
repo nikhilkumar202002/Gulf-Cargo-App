@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useUser } from '../context/UserContext';
 import { createCargo, getNextInvoiceNumber } from '../services/cargoService';
 import { useNavigation } from '@react-navigation/native';
@@ -24,6 +25,7 @@ export default function CargoScreen() {
   const [loading, setLoading] = useState(false);
   const [invoiceLoading, setInvoiceLoading] = useState(false);
   const totalSteps = 6;
+  const stepTitles = ['Cargo Items', 'Parties', 'Shipment', 'Charges', 'Collection', 'Review'];
 
   useLayoutEffect(() => {
     StatusBar.setHidden(false, 'slide');
@@ -299,15 +301,18 @@ export default function CargoScreen() {
         {/* Global Progress Card matching UI exactly */}
         <View style={styles.topCardContainer}>
           <View style={styles.progressCard}>
+            <View style={styles.invoiceRow}>
+                <Text style={styles.invoiceLabel}>Invoice Number</Text>
+                <View style={styles.invoiceBadge}>
+                    <Text style={styles.invoiceBadgeText}>
+                      {invoiceLoading ? 'Loading...' : formData.booking_no || 'Pending'}
+                    </Text>
+                </View>
+            </View>
             <View style={styles.progressHeader}>
                 <View style={styles.progressTitleBlock}>
                     <Text style={styles.progressTitle}>Create New Bill</Text>
-                    <View style={styles.invoiceBadge}>
-                        <Text style={styles.invoiceBadgeLabel}>Invoice</Text>
-                        <Text style={styles.invoiceBadgeText}>
-                          {invoiceLoading ? 'Loading...' : formData.booking_no || 'Pending'}
-                        </Text>
-                    </View>
+                    <Text style={styles.progressSubtitle}>{stepTitles[currentStep - 1]}</Text>
                 </View>
                 <View style={styles.stepBadge}>
                     <Text style={styles.stepBadgeText}>Step {currentStep}/{totalSteps}</Text>
@@ -328,6 +333,7 @@ export default function CargoScreen() {
               style={[styles.btn, styles.backBtn]} 
               onPress={() => setCurrentStep(currentStep - 1)}
             >
+              <MaterialCommunityIcons name="arrow-left" size={18} color="#374151" />
               <Text style={styles.backBtnText}>Back</Text>
             </TouchableOpacity>
           )}
@@ -337,7 +343,14 @@ export default function CargoScreen() {
             onPress={handleNext} 
             disabled={loading}
           >
-            {loading ? <ActivityIndicator color="#fff"/> : <Text style={styles.nextBtnText}>{currentStep === totalSteps ? 'Submit' : 'Next Step'}</Text>}
+            {loading ? (
+              <ActivityIndicator color="#fff"/>
+            ) : (
+              <>
+                <Text style={styles.nextBtnText}>{currentStep === totalSteps ? 'Submit Bill' : 'Next Step'}</Text>
+                <MaterialCommunityIcons name={currentStep === totalSteps ? 'check' : 'arrow-right'} size={18} color="#fff" />
+              </>
+            )}
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -352,11 +365,13 @@ const styles = StyleSheet.create({
       backgroundColor: '#fff', borderRadius: 12, overflow: 'hidden',
       elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 3,
   },
-  progressHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, gap: 12 },
+  invoiceRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
+  invoiceLabel: { fontSize: 12, color: '#6B7280', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.4, fontFamily: 'InstrumentSans-Regular' },
+  progressHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, gap: 12 },
   progressTitleBlock: { flex: 1 },
   progressTitle: { fontSize: 16, color: '#111827', fontWeight: '500', fontFamily: 'InstrumentSans-Regular' },
-  invoiceBadge: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', backgroundColor: '#34339A', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, marginTop: 8 },
-  invoiceBadgeLabel: { color: '#C7D2FE', fontSize: 11, fontWeight: '600', marginRight: 6, fontFamily: 'InstrumentSans-Regular' },
+  progressSubtitle: { fontSize: 12, color: '#6B7280', marginTop: 2, fontFamily: 'InstrumentSans-Regular' },
+  invoiceBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#34339A', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 },
   invoiceBadgeText: { color: '#fff', fontSize: 13, fontWeight: '700', fontFamily: 'InstrumentSans-Regular' },
   stepBadge: { backgroundColor: '#E0E7FF', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
   stepBadgeText: { color: '#312E81', fontSize: 12, fontWeight: '600', fontFamily: 'InstrumentSans-Regular' },
@@ -365,7 +380,7 @@ const styles = StyleSheet.create({
   
   contentContainer: { flex: 1, paddingHorizontal: 20 },
   footer: { flexDirection: 'row', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 130, backgroundColor: '#F9FAFB' },
-  btn: { height: 50, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
+  btn: { height: 50, borderRadius: 8, justifyContent: 'center', alignItems: 'center', flexDirection: 'row', gap: 8 },
   backBtn: { flex: 0.3, backgroundColor: '#fff', borderWidth: 1, borderColor: '#D1D5DB', marginRight: 10 },
   backBtnText: { color: '#374151', fontSize: 16, fontWeight: '500', fontFamily: 'InstrumentSans-Regular' },
   nextBtn: { flex: 0.7, backgroundColor: '#34339A' }, // Deep Indigo from UI

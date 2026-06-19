@@ -10,13 +10,13 @@ import {
   getActivePaymentMethods 
 } from '../../../services/coreServices'; 
 import BottomSheetSelect from '../components/BottomSheetSelect'; 
-import colors from '../../../styles/colors';
 
 export default function Step3Shipment({ data, update }) {
   // --- STATE ---
   const [shipmentMethods, setShipmentMethods] = useState([]);
   const [deliveryTypes, setDeliveryTypes] = useState([]);
   const [paymentMethods, setPaymentMethods] = useState([]);
+  const [loadingMasterData, setLoadingMasterData] = useState(false);
   
   const [showShipMethod, setShowShipMethod] = useState(false);
   const [showDelType, setShowDelType] = useState(false);
@@ -28,6 +28,7 @@ export default function Step3Shipment({ data, update }) {
   }, []);
 
   const loadMasterData = async () => {
+    setLoadingMasterData(true);
     try {
       // 1. Fetch all API lists in parallel
       const [smRes, dtRes, pmRes] = await Promise.all([
@@ -64,6 +65,8 @@ export default function Step3Shipment({ data, update }) {
 
     } catch (e) {
       // Silently handle shipment data load errors
+    } finally {
+      setLoadingMasterData(false);
     }
   };
 
@@ -85,8 +88,8 @@ export default function Step3Shipment({ data, update }) {
 
   // Reusable Card Component for Dropdowns to match the UI
   const SelectionCard = ({ label, value, placeholder, icon, onPress }) => (
-    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.7}>
-      <View style={styles.iconContainer}>
+    <TouchableOpacity style={[styles.card, value && styles.selectedCard]} onPress={onPress} activeOpacity={0.82}>
+      <View style={[styles.iconContainer, value && styles.selectedIconContainer]}>
         <MaterialCommunityIcons name={icon} size={24} color="#5B5FC7" />
       </View>
       <View style={styles.textContainer}>
@@ -95,7 +98,13 @@ export default function Step3Shipment({ data, update }) {
           {value || placeholder}
         </Text>
       </View>
-      <MaterialCommunityIcons name="chevron-down" size={24} color="#9CA3AF" />
+      {value ? (
+        <View style={styles.checkBadge}>
+          <MaterialCommunityIcons name="check" size={14} color="#fff" />
+        </View>
+      ) : (
+        <MaterialCommunityIcons name="chevron-down" size={24} color="#9CA3AF" />
+      )}
     </TouchableOpacity>
   );
 
@@ -103,6 +112,7 @@ export default function Step3Shipment({ data, update }) {
     <ScrollView style={styles.container} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
       
       <Text style={styles.sectionHeader}>Shipment Details</Text>
+      {loadingMasterData && <Text style={styles.helperText}>Loading available shipment options...</Text>}
 
       {/* 1. SHIPMENT METHOD */}
       <SelectionCard 
@@ -213,6 +223,13 @@ const styles = StyleSheet.create({
     marginTop: 8,
     fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
   },
+  helperText: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginTop: -6,
+    marginBottom: 10,
+    fontFamily: 'InstrumentSans-Regular',
+  },
   spacer: {
     height: 16,
   },
@@ -233,6 +250,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 2,
   },
+  selectedCard: {
+    borderColor: '#C7D2FE',
+    backgroundColor: '#FBFCFF',
+  },
   iconContainer: {
     width: 48,
     height: 48,
@@ -241,6 +262,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
+  },
+  selectedIconContainer: {
+    backgroundColor: '#E0E7FF',
   },
   textContainer: {
     flex: 1,
@@ -258,6 +282,14 @@ const styles = StyleSheet.create({
   },
   placeholderText: {
     color: '#9CA3AF', // Gray-400
+  },
+  checkBadge: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#34339A',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   
   // Input Styles

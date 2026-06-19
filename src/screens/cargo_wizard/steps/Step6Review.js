@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, Platform } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import colors from '../../../styles/colors';
 
 export default function Step6Review({ data }) {
@@ -61,9 +62,36 @@ export default function Step6Review({ data }) {
 
   const Divider = () => <View style={styles.divider} />;
 
+  const SummaryMetric = ({ icon, label, value }) => (
+    <View style={styles.summaryMetric}>
+      <View style={styles.summaryIcon}>
+        <MaterialCommunityIcons name={icon} size={18} color={colors.secondary} />
+      </View>
+      <Text style={styles.summaryMetricLabel}>{label}</Text>
+      <Text style={styles.summaryMetricValue} numberOfLines={1}>{value}</Text>
+    </View>
+  );
+
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <Text style={styles.pageTitle}>Invoice Overview</Text>
+
+      <View style={styles.summaryCard}>
+        <View>
+          <Text style={styles.summaryLabel}>Ready to submit</Text>
+          <Text style={styles.summaryInvoice}>{data.booking_no || 'Invoice pending'}</Text>
+        </View>
+        <View style={styles.summaryTotalBox}>
+          <Text style={styles.summaryTotalLabel}>Net</Text>
+          <Text style={styles.summaryTotalValue}>{formatCurrency(netTotal)}</Text>
+        </View>
+      </View>
+
+      <View style={styles.metricsRow}>
+        <SummaryMetric icon="package-variant-closed" label="Boxes" value={data.no_of_boxes || data.boxes?.length || 0} />
+        <SummaryMetric icon="weight-kilogram" label="Weight" value={`${data.quantity_total_weight || 0} KG`} />
+        <SummaryMetric icon="cash" label="Payment" value={data.payment_method_name || '-'} />
+      </View>
 
       <View style={styles.card}>
         
@@ -174,13 +202,32 @@ export default function Step6Review({ data }) {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   pageTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 17,
+    fontWeight: '700',
     color: '#111827', // Dark gray/black
     marginBottom: 12,
     marginTop: 8,
     fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
   },
+  summaryCard: {
+    backgroundColor: colors.secondary,
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  summaryLabel: { color: '#C7D2FE', fontSize: 12, fontWeight: '700', textTransform: 'uppercase' },
+  summaryInvoice: { color: '#fff', fontSize: 18, fontWeight: '800', marginTop: 4 },
+  summaryTotalBox: { alignItems: 'flex-end' },
+  summaryTotalLabel: { color: '#C7D2FE', fontSize: 11, fontWeight: '700' },
+  summaryTotalValue: { color: '#fff', fontSize: 22, fontWeight: '900' },
+  metricsRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
+  summaryMetric: { flex: 1, backgroundColor: '#fff', borderRadius: 12, padding: 10, borderWidth: 1, borderColor: '#EEF2FF' },
+  summaryIcon: { width: 30, height: 30, borderRadius: 9, backgroundColor: '#EEF2FF', alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
+  summaryMetricLabel: { fontSize: 10, color: '#9CA3AF', fontWeight: '700', textTransform: 'uppercase' },
+  summaryMetricValue: { fontSize: 13, color: '#111827', fontWeight: '700', marginTop: 2 },
   card: {
     backgroundColor: '#fff',
     borderRadius: 16,
