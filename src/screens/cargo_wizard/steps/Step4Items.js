@@ -86,7 +86,6 @@ export default function Step4Items({ data, update }) {
                 </View>
                 <TextInput 
                     style={[styles.weightInput, (!box.weight || parseFloat(box.weight) <= 0) && {borderWidth: 1, borderColor: '#FCA5A5'}]} 
-                    placeholder="0.00" 
                     keyboardType="numeric"
                     value={String(box.weight)}
                     onChangeText={(t) => updateBoxField(boxIndex, 'weight', t)}
@@ -105,7 +104,6 @@ export default function Step4Items({ data, update }) {
                             </View>
                             <TextInput 
                                 style={[styles.itemInput, (!item.name || item.name.trim() === "") && {borderColor: '#FCA5A5'}]} 
-                                placeholder="Dates" 
                                 value={item.name}
                                 onChangeText={(t) => updateItem(boxIndex, itemIndex, 'name', t)}
                             />
@@ -116,7 +114,6 @@ export default function Step4Items({ data, update }) {
                             <Text style={styles.itemLabel}>Qty</Text>
                             <TextInput 
                                 style={[styles.itemInput, {textAlign: 'center'}]} 
-                                placeholder="0" 
                                 keyboardType="numeric" 
                                 value={String(item.qty)}
                                 onChangeText={(t) => updateItem(boxIndex, itemIndex, 'qty', t)}
@@ -128,7 +125,6 @@ export default function Step4Items({ data, update }) {
                             <Text style={styles.itemLabel}>KG</Text>
                             <TextInput 
                                 style={[styles.itemInput, {textAlign: 'center'}]} 
-                                placeholder="0" 
                                 keyboardType="numeric" 
                                 value={String(item.weight)}
                                 onChangeText={(t) => updateItem(boxIndex, itemIndex, 'weight', t)}

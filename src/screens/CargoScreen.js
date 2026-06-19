@@ -6,8 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useUser } from '../context/UserContext';
-import { createCargo } from '../services/cargoService';
-import { generateInvoicePDF } from '../services/pdfGenerator';
+import { createCargo, getNextInvoiceNumber } from '../services/cargoService';
 import { useNavigation } from '@react-navigation/native';
 
 // --- IMPORT STEPS ---
@@ -23,6 +22,7 @@ export default function CargoScreen() {
   const { userData } = useUser();
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [invoiceLoading, setInvoiceLoading] = useState(false);
   const totalSteps = 6;
 
   useLayoutEffect(() => {
@@ -30,7 +30,7 @@ export default function CargoScreen() {
   }, []);
 
   const getInitialState = () => ({
-    branch_id: '', branch_name: '', sender_id: '', receiver_id: '',
+    branch_id: '', branch_name: '', booking_no: '', sender_id: '', receiver_id: '',
     shipping_method_id: '', payment_method_id: '', status_id: 1,
     date: new Date(),
     time: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
@@ -55,6 +55,22 @@ export default function CargoScreen() {
 
   const [formData, setFormData] = useState(getInitialState());
 
+  const loadNextInvoiceNumber = async (branchId) => {
+    if (!branchId) return;
+
+    setInvoiceLoading(true);
+    try {
+      const nextInvoiceNumber = await getNextInvoiceNumber(branchId);
+      if (nextInvoiceNumber) {
+        setFormData(prev => ({ ...prev, booking_no: nextInvoiceNumber }));
+      }
+    } catch (error) {
+      setFormData(prev => ({ ...prev, booking_no: '' }));
+    } finally {
+      setInvoiceLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (userData) {
         const userObj = userData.user || userData;
@@ -63,6 +79,7 @@ export default function CargoScreen() {
         
         if (bId) {
             setFormData(prev => ({ ...prev, branch_id: bId, branch_name: bName, name_id: userObj.id || userData.id }));
+            loadNextInvoiceNumber(bId);
         }
     }
   }, [userData]);
@@ -71,18 +88,18 @@ export default function CargoScreen() {
     React.useCallback(() => {
       // Reset form and step when screen comes into focus
       setCurrentStep(1);
-      setFormData(prev => {
-        const userObj = userData?.user || userData;
-        const bId = userData?.branch_id || userObj?.branch?.id || userObj?.branch_id;
-        const bName = userData?.branchName || userObj?.branch?.name || userObj?.branch_name;
-        
-        return {
-          ...getInitialState(),
-          branch_id: bId || '',
-          branch_name: bName || '',
-          name_id: userObj?.id || userData?.id || ''
-        };
+      const userObj = userData?.user || userData;
+      const bId = userData?.branch_id || userObj?.branch?.id || userObj?.branch_id;
+      const bName = userData?.branchName || userObj?.branch?.name || userObj?.branch_name;
+      
+      setFormData({
+        ...getInitialState(),
+        branch_id: bId || '',
+        branch_name: bName || '',
+        name_id: userObj?.id || userData?.id || ''
       });
+
+      loadNextInvoiceNumber(bId);
     }, [userData])
   );
 
@@ -162,6 +179,7 @@ export default function CargoScreen() {
     // Format data for API
     const submitData = {
       ...formData,
+      booking_no: formData.booking_no,
       date: formData.date.toISOString().split('T')[0], // YYYY-MM-DD
       sender_id: formData.sender?.id || formData.sender_id,
       receiver_id: formData.receiver?.id || formData.receiver_id,
@@ -282,7 +300,15 @@ export default function CargoScreen() {
         <View style={styles.topCardContainer}>
           <View style={styles.progressCard}>
             <View style={styles.progressHeader}>
-                <Text style={styles.progressTitle}>Create New Bill</Text>
+                <View style={styles.progressTitleBlock}>
+                    <Text style={styles.progressTitle}>Create New Bill</Text>
+                    <View style={styles.invoiceBadge}>
+                        <Text style={styles.invoiceBadgeLabel}>Invoice</Text>
+                        <Text style={styles.invoiceBadgeText}>
+                          {invoiceLoading ? 'Loading...' : formData.booking_no || 'Pending'}
+                        </Text>
+                    </View>
+                </View>
                 <View style={styles.stepBadge}>
                     <Text style={styles.stepBadgeText}>Step {currentStep}/{totalSteps}</Text>
                 </View>
@@ -326,8 +352,12 @@ const styles = StyleSheet.create({
       backgroundColor: '#fff', borderRadius: 12, overflow: 'hidden',
       elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 3,
   },
-  progressHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14 },
+  progressHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, gap: 12 },
+  progressTitleBlock: { flex: 1 },
   progressTitle: { fontSize: 16, color: '#111827', fontWeight: '500', fontFamily: 'InstrumentSans-Regular' },
+  invoiceBadge: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', backgroundColor: '#34339A', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, marginTop: 8 },
+  invoiceBadgeLabel: { color: '#C7D2FE', fontSize: 11, fontWeight: '600', marginRight: 6, fontFamily: 'InstrumentSans-Regular' },
+  invoiceBadgeText: { color: '#fff', fontSize: 13, fontWeight: '700', fontFamily: 'InstrumentSans-Regular' },
   stepBadge: { backgroundColor: '#E0E7FF', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
   stepBadgeText: { color: '#312E81', fontSize: 12, fontWeight: '600', fontFamily: 'InstrumentSans-Regular' },
   progressBarBg: { height: 4, backgroundColor: '#E5E7EB', width: '100%' },
