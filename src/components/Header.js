@@ -10,7 +10,7 @@ import { useUser } from '../context/UserContext';
 import colors from '../styles/colors';
 
 const Header = () => {
-  const { userData } = useUser();
+  const { userData, setUserData } = useUser();
   const navigation = useNavigation();
   const [menuVisible, setMenuVisible] = useState(false);
 
@@ -29,8 +29,17 @@ const Header = () => {
         text: 'Logout', 
         style: 'destructive',
         onPress: async () => {
-          await AsyncStorage.clear();
-          navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+          try {
+            await AsyncStorage.multiRemove(['userToken', 'session_start', 'last_activity']);
+          } finally {
+            setUserData({
+              name: '',
+              branchName: '',
+              email: '',
+              profilePic: null,
+            });
+            navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+          }
         }
       }
     ]);

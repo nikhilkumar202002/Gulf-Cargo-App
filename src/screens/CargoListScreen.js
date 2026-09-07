@@ -18,7 +18,7 @@ export default function CargoListScreen() {
   const { userData } = useUser();
   const currentUser = userData?.user || userData || {};
   const currentRoleName = String(currentUser.role?.name || currentUser.role || '').toLowerCase().trim();
-  const currentRoleId = currentUser.role_id || currentUser.role?.id;
+  const currentRoleId = Number(currentUser.role_id || currentUser.role?.id);
   const canEditCargo =
     currentRoleId === 1 ||
     currentRoleId === 2 ||

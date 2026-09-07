@@ -15,6 +15,7 @@ import { useRoute, useNavigation } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { getCargoDetails, updateCargo } from '../services/cargoService';
 import { getSenderParties, getReceiverParties } from '../services/partiesServices';
+import { useUser } from '../context/UserContext';
 import colors from '../styles/colors';
 import SkeletonLoader from '../components/SkeletonLoader';
 
@@ -22,6 +23,15 @@ export default function CargoEditScreen() {
   const route = useRoute();
   const navigation = useNavigation();
   const { id } = route.params;
+  const { userData } = useUser();
+  const currentUser = userData?.user || userData || {};
+  const currentRoleName = String(currentUser.role?.name || currentUser.role || '').toLowerCase().trim();
+  const currentRoleId = Number(currentUser.role_id || currentUser.role?.id);
+  const canEditCargo =
+    currentRoleId === 1 ||
+    currentRoleId === 2 ||
+    currentRoleName === 'admin' ||
+    currentRoleName === 'super admin';
 
   const [cargo, setCargo] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -83,9 +93,14 @@ export default function CargoEditScreen() {
   };
 
   useEffect(() => {
+    if (!canEditCargo) {
+      navigation.goBack();
+      return;
+    }
+
     fetchCargoDetails();
     fetchSendersAndReceivers();
-  }, [id]);
+  }, [id, canEditCargo]);
 
   // --- 1. AUTO-CALCULATE WEIGHT & BOX COUNT ---
   useEffect(() => {

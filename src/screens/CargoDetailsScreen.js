@@ -8,6 +8,7 @@ import { useRoute, useNavigation } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { getCargoDetails } from '../services/cargoService';
 import { getPartyDetails } from '../services/partiesServices';
+import { useUser } from '../context/UserContext';
 import colors from '../styles/colors';
 import SkeletonLoader from '../components/SkeletonLoader';
 
@@ -15,6 +16,15 @@ export default function CargoDetailsScreen() {
   const route = useRoute();
   const navigation = useNavigation();
   const { id } = route.params;
+  const { userData } = useUser();
+  const currentUser = userData?.user || userData || {};
+  const currentRoleName = String(currentUser.role?.name || currentUser.role || '').toLowerCase().trim();
+  const currentRoleId = Number(currentUser.role_id || currentUser.role?.id);
+  const canEditCargo =
+    currentRoleId === 1 ||
+    currentRoleId === 2 ||
+    currentRoleName === 'admin' ||
+    currentRoleName === 'super admin';
   
   const [cargo, setCargo] = useState(null);
   const [senderFull, setSenderFull] = useState(null);
@@ -102,9 +112,11 @@ export default function CargoDetailsScreen() {
           <MaterialCommunityIcons name="arrow-left" size={28} color="#333" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Booking {cargo?.booking_no}</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('CargoEdit', { id })}>
-          <MaterialCommunityIcons name="pencil" size={24} color={colors.primary} />
-        </TouchableOpacity>
+        {canEditCargo ? (
+          <TouchableOpacity onPress={() => navigation.navigate('CargoEdit', { id })}>
+            <MaterialCommunityIcons name="pencil" size={24} color={colors.primary} />
+          </TouchableOpacity>
+        ) : <View style={{ width: 24 }} />}
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>

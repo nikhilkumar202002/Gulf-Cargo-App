@@ -10,7 +10,7 @@ import { useUser } from '../context/UserContext';
 import colors from '../styles/colors';
 
 export default function SettingScreen() {
-  const { userData } = useUser();
+  const { userData, setUserData } = useUser();
   const navigation = useNavigation();
 
   // Access user data safely based on your context structure
@@ -23,8 +23,17 @@ export default function SettingScreen() {
         text: 'Logout', 
         style: 'destructive',
         onPress: async () => {
-          await AsyncStorage.clear();
-          navigation.replace('Login');
+          try {
+            await AsyncStorage.multiRemove(['userToken', 'session_start', 'last_activity']);
+          } finally {
+            setUserData({
+              name: '',
+              branchName: '',
+              email: '',
+              profilePic: null,
+            });
+            navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+          }
         }
       }
     ]);
