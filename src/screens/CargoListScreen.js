@@ -16,6 +16,14 @@ import SkeletonLoader from '../components/SkeletonLoader';
 export default function CargoListScreen() {
   const navigation = useNavigation();
   const { userData } = useUser();
+  const currentUser = userData?.user || userData || {};
+  const currentRoleName = String(currentUser.role?.name || currentUser.role || '').toLowerCase().trim();
+  const currentRoleId = currentUser.role_id || currentUser.role?.id;
+  const canEditCargo =
+    currentRoleId === 1 ||
+    currentRoleId === 2 ||
+    currentRoleName === 'admin' ||
+    currentRoleName === 'super admin';
   
   const [cargos, setCargos] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -105,7 +113,7 @@ export default function CargoListScreen() {
 
     if (action === 'view') {
       navigation.navigate('CargoDetails', { id: selectedCargo.id });
-    } else if (action === 'edit') {
+    } else if (action === 'edit' && canEditCargo) {
       navigation.navigate('CargoEdit', { id: selectedCargo.id }); 
     } else if (action === 'bill') {
         try {
@@ -203,10 +211,12 @@ export default function CargoListScreen() {
               <Text style={styles.optionLabel}>View Details</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.menuOption} onPress={() => handleMenuAction('edit')}>
-              <MaterialCommunityIcons name="pencil-outline" size={22} color="#0F172A" />
-              <Text style={styles.optionLabel}>Edit Cargo</Text>
-            </TouchableOpacity>
+            {canEditCargo && (
+              <TouchableOpacity style={styles.menuOption} onPress={() => handleMenuAction('edit')}>
+                <MaterialCommunityIcons name="pencil-outline" size={22} color="#0F172A" />
+                <Text style={styles.optionLabel}>Edit Cargo</Text>
+              </TouchableOpacity>
+            )}
             
             <TouchableOpacity style={styles.menuOption} onPress={() => handleMenuAction('bill')}>
               <MaterialCommunityIcons name="file-document-outline" size={22} color="#0F172A" />

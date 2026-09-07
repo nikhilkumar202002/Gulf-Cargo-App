@@ -37,13 +37,15 @@ export default function LoginScreen({ navigation }) {
   }, [navigation]);
 
   const handleLogin = async () => {
-    if (!email || !password) {
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (!normalizedEmail || !password) {
       Alert.alert('Required', 'Please enter your email and password.');
       return;
     }
     setLoading(true);
     try {
-      const loginResponse = await login(email, password);
+      const loginResponse = await login(normalizedEmail, password);
       if (loginResponse.data.success) { 
         const token = loginResponse.data.token;
         const nowTimestamp = Date.now().toString();
@@ -70,7 +72,20 @@ export default function LoginScreen({ navigation }) {
         Alert.alert('Login Failed', loginResponse.data.message || 'Invalid credentials');
       }
     } catch (error) {
-      Alert.alert('Error', error.response?.data?.message || 'Connection failed.');
+      const serverMessage = error.response?.data?.message;
+      const message = serverMessage
+        || (error.code === 'ECONNABORTED'
+          ? 'The server took too long to respond. Please try again.'
+          : error.request
+            ? 'Unable to reach the server. Check your internet connection and try again.'
+            : error.message || 'Unable to sign in.');
+
+      console.error('Login failed', {
+        code: error.code,
+        status: error.response?.status,
+        message: error.message,
+      });
+      Alert.alert('Sign In Failed', message);
     } finally {
       setLoading(false);
     }
